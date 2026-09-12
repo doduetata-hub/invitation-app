@@ -1,0 +1,60 @@
+# Redirection HTTP -> HTTPS, sauf pour le challenge ACME (renouvellement Let's Encrypt).
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+    client_max_body_size 20m;
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location /api/ {
+        proxy_pass http://backend:4000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /uploads/ {
+        proxy_pass http://backend:4000/uploads/;
+    }
+
+    # Les robots de prévisualisation sociale n'exécutent pas le JS de la SPA : on leur sert
+    # la page HTML avec les balises Open Graph pré-rendues côté backend (voir dev.conf pour le détail).
+    location ~ ^/i/(?<slug>[^/]+)$ {
+        if ($http_user_agent ~* "facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|LinkedInBot|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|Googlebot|bingbot") {
+            proxy_pass http://backend:4000/api/share/$slug;
+            break;
+        }
+        proxy_pass http://frontend:80/i/$slug;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://frontend:80/;
+        proxy_set_header Host $host;
+    }
+}

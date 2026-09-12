@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InvitationStatus {
+  DRAFT
+  IN_PROGRESS
+  READY
+  PUBLISHED
+  SUSPENDED
+  ARCHIVED
+}
+
+enum RsvpAnswer {
+  YES
+  NO
+  PENDING
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admins")
+}
+
+model Client {
+  id          String       @id @default(uuid())
+  firstName   String       @map("first_name")
+  lastName    String       @map("last_name")
+  phone       String?
+  whatsapp    String?
+  email       String?
+  address     String?
+  notes       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  invitations Invitation[]
+
+  @@map("clients")
+}
+
+model InvitationTemplate {
+  id          String       @id @default(uuid())
+  key         String       @unique
+  name        String
+  category    String
+  previewUrl  String?      @map("preview_url")
+  isActive    Boolean      @default(true) @map("is_active")
+  invitations Invitation[]
+
+  @@map("invitation_templates")
+}
+
+model Invitation {
+  id       String @id @default(uuid())
+  clientId String @map("client_id")
+  client   Client @relation(fields: [clientId], references: [id])
+
+  templateId String              @map("template_id")
+  template   InvitationTemplate  @relation(fields: [templateId], references: [id])
+
+  slug            String   @unique
+  eventType       String   @map("event_type")
+  title           String
+  namesLine       String?  @map("names_line")
+  eventDate       DateTime? @map("event_date")
+  eventTime       String?  @map("event_time")
+  venueName       String?  @map("venue_name")
+  address         String?
+  latitude        Float?
+  longitude       Float?
+  invitationText  String?  @map("invitation_text")
+  personalMessage String?  @map("personal_message")
+
+  theme    Json?
+  musicUrl String? @map("music_url")
+
+  // Donne au client un accès direct (sans compte admin) à la gestion des liens d'invités
+  // de CETTE invitation uniquement — jamais aux autres invitations, à l'édition ou aux templates.
+  clientAccessToken String? @unique @map("client_access_token")
+
+  status InvitationStatus @default(DRAFT)
+
+  price         Decimal?      @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+
+  media    Media[]
+  events   Event[]
+  guests   Guest[]
+  payments Payment[]
+  rsvps    Rsvp[]
+
+  @@map("invitations")
+}
+
+model Media {
+  id           String     @id @default(uuid())
+  invitationId String     @map("invitation_id")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  type         String
+  url          String
+  mimeType     String?    @map("mime_type")
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@map("media")
+}
+
+model Event {
+  id           String     @id @default(uuid())
+  invitationId String     @map("invitation_id")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  title        String
+  time         String?
+  location     String?
+  description  String?
+  order        Int        @default(0)
+
+  @@map("events")
+}
+
+model Guest {
+  id           String     @id @default(uuid())
+  invitationId String     @map("invitation_id")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  name         String?
+  phone        String?
+  guestCode    String?    @unique @map("guest_code")
+  maxPersons   Int?       @map("max_persons")
+  checkedInAt  DateTime?  @map("checked_in_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  rsvp         Rsvp?
+
+  @@map("guests")
+}
+
+model Rsvp {
+  id              String     @id @default(uuid())
+  guestId         String?    @unique @map("guest_id")
+  guest           Guest?     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  invitationId    String     @map("invitation_id")
+  invitation      Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  answer          RsvpAnswer @default(PENDING)
+  name            String
+  numberOfPersons Int        @default(1) @map("number_of_persons")
+  meal            String?
+  drink           String?
+  message         String?
+  respondedAt     DateTime   @default(now()) @map("responded_at")
+  checkedInAt     DateTime?  @map("checked_in_at")
+
+  @@map("rsvps")
+}
+
+model Payment {
+  id           String     @id @default(uuid())
+  invitationId String     @map("invitation_id")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  amount       Decimal    @db.Decimal(10, 2)
+  method       String?
+  paidAt       DateTime?  @map("paid_at")
+  notes        String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@map("payments")
+}

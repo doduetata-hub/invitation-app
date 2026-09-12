@@ -1,0 +1,83 @@
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './shared/auth/AuthContext';
+import ProtectedRoute from './admin/components/ProtectedRoute';
+import AdminLayout from './admin/layout/AdminLayout';
+import LoginPage from './admin/pages/LoginPage';
+import ForgotPasswordPage from './admin/pages/ForgotPasswordPage';
+import ResetPasswordPage from './admin/pages/ResetPasswordPage';
+import DashboardPage from './admin/pages/DashboardPage';
+import ClientsListPage from './admin/pages/ClientsListPage';
+import ClientFormPage from './admin/pages/ClientFormPage';
+import ClientDetailPage from './admin/pages/ClientDetailPage';
+import InvitationsListPage from './admin/pages/InvitationsListPage';
+import SettingsPage from './admin/pages/SettingsPage';
+import PublicInvitationPage from './public/PublicInvitationPage';
+import ClientAccessPage from './public/ClientAccessPage';
+
+// Pages qui embarquent le moteur de templates complet (registre + sections + éditeur de design)
+// sont chargées à la demande pour garder le bundle initial léger.
+const InvitationEditorPage = lazy(() => import('./admin/pages/InvitationEditorPage'));
+const TemplatesLibraryPage = lazy(() => import('./admin/pages/TemplatesLibraryPage'));
+const TemplatePreviewPage = lazy(() => import('./admin/pages/TemplatePreviewPage'));
+const GuestsPage = lazy(() => import('./admin/pages/GuestsPage'));
+const CheckInPage = lazy(() => import('./admin/pages/CheckInPage'));
+
+function PageFallback() {
+  return <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>Chargement...</div>;
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/admin" replace />} />
+            <Route path="/i/:slug" element={<PublicInvitationPage />} />
+            <Route path="/gerer/:token" element={<ClientAccessPage />} />
+            <Route path="/admin/login" element={<LoginPage />} />
+            <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
+            <Route
+              path="/admin/templates/:key/preview"
+              element={
+                <ProtectedRoute>
+                  <TemplatePreviewPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/invitations/:id/checkin"
+              element={
+                <ProtectedRoute>
+                  <CheckInPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DashboardPage />} />
+              <Route path="clients" element={<ClientsListPage />} />
+              <Route path="clients/new" element={<ClientFormPage />} />
+              <Route path="clients/:id" element={<ClientDetailPage />} />
+              <Route path="clients/:id/edit" element={<ClientFormPage />} />
+              <Route path="invitations" element={<InvitationsListPage />} />
+              <Route path="invitations/new" element={<InvitationEditorPage />} />
+              <Route path="invitations/:id/edit" element={<InvitationEditorPage />} />
+              <Route path="invitations/:id/guests" element={<GuestsPage />} />
+              <Route path="templates" element={<TemplatesLibraryPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

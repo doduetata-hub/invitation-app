@@ -1,0 +1,218 @@
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { api } from '../../shared/api/client';
+
+const emptyForm = { name: '', phone: '', maxPersons: '' };
+
+function AnswerBadge({ answer }) {
+  if (answer === 'YES') return <span className="badge badge-success">Présent</span>;
+  if (answer === 'NO') return <span className="badge badge-danger">Absent</span>;
+  return <span className="badge">En attente</span>;
+}
+
+export default function GuestsPage() {
+  const { id } = useParams();
+  const [invitation, setInvitation] = useState(null);
+  const [data, setData] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [copiedId, setCopiedId] = useState('');
+
+  const load = () => {
+    api.get(`/invitations/${id}/guests`).then(setData).catch((err) => setError(err.message));
+  };
+
+  useEffect(() => {
+    api.get(`/invitations/${id}`).then(setInvitation).catch((err) => setError(err.message));
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const guestUrl = (code) => `${window.location.origin}/i/${invitation?.slug}?guest=${code}`;
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    setError('');
+    try {
+      await api.post(`/invitations/${id}/guests`, form);
+      setForm(emptyForm);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (guestId) => {
+    if (!window.confirm('Supprimer cet invité et son lien personnalisé ?')) return;
+    try {
+      await api.delete(`/guests/${guestId}`);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCopy = (code) => {
+    navigator.clipboard?.writeText(guestUrl(code));
+    setCopiedId(code);
+    setTimeout(() => setCopiedId(''), 1500);
+  };
+
+  if (!data || !invitation) return <p className="admin-muted">Chargement...</p>;
+
+  const { guests, walkInRsvps, stats } = data;
+
+  return (
+    <div>
+      <div className="page-header">
+        <div>
+          <Link to={`/admin/invitations/${id}/edit`} className="admin-eyebrow" style={{ textDecoration: 'none' }}>← {invitation.title}</Link>
+          <h1 style={{ margin: '0.3rem 0 0' }}>Invités</h1>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link to={`/admin/invitations/${id}/checkin`} className="btn btn-accent">
+            Check-in Jour J →
+          </Link>
+          <a href={`/api/invitations/${id}/guests/export`} className="btn btn-outline">
+            Exporter CSV
+          </a>
+          <a href={`/api/invitations/${id}/guests/export.xlsx`} className="btn btn-primary">
+            Exporter Excel
+          </a>
+        </div>
+      </div>
+
+      {error && <p className="error-text">{error}</p>}
+
+      <div className="stats-grid" style={{ marginTop: '1.25rem' }}>
+        <StatCard label="Total invités" value={stats.totalGuests} />
+        <StatCard label="Confirmés" value={stats.confirmed} />
+        <StatCard label="Refus" value={stats.declined} />
+        <StatCard label="En attente" value={stats.pending} />
+        <StatCard label="Personnes attendues" value={stats.totalPersons} />
+        <StatCard label="Arrivés" value={stats.arrived} />
+      </div>
+
+      <div className="editor-section">
+        <h2>Liens personnalisés</h2>
+        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+          <input
+            placeholder="Nom (optionnel)"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className="input"
+          />
+          <input
+            placeholder="Téléphone (optionnel)"
+            value={form.phone}
+            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            className="input"
+          />
+          <input
+            type="number"
+            min="1"
+            placeholder="Max personnes"
+            value={form.maxPersons}
+            onChange={(e) => setForm((f) => ({ ...f, maxPersons: e.target.value }))}
+            className="input"
+            style={{ width: '130px', flex: 'none' }}
+          />
+          <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>+ Générer un lien</button>
+        </form>
+
+        {guests.length === 0 ? (
+          <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Téléphone</th>
+                <th>Max</th>
+                <th>Statut</th>
+                <th>Personnes</th>
+                <th>Repas / Boisson</th>
+                <th>Message</th>
+                <th>Arrivée</th>
+                <th>Lien</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {guests.map((g) => (
+                <tr key={g.id}>
+                  <td>{g.rsvp?.name || g.name || '—'}</td>
+                  <td>{g.phone || '—'}</td>
+                  <td>{g.maxPersons ?? '—'}</td>
+                  <td><AnswerBadge answer={g.rsvp?.answer} /></td>
+                  <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
+                  <td>{[g.rsvp?.meal, g.rsvp?.drink].filter(Boolean).join(' / ') || '—'}</td>
+                  <td>{g.rsvp?.message || '—'}</td>
+                  <td>{g.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
+                  <td style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
+                      {copiedId === g.guestCode ? 'Copié !' : 'Copier'}
+                    </button>
+                    <a href={`/api/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                      QR
+                    </a>
+                  </td>
+                  <td>
+                    <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="editor-section">
+        <h2>Réponses via le lien général</h2>
+        {walkInRsvps.length === 0 ? (
+          <div className="empty-state">Aucune réponse via le lien général pour le moment.</div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Statut</th>
+                <th>Personnes</th>
+                <th>Repas / Boisson</th>
+                <th>Message</th>
+                <th>Arrivée</th>
+                <th>Répondu le</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walkInRsvps.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.name}</td>
+                  <td><AnswerBadge answer={r.answer} /></td>
+                  <td>{r.numberOfPersons}</td>
+                  <td>{[r.meal, r.drink].filter(Boolean).join(' / ') || '—'}</td>
+                  <td>{r.message || '—'}</td>
+                  <td>{r.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
+                  <td>{new Date(r.respondedAt).toLocaleDateString('fr-FR')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}

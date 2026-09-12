@@ -1,0 +1,195 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { api } from '../shared/api/client';
+
+const emptyForm = { name: '', phone: '', maxPersons: '' };
+
+function AnswerBadge({ answer }) {
+  if (answer === 'YES') return <span className="badge badge-success">Présent</span>;
+  if (answer === 'NO') return <span className="badge badge-danger">Absent</span>;
+  return <span className="badge">En attente</span>;
+}
+
+// Page publique (aucune connexion admin) scopée par un token secret propre à une seule
+// invitation : elle ne donne accès qu'à la création/gestion de SES liens d'invités, jamais
+// aux autres invitations, à l'édition, aux templates ou au reste de l'admin.
+export default function ClientAccessPage() {
+  const { token } = useParams();
+  const [data, setData] = useState(null);
+  const [notFound, setNotFound] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [copiedCode, setCopiedCode] = useState('');
+
+  const load = () => {
+    api
+      .get(`/client-access/${token}`)
+      .then(setData)
+      .catch(() => setNotFound(true));
+  };
+
+  useEffect(load, [token]);
+
+  const guestUrl = (code) => `${window.location.origin}/i/${data?.invitation?.slug}?guest=${code}`;
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    setError('');
+    try {
+      await api.post(`/client-access/${token}/guests`, form);
+      setForm(emptyForm);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (guestId) => {
+    if (!window.confirm('Supprimer cet invité et son lien personnalisé ?')) return;
+    try {
+      await api.delete(`/client-access/${token}/guests/${guestId}`);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCopy = (code) => {
+    navigator.clipboard?.writeText(guestUrl(code));
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(''), 1500);
+  };
+
+  if (notFound) {
+    return (
+      <div style={styles.center}>
+        <p>Ce lien n'est plus valide. Demande un nouveau lien à l'organisateur.</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div style={styles.center}>Chargement...</div>;
+  }
+
+  const { guests, stats, invitation } = data;
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <p className="admin-eyebrow">{invitation.title}</p>
+        <h1 style={{ margin: '0.3rem 0 1.25rem' }}>{invitation.namesLine || 'Liens d\'invités'}</h1>
+
+        {error && <p className="error-text">{error}</p>}
+
+        <div className="stats-grid">
+          <StatCard label="Total invités" value={stats.totalGuests} />
+          <StatCard label="Confirmés" value={stats.confirmed} />
+          <StatCard label="Refus" value={stats.declined} />
+          <StatCard label="En attente" value={stats.pending} />
+          <StatCard label="Personnes attendues" value={stats.totalPersons} />
+        </div>
+
+        <div className="editor-section">
+          <h2>Créer un lien personnalisé</h2>
+          <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+            <input
+              placeholder="Nom (optionnel)"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className="input"
+            />
+            <input
+              placeholder="Téléphone (optionnel)"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              className="input"
+            />
+            <input
+              type="number"
+              min="1"
+              placeholder="Max personnes"
+              value={form.maxPersons}
+              onChange={(e) => setForm((f) => ({ ...f, maxPersons: e.target.value }))}
+              className="input"
+              style={{ width: '130px', flex: 'none' }}
+            />
+            <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>
+              + Générer un lien
+            </button>
+          </form>
+
+          {guests.length === 0 ? (
+            <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Téléphone</th>
+                  <th>Max</th>
+                  <th>Statut</th>
+                  <th>Personnes</th>
+                  <th>Message</th>
+                  <th>Lien</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {guests.map((g) => (
+                  <tr key={g.id}>
+                    <td>{g.rsvp?.name || g.name || '—'}</td>
+                    <td>{g.phone || '—'}</td>
+                    <td>{g.maxPersons ?? '—'}</td>
+                    <td><AnswerBadge answer={g.rsvp?.answer} /></td>
+                    <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
+                    <td>{g.rsvp?.message || '—'}</td>
+                    <td style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
+                        {copiedCode === g.guestCode ? 'Copié !' : 'Copier'}
+                      </button>
+                      <a href={`/api/client-access/${token}/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                        QR
+                      </a>
+                    </td>
+                    <td>
+                      <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+const styles = {
+  page: { minHeight: '100vh', background: 'var(--color-bg, #faf7f2)', padding: '2rem 1rem' },
+  container: { maxWidth: '900px', margin: '0 auto' },
+  center: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'sans-serif',
+    color: '#6b7280',
+    textAlign: 'center',
+    padding: '2rem',
+  },
+};
