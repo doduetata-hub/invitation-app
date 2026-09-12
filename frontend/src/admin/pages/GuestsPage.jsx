@@ -18,6 +18,9 @@ export default function GuestsPage() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = () => {
     api.get(`/invitations/${id}/guests`).then(setData).catch((err) => setError(err.message));
@@ -43,6 +46,27 @@ export default function GuestsPage() {
       setError(err.message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const startEdit = (g) => {
+    setEditingId(g.id);
+    setEditForm({ name: g.name || '', phone: g.phone || '', maxPersons: g.maxPersons ?? '' });
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (guestId) => {
+    setSavingEdit(true);
+    setError('');
+    try {
+      await api.patch(`/guests/${guestId}`, editForm);
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -135,7 +159,7 @@ export default function GuestsPage() {
                 <th>Max</th>
                 <th>Statut</th>
                 <th>Personnes</th>
-                <th>Repas / Boisson</th>
+                <th>Boisson</th>
                 <th>Message</th>
                 <th>Arrivée</th>
                 <th>Lien</th>
@@ -143,29 +167,81 @@ export default function GuestsPage() {
               </tr>
             </thead>
             <tbody>
-              {guests.map((g) => (
-                <tr key={g.id}>
-                  <td>{g.rsvp?.name || g.name || '—'}</td>
-                  <td>{g.phone || '—'}</td>
-                  <td>{g.maxPersons ?? '—'}</td>
-                  <td><AnswerBadge answer={g.rsvp?.answer} /></td>
-                  <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
-                  <td>{[g.rsvp?.meal, g.rsvp?.drink].filter(Boolean).join(' / ') || '—'}</td>
-                  <td>{g.rsvp?.message || '—'}</td>
-                  <td>{g.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
-                  <td style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
-                      {copiedId === g.guestCode ? 'Copié !' : 'Copier'}
-                    </button>
-                    <a href={`/api/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-                      QR
-                    </a>
-                  </td>
-                  <td>
-                    <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
-                  </td>
-                </tr>
-              ))}
+              {guests.map((g) => {
+                const isEditing = editingId === g.id;
+                return (
+                  <tr key={g.id}>
+                    {isEditing ? (
+                      <>
+                        <td>
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                            className="input"
+                            style={{ minWidth: '110px' }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={editForm.phone}
+                            onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                            className="input"
+                            style={{ minWidth: '110px' }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            value={editForm.maxPersons}
+                            onChange={(e) => setEditForm((f) => ({ ...f, maxPersons: e.target.value }))}
+                            className="input"
+                            style={{ width: '70px' }}
+                          />
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{g.rsvp?.name || g.name || '—'}</td>
+                        <td>{g.phone || '—'}</td>
+                        <td>{g.maxPersons ?? '—'}</td>
+                      </>
+                    )}
+                    <td><AnswerBadge answer={g.rsvp?.answer} /></td>
+                    <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
+                    <td>{g.rsvp?.drink || '—'}</td>
+                    <td>{g.rsvp?.message || '—'}</td>
+                    <td>{g.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
+                    {isEditing ? (
+                      <td colSpan={2} style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button type="button" onClick={() => saveEdit(g.id)} disabled={savingEdit} className="btn btn-primary btn-sm">
+                          Enregistrer
+                        </button>
+                        <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">
+                          Annuler
+                        </button>
+                      </td>
+                    ) : (
+                      <>
+                        <td style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button type="button" onClick={() => startEdit(g)} className="btn btn-outline btn-sm">
+                            Modifier
+                          </button>
+                          <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
+                            {copiedId === g.guestCode ? 'Copié !' : 'Copier'}
+                          </button>
+                          <a href={`/api/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                            QR
+                          </a>
+                        </td>
+                        <td>
+                          <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -182,7 +258,7 @@ export default function GuestsPage() {
                 <th>Nom</th>
                 <th>Statut</th>
                 <th>Personnes</th>
-                <th>Repas / Boisson</th>
+                <th>Boisson</th>
                 <th>Message</th>
                 <th>Arrivée</th>
                 <th>Répondu le</th>
@@ -194,7 +270,7 @@ export default function GuestsPage() {
                   <td>{r.name}</td>
                   <td><AnswerBadge answer={r.answer} /></td>
                   <td>{r.numberOfPersons}</td>
-                  <td>{[r.meal, r.drink].filter(Boolean).join(' / ') || '—'}</td>
+                  <td>{r.drink || '—'}</td>
                   <td>{r.message || '—'}</td>
                   <td>{r.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
                   <td>{new Date(r.respondedAt).toLocaleDateString('fr-FR')}</td>

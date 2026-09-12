@@ -62,6 +62,33 @@ async function createGuest(req, res) {
   res.status(201).json(guest);
 }
 
+// Ne touche jamais guestCode : un lien déjà envoyé à l'invité reste valide après correction.
+async function updateGuest(req, res) {
+  const invitation = await findInvitationByToken(req.params.token);
+  if (!invitation) {
+    return res.status(404).json({ error: 'Lien invalide ou expiré' });
+  }
+
+  const existing = await prisma.guest.findFirst({
+    where: { id: req.params.guestId, invitationId: invitation.id },
+  });
+  if (!existing) {
+    return res.status(404).json({ error: 'Invité introuvable' });
+  }
+
+  const { name, phone, maxPersons } = req.body || {};
+  const guest = await prisma.guest.update({
+    where: { id: existing.id },
+    data: {
+      name: name?.trim() || null,
+      phone: phone?.trim() || null,
+      maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
+    },
+  });
+
+  res.json(guest);
+}
+
 async function removeGuest(req, res) {
   const invitation = await findInvitationByToken(req.params.token);
   if (!invitation) {
@@ -101,4 +128,4 @@ async function getGuestQrCode(req, res) {
   res.send(buffer);
 }
 
-module.exports = { getByToken, createGuest, removeGuest, getGuestQrCode };
+module.exports = { getByToken, createGuest, updateGuest, removeGuest, getGuestQrCode };

@@ -25,7 +25,10 @@ const env = require('./config/env');
 
 const app = express();
 
-// Le backend est toujours servi derrière le reverse proxy Nginx (1 saut).
+// Toujours servi derrière un unique proxy de confiance (Nginx en VPS, ou l'edge Vercel en
+// serverless) : un seul saut dans les deux cas. `true` (faire confiance à toute la chaîne)
+// est rejeté par express-rate-limit (ERR_ERL_PERMISSIVE_TRUST_PROXY) car exploitable si le
+// nombre de sauts n'est pas garanti — on déclare donc explicitement "exactement 1 saut".
 app.set('trust proxy', 1);
 
 app.use(helmet());

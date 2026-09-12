@@ -21,6 +21,9 @@ export default function ClientAccessPage() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = () => {
     api
@@ -45,6 +48,27 @@ export default function ClientAccessPage() {
       setError(err.message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const startEdit = (g) => {
+    setEditingId(g.id);
+    setEditForm({ name: g.name || '', phone: g.phone || '', maxPersons: g.maxPersons ?? '' });
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (guestId) => {
+    setSavingEdit(true);
+    setError('');
+    try {
+      await api.patch(`/client-access/${token}/guests/${guestId}`, editForm);
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -140,27 +164,79 @@ export default function ClientAccessPage() {
                 </tr>
               </thead>
               <tbody>
-                {guests.map((g) => (
-                  <tr key={g.id}>
-                    <td>{g.rsvp?.name || g.name || '—'}</td>
-                    <td>{g.phone || '—'}</td>
-                    <td>{g.maxPersons ?? '—'}</td>
-                    <td><AnswerBadge answer={g.rsvp?.answer} /></td>
-                    <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
-                    <td>{g.rsvp?.message || '—'}</td>
-                    <td style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
-                        {copiedCode === g.guestCode ? 'Copié !' : 'Copier'}
-                      </button>
-                      <a href={`/api/client-access/${token}/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-                        QR
-                      </a>
-                    </td>
-                    <td>
-                      <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
-                    </td>
-                  </tr>
-                ))}
+                {guests.map((g) => {
+                  const isEditing = editingId === g.id;
+                  return (
+                    <tr key={g.id}>
+                      {isEditing ? (
+                        <>
+                          <td>
+                            <input
+                              value={editForm.name}
+                              onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                              className="input"
+                              style={{ minWidth: '110px' }}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={editForm.phone}
+                              onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                              className="input"
+                              style={{ minWidth: '110px' }}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              min="1"
+                              value={editForm.maxPersons}
+                              onChange={(e) => setEditForm((f) => ({ ...f, maxPersons: e.target.value }))}
+                              className="input"
+                              style={{ width: '70px' }}
+                            />
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td>{g.rsvp?.name || g.name || '—'}</td>
+                          <td>{g.phone || '—'}</td>
+                          <td>{g.maxPersons ?? '—'}</td>
+                        </>
+                      )}
+                      <td><AnswerBadge answer={g.rsvp?.answer} /></td>
+                      <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
+                      <td>{g.rsvp?.message || '—'}</td>
+                      {isEditing ? (
+                        <td colSpan={2} style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button type="button" onClick={() => saveEdit(g.id)} disabled={savingEdit} className="btn btn-primary btn-sm">
+                            Enregistrer
+                          </button>
+                          <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">
+                            Annuler
+                          </button>
+                        </td>
+                      ) : (
+                        <>
+                          <td style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button type="button" onClick={() => startEdit(g)} className="btn btn-outline btn-sm">
+                              Modifier
+                            </button>
+                            <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
+                              {copiedCode === g.guestCode ? 'Copié !' : 'Copier'}
+                            </button>
+                            <a href={`/api/client-access/${token}/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                              QR
+                            </a>
+                          </td>
+                          <td>
+                            <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

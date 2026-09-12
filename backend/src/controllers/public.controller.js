@@ -69,7 +69,7 @@ async function submitRsvp(req, res) {
     return res.status(404).json({ error: 'Invitation introuvable' });
   }
 
-  const { guestCode, name, answer, numberOfPersons, meal, drink, message } = req.body || {};
+  const { guestCode, name, answer, numberOfPersons, drink, message } = req.body || {};
 
   if (!name?.trim()) badRequest('Le nom est requis');
   if (!['YES', 'NO'].includes(answer)) badRequest('Réponse invalide');
@@ -80,7 +80,6 @@ async function submitRsvp(req, res) {
     name: name.trim(),
     answer,
     numberOfPersons: persons,
-    meal: meal?.trim() || null,
     drink: drink?.trim() || null,
     message: message?.trim() || null,
     respondedAt: new Date(),

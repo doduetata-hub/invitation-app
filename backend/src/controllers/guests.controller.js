@@ -8,7 +8,6 @@ const EXPORT_HEADERS = [
   'Lien personnalisé',
   'Présence',
   'Nombre de personnes',
-  'Repas',
   'Boisson',
   'Message',
   'Date de réponse',
@@ -80,6 +79,27 @@ async function create(req, res) {
   res.status(201).json(guest);
 }
 
+// Ne touche jamais guestCode : un lien déjà envoyé à l'invité reste valide après correction.
+async function update(req, res) {
+  const { name, phone, maxPersons } = req.body || {};
+  try {
+    const guest = await prisma.guest.update({
+      where: { id: req.params.id },
+      data: {
+        name: name?.trim() || null,
+        phone: phone?.trim() || null,
+        maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
+      },
+    });
+    res.json(guest);
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Invité introuvable' });
+    }
+    throw err;
+  }
+}
+
 async function remove(req, res) {
   try {
     await prisma.guest.delete({ where: { id: req.params.id } });
@@ -110,7 +130,6 @@ async function fetchExportData(invitationId) {
       g.guestCode,
       g.rsvp ? (g.rsvp.answer === 'YES' ? 'Présent' : 'Absent') : 'En attente',
       g.rsvp?.numberOfPersons ?? '',
-      g.rsvp?.meal || '',
       g.rsvp?.drink || '',
       g.rsvp?.message || '',
       g.rsvp?.respondedAt ? new Date(g.rsvp.respondedAt) : '',
@@ -124,7 +143,6 @@ async function fetchExportData(invitationId) {
       '',
       r.answer === 'YES' ? 'Présent' : 'Absent',
       r.numberOfPersons,
-      r.meal || '',
       r.drink || '',
       r.message || '',
       new Date(r.respondedAt),
@@ -168,7 +186,7 @@ async function exportXlsx(req, res) {
     sheet.addRow(row);
   }
 
-  sheet.getColumn(9).numFmt = 'yyyy-mm-dd hh:mm';
+  sheet.getColumn(8).numFmt = 'yyyy-mm-dd hh:mm';
 
   res.setHeader(
     'Content-Type',
@@ -180,4 +198,4 @@ async function exportXlsx(req, res) {
   res.end();
 }
 
-module.exports = { listForInvitation, create, remove, exportCsv, exportXlsx };
+module.exports = { listForInvitation, create, update, remove, exportCsv, exportXlsx };

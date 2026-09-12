@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, meal: '', drink: '', message: '' };
+const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, drink: '', message: '' };
 
 export default function RsvpSection({ onSubmit, guestInfo }) {
   const [form, setForm] = useState(emptyForm);
@@ -94,10 +94,6 @@ export default function RsvpSection({ onSubmit, guestInfo }) {
               {guestInfo?.maxPersons != null && (
                 <span style={styles.hint}>Maximum {guestInfo.maxPersons} personne(s)</span>
               )}
-            </label>
-            <label style={styles.label}>
-              Repas
-              <input value={form.meal} onChange={handleChange('meal')} style={styles.input} />
             </label>
             <label style={styles.label}>
               Boisson
