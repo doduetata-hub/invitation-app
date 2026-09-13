@@ -33,43 +33,38 @@ cp .env.vercel.example .env.vercel.local
 
 Remplis-le avec les vraies valeurs (voir commentaires du fichier).
 
-## 3. Appliquer les migrations et créer le compte admin (une seule fois, depuis ta machine)
-
-```bash
-cd backend
-DATABASE_URL="<ton-url-POSTGRES-DIRECTE>" npx prisma migrate deploy
-DATABASE_URL="<ton-url-POSTGRES-DIRECTE>" ADMIN_EMAIL="..." ADMIN_PASSWORD="..." node prisma/seed.js
-```
-
-À refaire uniquement après un nouveau `git pull` contenant des migrations Prisma.
-
-## 4. Déployer sur Vercel
+## 3. Déployer sur Vercel
 
 Connecte le repo GitHub/GitLab à un nouveau projet Vercel (ou `vercel --prod` en CLI). Vercel
 détecte `vercel.json` à la racine automatiquement — aucun réglage de framework à choisir.
 
 Dans **Project Settings → Environment Variables**, ajoute toutes les variables de
-`.env.vercel.example` avec cette fois l'URL Postgres **pooled** pour `DATABASE_URL`, et
-`PUBLIC_BASE_URL` = l'URL exacte de ton déploiement Vercel (ou ton domaine personnalisé une
-fois branché dans Vercel).
+`.env.vercel.example`, avec l'URL Postgres **pooled** pour `DATABASE_URL` et l'URL **directe**
+(sans `-pooler`) pour `DIRECT_DATABASE_URL`, et `PUBLIC_BASE_URL` = l'URL exacte de ton
+déploiement Vercel (ou ton domaine personnalisé une fois branché dans Vercel).
+
+Les migrations Prisma **et** la création/mise à jour du compte admin se lancent automatiquement
+à chaque build, via `DIRECT_DATABASE_URL` (voir `buildCommand` dans `vercel.json`) — aucune
+commande à lancer depuis ta machine. C'est volontairement fait ainsi car certains réseaux
+locaux (pare-feu, antivirus) bloquent le port Postgres 5432 en sortie même quand un simple test
+de connexion TCP semble passer ; les serveurs de build Vercel, eux, n'ont pas cette restriction.
 
 Déploie. Vercel construit le frontend (`frontend/dist`) et expose `backend/src/app.js` comme
 fonction serverless unique sous `/api/*` (voir `api/index.js` et les `rewrites` de
 `vercel.json`).
 
-## 5. Vérifier après le premier déploiement
+## 4. Vérifier après le premier déploiement
 
 - Ouvrir l'URL Vercel → la page admin doit charger.
-- Se connecter avec `ADMIN_EMAIL`/`ADMIN_PASSWORD` du seed.
+- Se connecter avec `ADMIN_EMAIL`/`ADMIN_PASSWORD` (ceux mis dans les variables d'environnement).
 - Uploader une photo de couverture sur une invitation → confirme que `STORAGE_DRIVER=s3` est
   bien pris en compte et que le bucket accepte l'écriture.
 - Tester le RSVP public sur une invitation publiée.
 
-## 6. Mettre à jour l'application
+## 5. Mettre à jour l'application
 
-Un nouveau `git push` sur la branche connectée redéploie automatiquement. S'il y a de nouvelles
-migrations Prisma, répète l'étape 3 avec l'URL directe **avant** ou **après** le déploiement
-(les migrations ne s'appliquent jamais automatiquement sur Vercel, contrairement au VPS).
+Un nouveau `git push` sur la branche connectée redéploie automatiquement, migrations et seed
+compris (étape 3) — rien de manuel à faire, y compris pour de futures migrations Prisma.
 
 ## Limites connues de ce mode de déploiement (honnêteté avant de t'y fier)
 
@@ -85,6 +80,5 @@ migrations Prisma, répète l'étape 3 avec l'URL directe **avant** ou **après*
   serverless, chaque instance froide repart de zéro et les instances concurrentes ne partagent
   pas ce compteur — la protection devient approximative (elle continue de fonctionner, juste
   moins précisément qu'en VPS où un seul processus persiste).
-- Les migrations Prisma ne s'appliquent jamais automatiquement (pas de conteneur qui démarre à
-  chaque déploiement comme en Docker) — à faire manuellement à chaque changement de schéma
-  (étape 3/6).
+- Faire tourner `prisma migrate deploy` à chaque build a un coût : quelques secondes de plus par
+  déploiement. Négligeable ici, mais à garder en tête si le projet grossit beaucoup.
