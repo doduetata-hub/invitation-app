@@ -1,6 +1,6 @@
 const prisma = require('../db/prismaClient');
 const { generateUniqueSlug } = require('../services/slug.service');
-const { generateUniqueClientAccessToken } = require('../services/clientAccessToken.service');
+const { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken } = require('../services/clientAccessToken.service');
 const storage = require('../services/storage');
 
 const STATUSES = ['DRAFT', 'IN_PROGRESS', 'READY', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'];
@@ -262,6 +262,38 @@ async function revokeClientAccessToken(req, res) {
   }
 }
 
+// Lien distinct, à déléguer à la personne qui filtre l'entrée jour J : elle ne peut jamais
+// créer/modifier/supprimer un invité avec ce token, seulement scanner/rechercher et pointer.
+async function regenerateCheckinAccessToken(req, res) {
+  const existing = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!existing) {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const checkinAccessToken = await generateUniqueCheckinAccessToken();
+  const invitation = await prisma.invitation.update({
+    where: { id: req.params.id },
+    data: { checkinAccessToken },
+  });
+
+  res.json({ checkinAccessToken: invitation.checkinAccessToken });
+}
+
+async function revokeCheckinAccessToken(req, res) {
+  try {
+    await prisma.invitation.update({
+      where: { id: req.params.id },
+      data: { checkinAccessToken: null },
+    });
+    res.status(204).send();
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Invitation introuvable' });
+    }
+    throw err;
+  }
+}
+
 module.exports = {
   list,
   getById,
@@ -271,4 +303,6 @@ module.exports = {
   remove,
   regenerateClientAccessToken,
   revokeClientAccessToken,
+  regenerateCheckinAccessToken,
+  revokeCheckinAccessToken,
 };

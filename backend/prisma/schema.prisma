@@ -92,6 +92,11 @@ model Invitation {
   // de CETTE invitation uniquement — jamais aux autres invitations, à l'édition ou aux templates.
   clientAccessToken String? @unique @map("client_access_token")
 
+  // Token distinct et indépendant : à déléguer à la personne qui filtre l'entrée le jour J.
+  // Volontairement séparé de clientAccessToken pour qu'elle ne puisse jamais créer/modifier/
+  // supprimer des invités — seulement rechercher/scanner et pointer les arrivées.
+  checkinAccessToken String? @unique @map("checkin_access_token")
+
   status InvitationStatus @default(DRAFT)
 
   price         Decimal?      @db.Decimal(10, 2)

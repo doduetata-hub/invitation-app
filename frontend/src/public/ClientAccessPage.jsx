@@ -13,6 +13,10 @@ function AnswerBadge({ answer }) {
 // Page publique (aucune connexion admin) scopée par un token secret propre à une seule
 // invitation : elle ne donne accès qu'à la création/gestion de SES liens d'invités, jamais
 // aux autres invitations, à l'édition, aux templates ou au reste de l'admin.
+//
+// Volontairement SANS check-in (voir CheckinAccessPage.jsx, token et lien séparés) : si le
+// client délègue le contrôle d'entrée jour J à une tierce personne, elle ne doit jamais
+// pouvoir créer/modifier/supprimer un invité avec ce même lien.
 export default function ClientAccessPage() {
   const { token } = useParams();
   const [data, setData] = useState(null);

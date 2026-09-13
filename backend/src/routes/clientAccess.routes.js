@@ -1,6 +1,15 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { getByToken, createGuest, updateGuest, removeGuest, getGuestQrCode } = require('../controllers/clientAccess.controller');
+const {
+  getByToken,
+  createGuest,
+  updateGuest,
+  removeGuest,
+  getGuestQrCode,
+  lookupGuestByCode,
+  checkInGuest,
+  undoCheckInGuest,
+} = require('../controllers/clientAccess.controller');
 
 const router = express.Router();
 
@@ -20,5 +29,9 @@ router.post('/:token/guests', createGuest);
 router.patch('/:token/guests/:guestId', updateGuest);
 router.delete('/:token/guests/:guestId', removeGuest);
 router.get('/:token/guests/:guestId/qrcode', getGuestQrCode);
+
+router.get('/:token/checkin/lookup', lookupGuestByCode);
+router.post('/:token/guests/:guestId/checkin', checkInGuest);
+router.delete('/:token/guests/:guestId/checkin', undoCheckInGuest);
 
 module.exports = router;

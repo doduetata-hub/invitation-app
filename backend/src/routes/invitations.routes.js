@@ -9,6 +9,8 @@ const {
   remove,
   regenerateClientAccessToken,
   revokeClientAccessToken,
+  regenerateCheckinAccessToken,
+  revokeCheckinAccessToken,
 } = require('../controllers/invitations.controller');
 const { listForInvitation, create: createEvent } = require('../controllers/events.controller');
 const {
@@ -67,5 +69,8 @@ router.get('/:id/checkin/lookup', lookupByCode);
 
 router.post('/:id/client-access-token', regenerateClientAccessToken);
 router.delete('/:id/client-access-token', revokeClientAccessToken);
+
+router.post('/:id/checkin-access-token', regenerateCheckinAccessToken);
+router.delete('/:id/checkin-access-token', revokeCheckinAccessToken);
 
 module.exports = router;

@@ -50,6 +50,8 @@ export default function InvitationEditorPage() {
   const [previewMode, setPreviewMode] = useState('mobile');
   const [tokenBusy, setTokenBusy] = useState(false);
   const [tokenCopied, setTokenCopied] = useState(false);
+  const [checkinTokenBusy, setCheckinTokenBusy] = useState(false);
+  const [checkinTokenCopied, setCheckinTokenCopied] = useState(false);
 
   useEffect(() => {
     api.get('/clients').then(setClients).catch((err) => setError(err.message));
@@ -175,6 +177,43 @@ export default function InvitationEditorPage() {
     navigator.clipboard?.writeText(clientAccessUrl);
     setTokenCopied(true);
     setTimeout(() => setTokenCopied(false), 1500);
+  };
+
+  const checkinAccessUrl = invitation?.checkinAccessToken
+    ? `${window.location.origin}/checkin/${invitation.checkinAccessToken}`
+    : '';
+
+  const handleGenerateCheckinAccess = async () => {
+    setCheckinTokenBusy(true);
+    setError('');
+    try {
+      const { checkinAccessToken } = await api.post(`/invitations/${id}/checkin-access-token`);
+      setInvitation((inv) => ({ ...inv, checkinAccessToken }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCheckinTokenBusy(false);
+    }
+  };
+
+  const handleRevokeCheckinAccess = async () => {
+    if (!window.confirm("Révoquer ce lien ? Il cessera immédiatement de fonctionner.")) return;
+    setCheckinTokenBusy(true);
+    setError('');
+    try {
+      await api.delete(`/invitations/${id}/checkin-access-token`);
+      setInvitation((inv) => ({ ...inv, checkinAccessToken: null }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCheckinTokenBusy(false);
+    }
+  };
+
+  const handleCopyCheckinAccess = () => {
+    navigator.clipboard?.writeText(checkinAccessUrl);
+    setCheckinTokenCopied(true);
+    setTimeout(() => setCheckinTokenCopied(false), 1500);
   };
 
   const handleStatusChange = async (e) => {
@@ -429,6 +468,39 @@ export default function InvitationEditorPage() {
             ) : (
               <button type="button" onClick={handleGenerateClientAccess} disabled={tokenBusy} className="btn btn-primary">
                 {tokenBusy ? '...' : 'Générer le lien'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {isEdit && invitation && (
+          <div className="editor-section">
+            <h2>Accès check-in (jour J)</h2>
+            <p className="admin-muted" style={{ marginTop: 0 }}>
+              Lien <strong>distinct</strong> du précédent, à donner à la personne qui filtre l'entrée le
+              jour J (souvent pas le client lui-même). Permet de scanner/rechercher et pointer les
+              arrivées — mais jamais de créer, modifier ou supprimer un invité.
+            </p>
+            {invitation.checkinAccessToken ? (
+              <>
+                <div className="public-link-box">
+                  <p style={{ margin: 0, wordBreak: 'break-all' }}>{checkinAccessUrl}</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                  <button type="button" onClick={handleCopyCheckinAccess} className="btn btn-outline btn-sm">
+                    {checkinTokenCopied ? 'Copié !' : 'Copier le lien'}
+                  </button>
+                  <button type="button" onClick={handleGenerateCheckinAccess} disabled={checkinTokenBusy} className="btn btn-outline btn-sm">
+                    Régénérer
+                  </button>
+                  <button type="button" onClick={handleRevokeCheckinAccess} disabled={checkinTokenBusy} className="btn btn-danger-outline btn-sm">
+                    Révoquer
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button type="button" onClick={handleGenerateCheckinAccess} disabled={checkinTokenBusy} className="btn btn-primary">
+                {checkinTokenBusy ? '...' : 'Générer le lien'}
               </button>
             )}
           </div>
