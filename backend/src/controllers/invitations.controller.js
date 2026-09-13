@@ -1,7 +1,10 @@
 const prisma = require('../db/prismaClient');
 const { generateUniqueSlug } = require('../services/slug.service');
 const { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken } = require('../services/clientAccessToken.service');
-const storage = require('../services/storage');
+// Chemin explicite (pas juste "../services/storage") : la résolution implicite d'un
+// index.js de dossier n'est pas toujours tracée correctement par l'empaquetage des
+// fonctions serverless Vercel, qui a fini par exclure ce module du bundle déployé.
+const storage = require('../services/storage/index.js');
 
 const STATUSES = ['DRAFT', 'IN_PROGRESS', 'READY', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'];
 const PAYMENT_STATUSES = ['PENDING', 'PARTIAL', 'PAID'];

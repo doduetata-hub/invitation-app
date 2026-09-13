@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const prisma = require('../db/prismaClient');
-const storage = require('../services/storage');
+// Chemin explicite : voir le commentaire équivalent dans invitations.controller.js.
+const storage = require('../services/storage/index.js');
 const { processImage } = require('../services/image.service');
 const { ALLOWED_VIDEO_TYPES } = require('../middleware/upload');
 

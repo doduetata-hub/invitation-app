@@ -4,7 +4,8 @@
   "installCommand": "cd backend && npm install && cd ../frontend && npm install",
   "functions": {
     "api/index.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "backend/src/**"
     }
   },
   "rewrites": [
