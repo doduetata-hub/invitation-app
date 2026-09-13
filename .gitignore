@@ -2,7 +2,9 @@ node_modules/
 .env
 .env.production
 backend/uploads/
-storage/
+# Ancré à la racine (slash de tête) : sans lui, ce motif exclut aussi
+# backend/src/services/storage/, du vrai code applicatif jamais poussé sur Vercel à cause de ça.
+/storage/
 dist/
 *.log
 deploy/backups/
