@@ -1,4 +1,5 @@
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const env = require('../../config/env');
 
 let client;
@@ -56,7 +57,8 @@ async function save(buffer, filename) {
       Key: filename,
       Body: buffer,
       ContentType: contentTypeFromExt(filename),
-      ACL: 'public-read',
+      // Pas d'ACL : Cloudflare R2 (et les buckets S3 "object ownership enforced") ne supporte
+      // pas les ACL par objet — l'accès public se règle au niveau du bucket (r2.dev / domaine).
     })
   );
 
@@ -73,4 +75,27 @@ async function remove(url) {
     .catch(() => {});
 }
 
-module.exports = { save, remove };
+// Génère une URL de dépôt direct (PUT) signée temporairement : le fichier va du navigateur
+// vers R2 sans jamais transiter par la fonction serverless, contournant sa limite stricte de
+// taille de requête (4,5 Mo sur Vercel) — bien en dessous des besoins réels (photos/musique).
+async function getPresignedUploadUrl(filename, contentType) {
+  if (!env.s3Bucket) {
+    throw new Error('S3_BUCKET doit être défini quand STORAGE_DRIVER=s3');
+  }
+  const command = new PutObjectCommand({
+    Bucket: env.s3Bucket,
+    Key: filename,
+    ContentType: contentType || contentTypeFromExt(filename),
+  });
+  return getSignedUrl(getClient(), command, { expiresIn: 300 });
+}
+
+async function fetchByKey(filename) {
+  const res = await fetch(publicUrl(filename));
+  if (!res.ok) {
+    throw new Error(`Impossible de récupérer le fichier déposé (${res.status})`);
+  }
+  return Buffer.from(await res.arrayBuffer());
+}
+
+module.exports = { save, remove, publicUrl, getPresignedUploadUrl, fetchByKey };

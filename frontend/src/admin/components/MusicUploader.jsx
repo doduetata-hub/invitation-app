@@ -6,13 +6,32 @@ export default function MusicUploader({ invitationId, musicUrl, onChange }) {
   const [error, setError] = useState('');
   const inputRef = useRef(null);
 
+  // Même principe que MediaUploader : dépôt direct dans R2 depuis le navigateur en stockage
+  // S3 (contourne la limite de 4,5 Mo des fonctions serverless Vercel), ancien flux inchangé
+  // en stockage local (Docker).
   const handleFile = async (file) => {
     setError('');
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      await api.upload(`/invitations/${invitationId}/music`, formData);
+      const presign = await api.post(`/invitations/${invitationId}/music/presign`, {
+        contentType: file.type,
+      });
+
+      if (!presign.supported) {
+        const formData = new FormData();
+        formData.append('file', file);
+        await api.upload(`/invitations/${invitationId}/music`, formData);
+      } else {
+        const putRes = await fetch(presign.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+        if (!putRes.ok) {
+          throw new Error("Échec de l'envoi du fichier vers le stockage");
+        }
+        await api.post(`/invitations/${invitationId}/music/finalize`, { rawKey: presign.rawKey });
+      }
       onChange();
     } catch (err) {
       setError(err.message);

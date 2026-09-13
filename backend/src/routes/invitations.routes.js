@@ -23,6 +23,10 @@ const {
   upload: uploadMedia,
   uploadMusic,
   removeMusic,
+  presignMedia,
+  finalizeMedia,
+  presignMusic,
+  finalizeMusic,
 } = require('../controllers/media.controller');
 const { getQrCode } = require('../controllers/qrcode.controller');
 const {
@@ -60,6 +64,15 @@ router.get('/:id/guests/export.xlsx', exportXlsx);
 router.post('/:id/media', uploadLimiter, upload.single('file'), uploadMedia);
 router.post('/:id/music', uploadLimiter, uploadAudio.single('file'), uploadMusic);
 router.delete('/:id/music', removeMusic);
+
+// Upload direct navigateur → R2 (contourne la limite de 4,5 Mo des fonctions serverless
+// Vercel) : "presign" retourne une URL de dépôt signée, "finalize" traite/enregistre après
+// coup. Répond { supported: false } si STORAGE_DRIVER=local (le formulaire d'upload classique
+// reste alors utilisé, inchangé).
+router.post('/:id/media/presign', uploadLimiter, presignMedia);
+router.post('/:id/media/finalize', uploadLimiter, finalizeMedia);
+router.post('/:id/music/presign', uploadLimiter, presignMusic);
+router.post('/:id/music/finalize', uploadLimiter, finalizeMusic);
 router.get('/:id/qrcode', getQrCode);
 
 router.get('/:id/payments', listPayments);

@@ -4,6 +4,7 @@ const prisma = require('../db/prismaClient');
 const storage = require('../services/storage/index.js');
 const { processImage } = require('../services/image.service');
 const { ALLOWED_VIDEO_TYPES } = require('../middleware/upload');
+const env = require('../config/env');
 
 const MEDIA_TYPES = ['cover', 'gallery'];
 
@@ -66,6 +67,86 @@ async function upload(req, res) {
 
   const media = await prisma.media.create({
     data: { invitationId: req.params.id, type, url, mimeType, order: count },
+  });
+
+  res.status(201).json(media);
+}
+
+// Les fonctions serverless Vercel refusent toute requête entrante au-delà de 4,5 Mo — bien
+// en dessous des tailles réelles de photos/vidéos. Le navigateur dépose donc le fichier
+// directement dans R2 via cette URL signée, sans jamais passer par la fonction ; seule la
+// finalisation (traitement image + écriture en base) transite par le backend.
+async function presignMedia(req, res) {
+  if (env.storageDriver !== 's3') {
+    return res.json({ supported: false });
+  }
+
+  const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!invitation) {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const { contentType } = req.body || {};
+  const rawKey = `raw-${crypto.randomUUID()}`;
+  const uploadUrl = await storage.getPresignedUploadUrl(rawKey, contentType);
+  res.json({ supported: true, uploadUrl, rawKey });
+}
+
+async function finalizeMedia(req, res) {
+  const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!invitation) {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const { rawKey, mimeType } = req.body || {};
+  if (!rawKey || !mimeType) {
+    return res.status(400).json({ error: 'rawKey et mimeType requis' });
+  }
+
+  const type = MEDIA_TYPES.includes(req.body?.type) ? req.body.type : 'gallery';
+  const isVideo = ALLOWED_VIDEO_TYPES.includes(mimeType);
+
+  if (isVideo && type === 'cover') {
+    await storage.remove(storage.publicUrl(rawKey));
+    return res.status(400).json({ error: 'La couverture doit être une image, pas une vidéo' });
+  }
+
+  const rawBuffer = await storage.fetchByKey(rawKey);
+
+  let buffer;
+  let ext;
+  let finalMimeType;
+
+  if (isVideo) {
+    buffer = rawBuffer;
+    ext = VIDEO_EXTENSIONS[mimeType] || 'mp4';
+    finalMimeType = mimeType;
+  } else {
+    const processed = await processImage(rawBuffer, {
+      maxWidth: type === 'cover' ? 1600 : 1200,
+      mimetype: mimeType,
+    });
+    buffer = processed.buffer;
+    ext = processed.ext;
+    finalMimeType = processed.contentType;
+  }
+
+  const filename = `${crypto.randomUUID()}.${ext}`;
+  const url = await storage.save(buffer, filename);
+  await storage.remove(storage.publicUrl(rawKey));
+
+  if (type === 'cover') {
+    const existingCovers = await prisma.media.findMany({
+      where: { invitationId: req.params.id, type: 'cover' },
+    });
+    await Promise.all(existingCovers.map((m) => storage.remove(m.url)));
+    await prisma.media.deleteMany({ where: { invitationId: req.params.id, type: 'cover' } });
+  }
+
+  const count = await prisma.media.count({ where: { invitationId: req.params.id, type } });
+
+  const media = await prisma.media.create({
+    data: { invitationId: req.params.id, type, url, mimeType: finalMimeType, order: count },
   });
 
   res.status(201).json(media);
@@ -136,6 +217,49 @@ async function uploadMusic(req, res) {
   res.status(201).json({ musicUrl: updated.musicUrl });
 }
 
+async function presignMusic(req, res) {
+  if (env.storageDriver !== 's3') {
+    return res.json({ supported: false });
+  }
+
+  const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!invitation) {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const { contentType } = req.body || {};
+  // Pas de traitement pour l'audio : la clé déposée est directement la clé finale, la
+  // finalisation ne fait donc qu'enregistrer l'URL en base, sans réupload.
+  const ext = AUDIO_EXTENSIONS[contentType] || 'mp3';
+  const rawKey = `${crypto.randomUUID()}.${ext}`;
+  const uploadUrl = await storage.getPresignedUploadUrl(rawKey, contentType);
+  res.json({ supported: true, uploadUrl, rawKey });
+}
+
+async function finalizeMusic(req, res) {
+  const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!invitation) {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const { rawKey } = req.body || {};
+  if (!rawKey) {
+    return res.status(400).json({ error: 'rawKey requis' });
+  }
+
+  const url = storage.publicUrl(rawKey);
+  if (invitation.musicUrl) {
+    await storage.remove(invitation.musicUrl);
+  }
+
+  const updated = await prisma.invitation.update({
+    where: { id: req.params.id },
+    data: { musicUrl: url },
+  });
+
+  res.status(201).json({ musicUrl: updated.musicUrl });
+}
+
 async function removeMusic(req, res) {
   const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
   if (!invitation) {
@@ -150,4 +274,14 @@ async function removeMusic(req, res) {
   res.status(204).send();
 }
 
-module.exports = { upload, remove, update, uploadMusic, removeMusic };
+module.exports = {
+  upload,
+  remove,
+  update,
+  uploadMusic,
+  removeMusic,
+  presignMedia,
+  finalizeMedia,
+  presignMusic,
+  finalizeMusic,
+};

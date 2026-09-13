@@ -9,15 +9,45 @@ export default function MediaUploader({ invitationId, type, media, onChange }) {
   const items = media.filter((m) => m.type === type).sort((a, b) => a.order - b.order);
   const acceptVideo = type === 'gallery';
 
+  // En stockage S3 (production), le fichier est déposé directement dans le bucket depuis le
+  // navigateur (URL signée), sans passer par le backend — les fonctions serverless Vercel
+  // refusent toute requête entrante au-delà de 4,5 Mo, bien en dessous d'une photo/vidéo réelle.
+  // En stockage local (Docker), le presign répond { supported:false } et on garde l'ancien flux.
+  const uploadOne = async (file) => {
+    const presign = await api.post(`/invitations/${invitationId}/media/presign`, {
+      contentType: file.type,
+    });
+
+    if (!presign.supported) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      await api.upload(`/invitations/${invitationId}/media`, formData);
+      return;
+    }
+
+    const putRes = await fetch(presign.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type },
+    });
+    if (!putRes.ok) {
+      throw new Error("Échec de l'envoi du fichier vers le stockage");
+    }
+
+    await api.post(`/invitations/${invitationId}/media/finalize`, {
+      rawKey: presign.rawKey,
+      mimeType: file.type,
+      type,
+    });
+  };
+
   const handleFiles = async (files) => {
     setError('');
     setUploading(true);
     try {
       for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', type);
-        await api.upload(`/invitations/${invitationId}/media`, formData);
+        await uploadOne(file);
       }
       onChange();
     } catch (err) {
