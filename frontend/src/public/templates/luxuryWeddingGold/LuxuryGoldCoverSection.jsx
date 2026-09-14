@@ -230,7 +230,7 @@ const styles = {
   // Léger zoom (au-delà du cadrage cover naturel) : la photo remplit davantage l'arche,
   // recadrée par le overflow:hidden du cadre — fonctionne pour n'importe quelle photo,
   // portrait ou paysage, sans jamais la déformer (toujours object-fit: cover en dessous).
-  photoImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 22%', display: 'block', transform: 'scale(1.15)' },
+  photoImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 22%', display: 'block', transform: 'scale(1.09)' },
   photoPlaceholder: { width: '100%', height: '100%', background: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   placeholderIcon: { fontSize: '2.5rem', color: 'var(--color-secondary)', opacity: 0.5 },
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
+import QrCodeModal from '../shared/components/QrCodeModal';
 
 const emptyForm = { name: '', phone: '', maxPersons: '' };
 
@@ -28,6 +29,7 @@ export default function ClientAccessPage() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [qrGuest, setQrGuest] = useState(null);
 
   const load = () => {
     api
@@ -229,9 +231,9 @@ export default function ClientAccessPage() {
                             <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
                               {copiedCode === g.guestCode ? 'Copié !' : 'Copier'}
                             </button>
-                            <a href={`/api/client-access/${token}/guests/${g.id}/qrcode`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-                              QR
-                            </a>
+                            <button type="button" onClick={() => setQrGuest(g)} className="btn btn-outline btn-sm">
+                              Afficher le QR code
+                            </button>
                           </td>
                           <td>
                             <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
@@ -246,6 +248,16 @@ export default function ClientAccessPage() {
           )}
         </div>
       </div>
+
+      {qrGuest && (
+        <QrCodeModal
+          title={qrGuest.rsvp?.name || qrGuest.name || 'Lien invité'}
+          link={guestUrl(qrGuest.guestCode)}
+          qrUrl={`/api/client-access/${token}/guests/${qrGuest.id}/qrcode`}
+          downloadName={`qrcode-${qrGuest.guestCode}.png`}
+          onClose={() => setQrGuest(null)}
+        />
+      )}
     </div>
   );
 }
