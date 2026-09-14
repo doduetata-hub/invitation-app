@@ -31,15 +31,19 @@ async function getInvitationBySlug(req, res) {
       where: { invitationId: invitation.id, guestCode: String(guestCode).toUpperCase() },
       include: { rsvp: true },
     });
-    if (guest) {
-      guestInfo = {
-        code: guest.guestCode,
-        name: guest.name,
-        maxPersons: guest.maxPersons,
-        alreadyAnswered: Boolean(guest.rsvp),
-        rsvp: guest.rsvp,
-      };
+    // Un lien personnalisé pointant vers un invité supprimé (ou un code invalide) doit se
+    // comporter comme un lien mort, pas retomber silencieusement sur l'invitation générale
+    // sans le nom — submitRsvp() rejette déjà ce cas, on aligne l'affichage dessus.
+    if (!guest) {
+      return res.status(404).json({ error: "Ce lien personnalisé n'est plus valide" });
     }
+    guestInfo = {
+      code: guest.guestCode,
+      name: guest.name,
+      maxPersons: guest.maxPersons,
+      alreadyAnswered: Boolean(guest.rsvp),
+      rsvp: guest.rsvp,
+    };
   }
 
   res.json({
