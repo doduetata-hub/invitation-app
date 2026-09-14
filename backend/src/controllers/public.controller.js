@@ -96,6 +96,13 @@ async function submitRsvp(req, res) {
       badRequest(`Le nombre de personnes dépasse le maximum autorisé (${guest.maxPersons})`);
     }
 
+    // Le nom d'un lien personnalisé est fixé par l'admin/client à la création : on l'impose ici
+    // côté serveur (pas seulement en désactivant le champ côté client, contournable) pour que
+    // l'invité ne puisse jamais répondre sous une autre identité que celle qui lui a été assignée.
+    if (guest.name) {
+      rsvpData.name = guest.name;
+    }
+
     const rsvp = await prisma.rsvp.upsert({
       where: { guestId: guest.id },
       update: rsvpData,

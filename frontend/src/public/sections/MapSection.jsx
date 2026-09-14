@@ -36,7 +36,7 @@ const styles = {
   section: { padding: '1.5rem 1.5rem 3rem', textAlign: 'center' },
   title: { fontFamily: 'var(--font-heading)', color: 'var(--color-text)', fontSize: '1.6rem', marginBottom: '0.75rem' },
   venue: { fontFamily: 'var(--font-body)', fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-text)', margin: '0.25rem 0' },
-  address: { fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', margin: '0.25rem 0' },
+  address: { fontFamily: 'var(--font-body)', color: 'var(--color-text)', margin: '0.25rem 0' },
   mapFrame: {
     marginTop: '1rem',
     width: '100%',

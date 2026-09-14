@@ -47,6 +47,6 @@ const styles = {
     minWidth: '52px',
   },
   eventTitle: { fontFamily: 'var(--font-body)', fontWeight: 'bold', color: 'var(--color-text)', fontSize: '1.1rem' },
-  location: { fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)' },
-  description: { fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', fontSize: '0.9rem' },
+  location: { fontFamily: 'var(--font-body)', color: 'var(--color-text)' },
+  description: { fontFamily: 'var(--font-body)', color: 'var(--color-text)', fontSize: '0.9rem' },
 };

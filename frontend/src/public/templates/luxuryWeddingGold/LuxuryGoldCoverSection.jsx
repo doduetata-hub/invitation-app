@@ -91,7 +91,7 @@ export default function LuxuryGoldCoverSection({ invitation }) {
     formattedDate && { icon: <CalendarIcon />, label: 'Date', sub: formattedDate },
     eventTime && { icon: <ClockIcon />, label: 'Heure', sub: eventTime },
     venueName && { icon: <PinIcon />, label: 'Lieu', sub: venueName },
-    mapsUrl && { icon: <MapIcon />, label: 'Itinéraire', sub: 'Voir la carte', href: mapsUrl },
+    mapsUrl && { icon: <MapIcon />, label: 'Itin.', sub: 'Voir la carte', href: mapsUrl },
   ].filter(Boolean);
 
   return (
@@ -212,7 +212,14 @@ const styles = {
   leafEdgeRight: { position: 'absolute', top: '4.4rem', right: 0, width: '108px', height: 'auto', opacity: 0.85 },
 
   motto: { textAlign: 'center', marginBottom: '1.1rem' },
-  mottoText: { textTransform: 'uppercase', letterSpacing: '0.24em', fontSize: '0.68rem', color: 'var(--color-text-muted)', margin: '0 0 0.5rem' },
+  mottoText: {
+    textTransform: 'uppercase',
+    letterSpacing: '0.12em',
+    fontSize: 'clamp(0.56rem, 2.4vw, 0.68rem)',
+    color: 'var(--color-text-muted)',
+    margin: '0 0 0.5rem',
+    whiteSpace: 'nowrap',
+  },
   mottoDiamond: { width: '8px', height: '8px', color: 'var(--color-secondary)' },
 
   stage: { position: 'relative', width: '100%' },

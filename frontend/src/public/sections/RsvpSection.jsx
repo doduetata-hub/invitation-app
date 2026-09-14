@@ -82,7 +82,14 @@ export default function RsvpSection({ onSubmit, guestInfo, slug }) {
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
           Nom
-          <input value={form.name} onChange={handleChange('name')} required style={styles.input} />
+          <input
+            value={form.name}
+            onChange={handleChange('name')}
+            required
+            readOnly={Boolean(guestInfo?.name)}
+            style={guestInfo?.name ? { ...styles.input, ...styles.inputLocked } : styles.input}
+          />
+          {guestInfo?.name && <span style={styles.hint}>Ce lien vous est réservé personnellement</span>}
         </label>
 
         <div style={styles.radioGroup}>
@@ -137,7 +144,7 @@ export default function RsvpSection({ onSubmit, guestInfo, slug }) {
 const styles = {
   section: { padding: '1.5rem 1.5rem 3rem', maxWidth: '420px', margin: '0 auto', textAlign: 'center' },
   title: { fontFamily: 'var(--font-heading)', color: 'var(--color-text)', fontSize: '1.6rem', marginBottom: '1rem' },
-  confirmation: { fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)' },
+  confirmation: { fontFamily: 'var(--font-body)', color: 'var(--color-text)' },
   qrCard: {
     display: 'inline-flex',
     flexDirection: 'column',
@@ -150,12 +157,13 @@ const styles = {
     borderRadius: 'var(--radius)',
   },
   qrImage: { width: '180px', height: '180px', maxWidth: '100%' },
-  qrHint: { fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0, maxWidth: '220px' },
+  qrHint: { fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text)', margin: 0, maxWidth: '220px' },
   form: { display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' },
-  label: { display: 'flex', flexDirection: 'column', gap: '0.25rem', fontFamily: 'var(--font-body)', fontSize: '0.95rem', color: 'var(--color-text)' },
-  input: { padding: '0.55rem', border: '1px solid var(--color-secondary)', borderRadius: 'var(--radius)', fontFamily: 'var(--font-body)', fontSize: '1rem' },
-  hint: { fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' },
-  radioGroup: { display: 'flex', flexDirection: 'column', gap: '0.4rem', fontFamily: 'var(--font-body)' },
+  label: { display: 'flex', flexDirection: 'column', gap: '0.25rem', fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)' },
+  input: { padding: '0.55rem', border: '1px solid var(--color-secondary)', borderRadius: 'var(--radius)', fontFamily: 'var(--font-body)', fontSize: '1rem', color: 'var(--color-text)' },
+  inputLocked: { background: 'var(--color-bg)', color: 'var(--color-text)', cursor: 'not-allowed' },
+  hint: { fontSize: '0.75rem', color: 'var(--color-text)', fontFamily: 'var(--font-body)' },
+  radioGroup: { display: 'flex', flexDirection: 'column', gap: '0.4rem', fontFamily: 'var(--font-body)', color: 'var(--color-text)' },
   radioLabel: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
   error: { color: '#dc2626', fontFamily: 'var(--font-body)', fontSize: '0.9rem', margin: 0 },
   button: {
