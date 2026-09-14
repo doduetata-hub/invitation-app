@@ -271,7 +271,7 @@ const styles = {
 
   invitationText: {
     fontFamily: 'var(--font-body)',
-    color: 'var(--color-text-muted)',
+    color: 'var(--color-text)',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     fontSize: '0.8rem',
@@ -279,7 +279,7 @@ const styles = {
     margin: '1.1rem 0 0',
     overflowWrap: 'break-word',
   },
-  address: { fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0.5rem 0 0', overflowWrap: 'break-word' },
+  address: { fontFamily: 'var(--font-body)', color: 'var(--color-text)', fontSize: '0.85rem', margin: '0.5rem 0 0', overflowWrap: 'break-word' },
 
   ornament: { display: 'block', margin: '1.3rem auto 1rem', height: '18px', width: 'auto' },
 
@@ -300,7 +300,7 @@ const styles = {
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     fontSize: '0.78rem',
-    color: 'var(--color-text-muted)',
+    color: 'var(--color-text)',
     margin: '1.5rem 0 0',
     overflowWrap: 'break-word',
   },

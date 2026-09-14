@@ -73,7 +73,8 @@ export default function ClientDetailPage() {
       {client.invitations.length === 0 ? (
         <div className="empty-state">Aucune invitation pour le moment.</div>
       ) : (
-        <table className="table" style={{ marginTop: '0.75rem' }}>
+        <div className="table-wrap" style={{ marginTop: '0.75rem' }}>
+        <table className="table">
           <tbody>
             {client.invitations.map((inv) => (
               <tr key={inv.id}>
@@ -83,6 +84,7 @@ export default function ClientDetailPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

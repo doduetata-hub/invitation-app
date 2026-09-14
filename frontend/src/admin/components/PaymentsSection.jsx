@@ -57,7 +57,8 @@ export default function PaymentsSection({ invitationId, price }) {
       {error && <p className="error-text">{error}</p>}
 
       {payments.length > 0 && (
-        <table className="table" style={{ marginBottom: '0.9rem' }}>
+        <div className="table-wrap" style={{ marginBottom: '0.9rem' }}>
+        <table className="table">
           <thead>
             <tr>
               <th>Date</th>
@@ -81,6 +82,7 @@ export default function PaymentsSection({ invitationId, price }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>

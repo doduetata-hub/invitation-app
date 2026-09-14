@@ -246,6 +246,7 @@ export default function CheckInPage() {
           style={{ maxWidth: '320px', marginBottom: '1rem' }}
         />
 
+        <div className="table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -290,6 +291,7 @@ export default function CheckInPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

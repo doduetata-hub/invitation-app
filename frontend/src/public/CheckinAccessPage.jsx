@@ -241,6 +241,7 @@ export default function CheckinAccessPage() {
             className="input"
             style={{ maxWidth: '320px', marginBottom: '1rem' }}
           />
+          <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -269,6 +270,7 @@ export default function CheckinAccessPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

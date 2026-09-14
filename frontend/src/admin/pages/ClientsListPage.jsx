@@ -61,6 +61,7 @@ export default function ClientsListPage() {
       ) : clients.length === 0 ? (
         <div className="empty-state">Aucun client pour le moment.</div>
       ) : (
+        <div className="table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -85,6 +86,7 @@ export default function ClientsListPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

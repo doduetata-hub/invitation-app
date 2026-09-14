@@ -156,6 +156,7 @@ export default function ClientAccessPage() {
           {guests.length === 0 ? (
             <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
           ) : (
+            <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
@@ -245,6 +246,7 @@ export default function ClientAccessPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

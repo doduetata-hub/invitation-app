@@ -57,6 +57,7 @@ export default function DashboardPage() {
             {summary.recentInvitations.length === 0 ? (
               <div className="empty-state">Aucune invitation pour le moment.</div>
             ) : (
+              <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
@@ -79,6 +80,7 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </section>
         </>

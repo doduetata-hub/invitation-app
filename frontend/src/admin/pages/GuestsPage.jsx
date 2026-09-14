@@ -153,6 +153,7 @@ export default function GuestsPage() {
         {guests.length === 0 ? (
           <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
         ) : (
+          <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -246,6 +247,7 @@ export default function GuestsPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -254,6 +256,7 @@ export default function GuestsPage() {
         {walkInRsvps.length === 0 ? (
           <div className="empty-state">Aucune réponse via le lien général pour le moment.</div>
         ) : (
+          <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -280,6 +283,7 @@ export default function GuestsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

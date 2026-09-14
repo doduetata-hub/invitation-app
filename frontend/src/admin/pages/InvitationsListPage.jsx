@@ -81,6 +81,7 @@ export default function InvitationsListPage() {
       ) : invitations.length === 0 ? (
         <div className="empty-state">Aucune invitation pour le moment.</div>
       ) : (
+        <div className="table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -113,6 +114,7 @@ export default function InvitationsListPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
