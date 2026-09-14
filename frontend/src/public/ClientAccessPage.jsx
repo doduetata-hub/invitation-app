@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import QrCodeModal from '../shared/components/QrCodeModal';
+import { buildWhatsappShareUrl } from '../shared/utils/whatsapp';
 
 const emptyForm = { name: '', phone: '', maxPersons: '' };
 
@@ -30,6 +31,8 @@ export default function ClientAccessPage() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [savingEdit, setSavingEdit] = useState(false);
   const [qrGuest, setQrGuest] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState('');
 
   const load = () => {
     api
@@ -85,6 +88,23 @@ export default function ClientAccessPage() {
       load();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleImportFile = async (file) => {
+    setImporting(true);
+    setError('');
+    setImportMessage('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.upload(`/client-access/${token}/guests/import`, formData);
+      setImportMessage(`${res.imported} invité(s) importé(s) avec succès.`);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -152,6 +172,23 @@ export default function ClientAccessPage() {
               + Générer un lien
             </button>
           </form>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.1rem' }}>
+            <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
+              {importing ? 'Import en cours...' : '📄 Importer depuis Excel'}
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => e.target.files[0] && handleImportFile(e.target.files[0])}
+                disabled={importing}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <a href={`/api/client-access/${token}/guests/import-template`} className="admin-muted" style={{ fontSize: '0.82rem' }}>
+              Télécharger le modèle
+            </a>
+            {importMessage && <span className="success-text">{importMessage}</span>}
+          </div>
 
           {guests.length === 0 ? (
             <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
@@ -235,6 +272,20 @@ export default function ClientAccessPage() {
                             <button type="button" onClick={() => setQrGuest(g)} className="btn btn-outline btn-sm">
                               Afficher le QR code
                             </button>
+                            {g.phone && (
+                              <a
+                                href={buildWhatsappShareUrl(
+                                  g.phone,
+                                  `Bonjour${g.rsvp?.name || g.name ? ' ' + (g.rsvp?.name || g.name) : ''}, voici votre invitation : ${guestUrl(g.guestCode)}`
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn btn-outline btn-sm"
+                                title="Partager le lien par WhatsApp"
+                              >
+                                WhatsApp
+                              </a>
+                            )}
                           </td>
                           <td>
                             <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>

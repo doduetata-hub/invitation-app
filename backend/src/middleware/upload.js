@@ -37,4 +37,21 @@ const uploadAudio = multer({
   ),
 });
 
-module.exports = { upload, uploadAudio, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES };
+const ALLOWED_SPREADSHEET_TYPES = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls (souvent envoyé avec ce type par les navigateurs)
+  'text/csv',
+  'application/csv',
+];
+const MAX_SPREADSHEET_SIZE = 5 * 1024 * 1024; // 5 Mo — largement suffisant pour une liste d'invités
+
+const uploadSpreadsheet = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_SPREADSHEET_SIZE },
+  fileFilter: fileFilterFor(
+    ALLOWED_SPREADSHEET_TYPES,
+    'Type de fichier non supporté (Excel .xlsx ou CSV uniquement)'
+  ),
+});
+
+module.exports = { upload, uploadAudio, uploadSpreadsheet, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES };

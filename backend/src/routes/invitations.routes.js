@@ -18,6 +18,8 @@ const {
   create: createGuest,
   exportCsv,
   exportXlsx,
+  importXlsx,
+  downloadImportTemplate,
 } = require('../controllers/guests.controller');
 const {
   upload: uploadMedia,
@@ -34,7 +36,7 @@ const {
   create: createPayment,
 } = require('../controllers/payments.controller');
 const { lookupByCode } = require('../controllers/checkin.controller');
-const { upload, uploadAudio } = require('../middleware/upload');
+const { upload, uploadAudio, uploadSpreadsheet } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -60,6 +62,8 @@ router.get('/:id/guests', listGuests);
 router.post('/:id/guests', createGuest);
 router.get('/:id/guests/export', exportCsv);
 router.get('/:id/guests/export.xlsx', exportXlsx);
+router.get('/:id/guests/import-template', downloadImportTemplate);
+router.post('/:id/guests/import', uploadLimiter, uploadSpreadsheet.single('file'), importXlsx);
 
 router.post('/:id/media', uploadLimiter, upload.single('file'), uploadMedia);
 router.post('/:id/music', uploadLimiter, uploadAudio.single('file'), uploadMusic);

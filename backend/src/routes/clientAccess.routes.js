@@ -3,6 +3,8 @@ const rateLimit = require('express-rate-limit');
 const {
   getByToken,
   createGuest,
+  importGuests,
+  downloadImportTemplate,
   updateGuest,
   removeGuest,
   getGuestQrCode,
@@ -10,6 +12,7 @@ const {
   checkInGuest,
   undoCheckInGuest,
 } = require('../controllers/clientAccess.controller');
+const { uploadSpreadsheet } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -26,6 +29,8 @@ router.use(clientAccessLimiter);
 
 router.get('/:token', getByToken);
 router.post('/:token/guests', createGuest);
+router.get('/:token/guests/import-template', downloadImportTemplate);
+router.post('/:token/guests/import', uploadSpreadsheet.single('file'), importGuests);
 router.patch('/:token/guests/:guestId', updateGuest);
 router.delete('/:token/guests/:guestId', removeGuest);
 router.get('/:token/guests/:guestId/qrcode', getGuestQrCode);

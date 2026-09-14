@@ -2,6 +2,7 @@ const QRCode = require('qrcode');
 const prisma = require('../db/prismaClient');
 const env = require('../config/env');
 const { generateUniqueGuestCode } = require('../services/guestCode.service');
+const { parseGuestsSpreadsheet, buildImportTemplateBuffer, MAX_IMPORT_ROWS } = require('../services/guestImport.service');
 
 // Toutes les fonctions ci-dessous résolvent l'invitation UNIQUEMENT via le token de l'URL
 // (jamais via un id transmis par le client) : un token ne peut donc jamais agir sur une
@@ -60,6 +61,56 @@ async function createGuest(req, res) {
   });
 
   res.status(201).json(guest);
+}
+
+// Import en masse depuis un fichier Excel/CSV : épargne au client la saisie manuelle d'une
+// longue liste d'invités. Chaque ligne devient un invité avec son propre lien/QR, exactement
+// comme s'il avait été créé un par un via "+ Générer un lien".
+async function importGuests(req, res) {
+  const invitation = await findInvitationByToken(req.params.token);
+  if (!invitation) {
+    return res.status(404).json({ error: 'Lien invalide ou expiré' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'Fichier requis' });
+  }
+
+  let rows;
+  try {
+    rows = await parseGuestsSpreadsheet(req.file.buffer, req.file.originalname);
+  } catch {
+    return res.status(400).json({ error: 'Fichier illisible : vérifiez qu\'il s\'agit bien d\'un export Excel ou CSV valide' });
+  }
+
+  if (rows.length === 0) {
+    return res.status(400).json({ error: 'Aucun invité trouvé dans ce fichier' });
+  }
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return res.status(400).json({ error: `Ce fichier dépasse la limite de ${MAX_IMPORT_ROWS} invités par import` });
+  }
+
+  const created = [];
+  for (const row of rows) {
+    const guestCode = await generateUniqueGuestCode();
+    const guest = await prisma.guest.create({
+      data: { invitationId: invitation.id, name: row.name, phone: row.phone, maxPersons: row.maxPersons, guestCode },
+    });
+    created.push(guest);
+  }
+
+  res.status(201).json({ imported: created.length });
+}
+
+async function downloadImportTemplate(req, res) {
+  const invitation = await findInvitationByToken(req.params.token);
+  if (!invitation) {
+    return res.status(404).json({ error: 'Lien invalide ou expiré' });
+  }
+
+  const buffer = await buildImportTemplateBuffer();
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="modele-import-invites.xlsx"');
+  res.send(buffer);
 }
 
 // Ne touche jamais guestCode : un lien déjà envoyé à l'invité reste valide après correction.
@@ -205,6 +256,8 @@ async function undoCheckInGuest(req, res) {
 module.exports = {
   getByToken,
   createGuest,
+  importGuests,
+  downloadImportTemplate,
   updateGuest,
   removeGuest,
   getGuestQrCode,
