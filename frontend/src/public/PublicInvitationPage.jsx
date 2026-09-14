@@ -69,7 +69,7 @@ export default function PublicInvitationPage() {
     return <div style={styles.center}>Chargement...</div>;
   }
 
-  return <InvitationPage invitation={invitation} onRsvpSubmit={handleRsvpSubmit} />;
+  return <InvitationPage invitation={invitation} slug={slug} onRsvpSubmit={handleRsvpSubmit} />;
 }
 
 const styles = {

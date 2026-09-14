@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { getInvitationBySlug, submitRsvp } = require('../controllers/public.controller');
+const { getInvitationBySlug, submitRsvp, getGuestQrCode } = require('../controllers/public.controller');
 
 const router = express.Router();
 
@@ -13,5 +13,6 @@ const rsvpLimiter = rateLimit({
 
 router.get('/invitations/:slug', getInvitationBySlug);
 router.post('/invitations/:slug/rsvp', rsvpLimiter, submitRsvp);
+router.get('/invitations/:slug/qrcode', getGuestQrCode);
 
 module.exports = router;

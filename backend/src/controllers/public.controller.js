@@ -1,4 +1,6 @@
+const QRCode = require('qrcode');
 const prisma = require('../db/prismaClient');
+const env = require('../config/env');
 
 function badRequest(message) {
   const err = new Error(message);
@@ -108,4 +110,33 @@ async function submitRsvp(req, res) {
   res.status(201).json(rsvp);
 }
 
-module.exports = { getInvitationBySlug, submitRsvp };
+// QR code du lien personnalisé de l'invité, servi depuis sa propre page d'invitation
+// (pas besoin que le client le génère/l'envoie à part : l'invité l'a directement en ouvrant
+// son lien). Scopé slug+guestCode, sans authentification, comme le reste de l'API publique.
+async function getGuestQrCode(req, res) {
+  const invitation = await prisma.invitation.findUnique({ where: { slug: req.params.slug } });
+  if (!invitation || invitation.status !== 'PUBLISHED') {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const guestCode = req.query.guest;
+  if (!guestCode) {
+    return res.status(404).json({ error: 'Code invité requis' });
+  }
+
+  const guest = await prisma.guest.findFirst({
+    where: { invitationId: invitation.id, guestCode: String(guestCode).toUpperCase() },
+  });
+  if (!guest) {
+    return res.status(404).json({ error: 'Invité introuvable' });
+  }
+
+  const url = `${env.publicBaseUrl}/i/${invitation.slug}?guest=${guest.guestCode}`;
+  const buffer = await QRCode.toBuffer(url, { width: 512, margin: 2 });
+
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Content-Disposition', `inline; filename="qrcode-${guest.guestCode}.png"`);
+  res.send(buffer);
+}
+
+module.exports = { getInvitationBySlug, submitRsvp, getGuestQrCode };

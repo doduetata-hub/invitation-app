@@ -19,7 +19,7 @@ const DEFAULT_SECTION_COMPONENTS = {
   contact: ContactSection,
 };
 
-export default function InvitationPage({ invitation, onRsvpSubmit }) {
+export default function InvitationPage({ invitation, slug, onRsvpSubmit }) {
   const template = getTemplate(invitation.template?.key);
   const overrides = invitation.theme || {};
   const cssVars = tokensToCssVars({ ...template.tokens, ...(overrides.colors || {}), ...(overrides.fonts || {}) });
@@ -38,7 +38,7 @@ export default function InvitationPage({ invitation, onRsvpSubmit }) {
           // mise en page/décors sur mesure) ; sinon on retombe sur le composant partagé générique.
           const Section = template.sectionComponents?.[key] || DEFAULT_SECTION_COMPONENTS[key];
           if (!Section) return null;
-          const rsvpProps = key === 'rsvp' ? { onSubmit: onRsvpSubmit, guestInfo: invitation.guest } : {};
+          const rsvpProps = key === 'rsvp' ? { onSubmit: onRsvpSubmit, guestInfo: invitation.guest, slug } : {};
           return (
             <div key={key} id={key}>
               <Section invitation={invitation} {...rsvpProps} />

@@ -2,7 +2,21 @@ import { useEffect, useState } from 'react';
 
 const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, drink: '', message: '' };
 
-export default function RsvpSection({ onSubmit, guestInfo }) {
+// Carte du QR code d'entrée de l'invité : affichée dès que son lien personnalisé est ouvert,
+// qu'il ait déjà répondu ou non, pour qu'il l'ait toujours sous la main le jour J sans que le
+// client ait besoin de le lui envoyer séparément (voir QrCodeModal côté client/admin).
+function GuestQrCard({ slug, guestInfo }) {
+  if (!slug || !guestInfo?.code) return null;
+  const qrUrl = `/api/public/invitations/${slug}/qrcode?guest=${guestInfo.code}`;
+  return (
+    <div style={styles.qrCard}>
+      <img src={qrUrl} alt="Votre QR code d'entrée" style={styles.qrImage} />
+      <p style={styles.qrHint}>Présentez ce QR code à l'entrée le jour J</p>
+    </div>
+  );
+}
+
+export default function RsvpSection({ onSubmit, guestInfo, slug }) {
   const [form, setForm] = useState(emptyForm);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +60,7 @@ export default function RsvpSection({ onSubmit, guestInfo }) {
         <p style={styles.confirmation}>
           Vous avez déjà confirmé : {guestInfo.rsvp?.answer === 'YES' ? 'présent(e)' : 'absent(e)'}.
         </p>
+        <GuestQrCard slug={slug} guestInfo={guestInfo} />
       </section>
     );
   }
@@ -55,6 +70,7 @@ export default function RsvpSection({ onSubmit, guestInfo }) {
       <section style={styles.section}>
         <h2 style={styles.title}>Merci !</h2>
         <p style={styles.confirmation}>Votre réponse a bien été enregistrée.</p>
+        <GuestQrCard slug={slug} guestInfo={guestInfo} />
       </section>
     );
   }
@@ -62,6 +78,7 @@ export default function RsvpSection({ onSubmit, guestInfo }) {
   return (
     <section style={styles.section}>
       <h2 style={styles.title}>Confirmez votre présence</h2>
+      <GuestQrCard slug={slug} guestInfo={guestInfo} />
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
           Nom
@@ -121,6 +138,19 @@ const styles = {
   section: { padding: '1.5rem 1.5rem 3rem', maxWidth: '420px', margin: '0 auto', textAlign: 'center' },
   title: { fontFamily: 'var(--font-heading)', color: 'var(--color-text)', fontSize: '1.6rem', marginBottom: '1rem' },
   confirmation: { fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)' },
+  qrCard: {
+    display: 'inline-flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem',
+    margin: '1rem auto 1.5rem',
+    padding: '1rem',
+    background: 'var(--color-surface, #fff)',
+    border: '1px solid var(--color-secondary)',
+    borderRadius: 'var(--radius)',
+  },
+  qrImage: { width: '180px', height: '180px', maxWidth: '100%' },
+  qrHint: { fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0, maxWidth: '220px' },
   form: { display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' },
   label: { display: 'flex', flexDirection: 'column', gap: '0.25rem', fontFamily: 'var(--font-body)', fontSize: '0.95rem', color: 'var(--color-text)' },
   input: { padding: '0.55rem', border: '1px solid var(--color-secondary)', borderRadius: 'var(--radius)', fontFamily: 'var(--font-body)', fontSize: '1rem' },
