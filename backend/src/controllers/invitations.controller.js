@@ -74,9 +74,15 @@ function toInvitationInput(body) {
     longitude: longitude === '' || longitude == null ? null : Number(longitude),
     invitationText: invitationText?.trim() || null,
     personalMessage: personalMessage?.trim() || null,
-    musicUrl: musicUrl?.trim() || null,
     price: price === '' || price == null ? null : price,
   };
+
+  // La musique est gérée à part par MusicUploader (upload direct + PATCH dédié) : ce
+  // formulaire ne porte jamais ce champ, donc l'écrire inconditionnellement ici l'effaçait
+  // silencieusement à chaque simple sauvegarde de l'éditeur (titre, date, thème...).
+  if (musicUrl !== undefined) {
+    data.musicUrl = musicUrl?.trim() || null;
+  }
 
   if (paymentStatus !== undefined) {
     if (!PAYMENT_STATUSES.includes(paymentStatus)) {
