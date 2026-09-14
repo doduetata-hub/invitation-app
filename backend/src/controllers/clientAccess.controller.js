@@ -47,7 +47,7 @@ async function createGuest(req, res) {
     return res.status(404).json({ error: 'Lien invalide ou expiré' });
   }
 
-  const { name, phone, maxPersons } = req.body || {};
+  const { name, phone, maxPersons, tableNumber } = req.body || {};
   const guestCode = await generateUniqueGuestCode();
 
   const guest = await prisma.guest.create({
@@ -56,6 +56,7 @@ async function createGuest(req, res) {
       name: name?.trim() || null,
       phone: phone?.trim() || null,
       maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
+      tableNumber: tableNumber?.trim() || null,
       guestCode,
     },
   });
@@ -93,7 +94,14 @@ async function importGuests(req, res) {
   for (const row of rows) {
     const guestCode = await generateUniqueGuestCode();
     const guest = await prisma.guest.create({
-      data: { invitationId: invitation.id, name: row.name, phone: row.phone, maxPersons: row.maxPersons, guestCode },
+      data: {
+        invitationId: invitation.id,
+        name: row.name,
+        phone: row.phone,
+        maxPersons: row.maxPersons,
+        tableNumber: row.tableNumber,
+        guestCode,
+      },
     });
     created.push(guest);
   }
@@ -127,13 +135,14 @@ async function updateGuest(req, res) {
     return res.status(404).json({ error: 'Invité introuvable' });
   }
 
-  const { name, phone, maxPersons } = req.body || {};
+  const { name, phone, maxPersons, tableNumber } = req.body || {};
   const guest = await prisma.guest.update({
     where: { id: existing.id },
     data: {
       name: name?.trim() || null,
       phone: phone?.trim() || null,
       maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
+      tableNumber: tableNumber?.trim() || null,
     },
   });
 

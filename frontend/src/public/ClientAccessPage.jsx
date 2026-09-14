@@ -4,7 +4,7 @@ import { api } from '../shared/api/client';
 import QrCodeModal from '../shared/components/QrCodeModal';
 import { buildWhatsappShareUrl } from '../shared/utils/whatsapp';
 
-const emptyForm = { name: '', phone: '', maxPersons: '' };
+const emptyForm = { name: '', phone: '', maxPersons: '', tableNumber: '' };
 
 function AnswerBadge({ answer }) {
   if (answer === 'YES') return <span className="badge badge-success">Présent</span>;
@@ -62,7 +62,7 @@ export default function ClientAccessPage() {
 
   const startEdit = (g) => {
     setEditingId(g.id);
-    setEditForm({ name: g.name || '', phone: g.phone || '', maxPersons: g.maxPersons ?? '' });
+    setEditForm({ name: g.name || '', phone: g.phone || '', maxPersons: g.maxPersons ?? '', tableNumber: g.tableNumber || '' });
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -168,6 +168,13 @@ export default function ClientAccessPage() {
               className="input"
               style={{ width: '130px', flex: 'none' }}
             />
+            <input
+              placeholder="Table (optionnel)"
+              value={form.tableNumber}
+              onChange={(e) => setForm((f) => ({ ...f, tableNumber: e.target.value }))}
+              className="input"
+              style={{ width: '130px', flex: 'none' }}
+            />
             <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>
               + Générer un lien
             </button>
@@ -200,6 +207,7 @@ export default function ClientAccessPage() {
                   <th>Nom</th>
                   <th>Téléphone</th>
                   <th>Max</th>
+                  <th>Table</th>
                   <th>Statut</th>
                   <th>Personnes</th>
                   <th>Message</th>
@@ -240,12 +248,21 @@ export default function ClientAccessPage() {
                               style={{ width: '70px' }}
                             />
                           </td>
+                          <td>
+                            <input
+                              value={editForm.tableNumber}
+                              onChange={(e) => setEditForm((f) => ({ ...f, tableNumber: e.target.value }))}
+                              className="input"
+                              style={{ width: '90px' }}
+                            />
+                          </td>
                         </>
                       ) : (
                         <>
                           <td>{g.rsvp?.name || g.name || '—'}</td>
                           <td>{g.phone || '—'}</td>
                           <td>{g.maxPersons ?? '—'}</td>
+                          <td>{g.tableNumber || '—'}</td>
                         </>
                       )}
                       <td><AnswerBadge answer={g.rsvp?.answer} /></td>

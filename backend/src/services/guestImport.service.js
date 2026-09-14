@@ -1,6 +1,6 @@
 const ExcelJS = require('exceljs');
 
-const IMPORT_HEADERS = ['Nom', 'Téléphone', 'Max personnes'];
+const IMPORT_HEADERS = ['Nom', 'Téléphone', 'Max personnes', 'Table'];
 const MAX_IMPORT_ROWS = 500;
 
 function cellText(cell) {
@@ -11,13 +11,14 @@ function cellText(cell) {
   return String(v).trim();
 }
 
-function toRow(name, phone, maxPersonsRaw) {
-  if (!name && !phone && !maxPersonsRaw) return null; // ligne vide
+function toRow(name, phone, maxPersonsRaw, tableNumberRaw) {
+  if (!name && !phone && !maxPersonsRaw && !tableNumberRaw) return null; // ligne vide
   const maxPersonsNum = maxPersonsRaw ? Number(maxPersonsRaw) : null;
   return {
     name: name || null,
     phone: phone || null,
     maxPersons: Number.isFinite(maxPersonsNum) && maxPersonsNum > 0 ? Math.trunc(maxPersonsNum) : null,
+    tableNumber: tableNumberRaw || null,
   };
 }
 
@@ -68,8 +69,8 @@ async function parseGuestsSpreadsheet(buffer, originalName = '') {
 
   if (isCsv) {
     const lines = parseCsvRows(buffer.toString('utf8'));
-    lines.slice(1).forEach(([name, phone, maxPersonsRaw]) => {
-      const row = toRow(name, phone, maxPersonsRaw);
+    lines.slice(1).forEach(([name, phone, maxPersonsRaw, tableNumberRaw]) => {
+      const row = toRow(name, phone, maxPersonsRaw, tableNumberRaw);
       if (row) rows.push(row);
     });
   } else {
@@ -79,7 +80,12 @@ async function parseGuestsSpreadsheet(buffer, originalName = '') {
     if (sheet) {
       sheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return; // en-tête
-        const parsed = toRow(cellText(row.getCell(1)), cellText(row.getCell(2)), cellText(row.getCell(3)));
+        const parsed = toRow(
+          cellText(row.getCell(1)),
+          cellText(row.getCell(2)),
+          cellText(row.getCell(3)),
+          cellText(row.getCell(4))
+        );
         if (parsed) rows.push(parsed);
       });
     }
@@ -95,7 +101,7 @@ async function buildImportTemplateBuffer() {
 
   sheet.columns = IMPORT_HEADERS.map((header) => ({ header, key: header, width: 24 }));
   sheet.getRow(1).font = { bold: true };
-  sheet.addRow(['Jean Dupont', '+243 900 000 000', 2]);
+  sheet.addRow(['Jean Dupont', '+243 900 000 000', 2, 'Table 5']);
 
   return workbook.xlsx.writeBuffer();
 }

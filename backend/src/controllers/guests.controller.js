@@ -6,6 +6,7 @@ const { parseGuestsSpreadsheet, buildImportTemplateBuffer, MAX_IMPORT_ROWS } = r
 const EXPORT_HEADERS = [
   'Nom',
   'Téléphone',
+  'Table',
   'Lien personnalisé',
   'Présence',
   'Nombre de personnes',
@@ -64,7 +65,7 @@ async function create(req, res) {
     return res.status(404).json({ error: 'Invitation introuvable' });
   }
 
-  const { name, phone, maxPersons } = req.body || {};
+  const { name, phone, maxPersons, tableNumber } = req.body || {};
   const guestCode = await generateUniqueGuestCode();
 
   const guest = await prisma.guest.create({
@@ -73,6 +74,7 @@ async function create(req, res) {
       name: name?.trim() || null,
       phone: phone?.trim() || null,
       maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
+      tableNumber: tableNumber?.trim() || null,
       guestCode,
     },
   });
@@ -110,7 +112,14 @@ async function importXlsx(req, res) {
   for (const row of rows) {
     const guestCode = await generateUniqueGuestCode();
     const guest = await prisma.guest.create({
-      data: { invitationId: req.params.id, name: row.name, phone: row.phone, maxPersons: row.maxPersons, guestCode },
+      data: {
+        invitationId: req.params.id,
+        name: row.name,
+        phone: row.phone,
+        maxPersons: row.maxPersons,
+        tableNumber: row.tableNumber,
+        guestCode,
+      },
     });
     created.push(guest);
   }
@@ -127,7 +136,7 @@ async function downloadImportTemplate(req, res) {
 
 // Ne touche jamais guestCode : un lien déjà envoyé à l'invité reste valide après correction.
 async function update(req, res) {
-  const { name, phone, maxPersons } = req.body || {};
+  const { name, phone, maxPersons, tableNumber } = req.body || {};
   try {
     const guest = await prisma.guest.update({
       where: { id: req.params.id },
@@ -135,6 +144,7 @@ async function update(req, res) {
         name: name?.trim() || null,
         phone: phone?.trim() || null,
         maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
+        tableNumber: tableNumber?.trim() || null,
       },
     });
     res.json(guest);
@@ -173,6 +183,7 @@ async function fetchExportData(invitationId) {
     rows.push([
       g.rsvp?.name || g.name || '',
       g.phone || '',
+      g.tableNumber || '',
       g.guestCode,
       g.rsvp ? (g.rsvp.answer === 'YES' ? 'Présent' : 'Absent') : 'En attente',
       g.rsvp?.numberOfPersons ?? '',
@@ -185,6 +196,7 @@ async function fetchExportData(invitationId) {
   for (const r of walkInRsvps) {
     rows.push([
       r.name,
+      '',
       '',
       '',
       r.answer === 'YES' ? 'Présent' : 'Absent',
@@ -232,7 +244,7 @@ async function exportXlsx(req, res) {
     sheet.addRow(row);
   }
 
-  sheet.getColumn(8).numFmt = 'yyyy-mm-dd hh:mm';
+  sheet.getColumn(EXPORT_HEADERS.indexOf('Date de réponse') + 1).numFmt = 'yyyy-mm-dd hh:mm';
 
   res.setHeader(
     'Content-Type',
