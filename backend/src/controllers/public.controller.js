@@ -41,6 +41,7 @@ async function getInvitationBySlug(req, res) {
       code: guest.guestCode,
       name: guest.name,
       maxPersons: guest.maxPersons,
+      tableNumber: guest.tableNumber,
       alreadyAnswered: Boolean(guest.rsvp),
       rsvp: guest.rsvp,
     };

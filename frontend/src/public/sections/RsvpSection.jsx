@@ -11,6 +11,7 @@ function GuestQrCard({ slug, guestInfo }) {
   return (
     <div style={styles.qrCard}>
       <img src={qrUrl} alt="Votre QR code d'entrée" style={styles.qrImage} />
+      {guestInfo.tableNumber && <p style={styles.tableInfo}>Votre table : {guestInfo.tableNumber}</p>}
       <p style={styles.qrHint}>Présentez ce QR code à l'entrée le jour J</p>
     </div>
   );
@@ -157,6 +158,7 @@ const styles = {
     borderRadius: 'var(--radius)',
   },
   qrImage: { width: '180px', height: '180px', maxWidth: '100%' },
+  tableInfo: { fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-text)', margin: 0 },
   qrHint: { fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text)', margin: 0, maxWidth: '220px' },
   form: { display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' },
   label: { display: 'flex', flexDirection: 'column', gap: '0.25rem', fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)' },
