@@ -44,11 +44,19 @@ export default function DashboardPage() {
           </section>
 
           <section className="dashboard-section">
-            <h2>RSVP</h2>
+            <h2>Invitations personnalisées</h2>
             <div className="stats-grid">
-              <StatCard label="Confirmés" value={summary.rsvp.confirmed} />
-              <StatCard label="Refus" value={summary.rsvp.declined} />
+              <StatCard label="Liens envoyés" value={summary.guests.total} />
+              <StatCard label="Confirmées" value={summary.rsvp.confirmed} />
+              <StatCard label="Refusées" value={summary.rsvp.declined} />
               <StatCard label="En attente" value={summary.rsvp.pending} />
+            </div>
+          </section>
+
+          <section className="dashboard-section">
+            <h2>Invités</h2>
+            <div className="stats-grid">
+              <StatCard label="Personnes attendues" value={summary.rsvp.personsConfirmed} />
             </div>
           </section>
 

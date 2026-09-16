@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import QrCodeModal from '../shared/components/QrCodeModal';
 import { buildWhatsappShareUrl } from '../shared/utils/whatsapp';
+import { buildGuestDeleteWarning } from '../shared/utils/guestWarnings';
 
 const emptyForm = { name: '', phone: '', maxPersons: '', tableNumber: '' };
 
@@ -82,7 +83,8 @@ export default function ClientAccessPage() {
   };
 
   const handleDelete = async (guestId) => {
-    if (!window.confirm('Supprimer cet invité et son lien personnalisé ?')) return;
+    const guest = data?.guests.find((g) => g.id === guestId);
+    if (!window.confirm(buildGuestDeleteWarning(guest))) return;
     try {
       await api.delete(`/client-access/${token}/guests/${guestId}`);
       load();
@@ -137,7 +139,7 @@ export default function ClientAccessPage() {
         {error && <p className="error-text">{error}</p>}
 
         <div className="stats-grid">
-          <StatCard label="Total invités" value={stats.totalGuests} />
+          <StatCard label="Invitations envoyées" value={stats.totalGuests} />
           <StatCard label="Confirmés" value={stats.confirmed} />
           <StatCard label="Refus" value={stats.declined} />
           <StatCard label="En attente" value={stats.pending} />
