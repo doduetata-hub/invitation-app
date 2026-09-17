@@ -19,6 +19,30 @@ const DEFAULT_SECTION_COMPONENTS = {
   contact: ContactSection,
 };
 
+// Reflète volontairement la même condition que le "return null" de chaque section (cover et
+// rsvp n'en ont pas, donc jamais vides ici) : un template comme Luxury Wedding Gold ajoute son
+// propre séparateur décoratif avant CHAQUE section active, décision prise avant que la section
+// elle-même ne s'exécute et ne découvre qu'elle n'a rien à afficher. Sans ce filtre, une section
+// vide (ex. Galerie sans photo) garde son séparateur mais aucun contenu dessous — deux
+// séparateurs se retrouvent collés l'un à l'autre entre les deux sections voisines qui, elles,
+// ont du contenu.
+function isEmptySection(key, invitation) {
+  switch (key) {
+    case 'countdown':
+      return !invitation.eventDate;
+    case 'program':
+      return (invitation.events || []).length === 0;
+    case 'gallery':
+      return !(invitation.media || []).some((m) => m.type === 'gallery');
+    case 'map':
+      return !invitation.venueName && !invitation.address;
+    case 'contact':
+      return !invitation.contactPhone && !invitation.contactWhatsapp;
+    default:
+      return false;
+  }
+}
+
 export default function InvitationPage({ invitation, slug, onRsvpSubmit }) {
   const template = getTemplate(invitation.template?.key);
   const overrides = invitation.theme || {};
@@ -26,7 +50,9 @@ export default function InvitationPage({ invitation, slug, onRsvpSubmit }) {
 
   const sectionsOrder = overrides.sectionsOrder || DEFAULT_SECTIONS_ORDER;
   const disabledSections = new Set(overrides.disabledSections || []);
-  const activeSections = sectionsOrder.filter((s) => !disabledSections.has(s));
+  const activeSections = sectionsOrder.filter(
+    (s) => !disabledSections.has(s) && !isEmptySection(s, invitation)
+  );
 
   const { Wrapper } = template;
 
