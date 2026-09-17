@@ -56,16 +56,16 @@ function fitFontSize(text) {
   return '2.7rem';
 }
 
-function InfoCell({ icon, label, sub, href, isLast, grow = 1, nowrapSub = false }) {
+function InfoCell({ icon, label, sub, href, isLast }) {
   const content = (
     <>
       <span style={styles.infoIcon}>{icon}</span>
       <span style={styles.infoLabel}>{label}</span>
-      {sub && <span style={nowrapSub ? { ...styles.infoSub, ...styles.infoSubNowrap } : styles.infoSub}>{sub}</span>}
+      {sub && <span style={styles.infoSub}>{sub}</span>}
     </>
   );
   return (
-    <div style={{ ...styles.infoCell, flex: grow, borderRight: isLast ? 'none' : '1px solid rgba(169,120,46,0.35)' }}>
+    <div style={{ ...styles.infoCell, borderRight: isLast ? 'none' : '1px solid rgba(169,120,46,0.35)' }}>
       {href ? (
         <a href={href} target="_blank" rel="noreferrer" style={{ ...styles.infoCellInner, textDecoration: 'none' }}>
           {content}
@@ -92,7 +92,7 @@ export default function LuxuryGoldCoverSection({ invitation }) {
     eventTime && { icon: <ClockIcon />, label: 'Heure', sub: eventTime },
     venueName && { icon: <PinIcon />, label: 'Lieu', sub: venueName },
     mapsUrl && { icon: <MapIcon />, label: 'Itin.', sub: 'Voir la carte', href: mapsUrl },
-    dressCode && { icon: <SparkleIcon />, label: 'Thème', sub: dressCode, grow: 1.5, nowrapSub: true },
+    dressCode && { icon: <SparkleIcon />, label: 'Thème', sub: dressCode },
   ].filter(Boolean);
 
   return (
@@ -291,25 +291,26 @@ const styles = {
 
   ornament: { display: 'block', margin: '1.3rem auto 1rem', height: '18px', width: 'auto' },
 
+  // Marge horizontale négative : déborde volontairement du padding de la carte (1.5rem de
+  // chaque côté) pour récupérer de la largeur pour LES 5 colonnes ensemble, plutôt que
+  // d'agrandir une seule colonne (Thème) au détriment des autres — ce qui cassait la symétrie
+  // de l'encadré.
   infoRow: {
     display: 'flex',
     border: '1px solid var(--color-secondary)',
     borderRadius: '16px',
     overflow: 'hidden',
+    margin: '0 -1rem',
   },
-  infoCell: { minWidth: 0 },
-  // Padding horizontal resserré (0.4rem -> 0.22rem) : avec 5 cellules (Thème en plus des 4
-  // d'origine), chaque colonne a moins de place, et un mot un peu long ("Smoking") repassait
-  // à la ligne dans sa cellule. On récupère de la place ici plutôt que de réduire infoSub
-  // (la taille de police doit rester identique entre toutes les cellules).
-  infoCellInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', padding: '0.85rem 0.22rem', color: 'var(--color-text)' },
+  infoCell: { flex: 1, minWidth: 0 },
+  infoCellInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', padding: '0.85rem 0.3rem', color: 'var(--color-text)' },
   infoIcon: { fontSize: '1.15rem', color: 'var(--color-secondary)', display: 'flex' },
   infoLabel: { fontFamily: 'var(--font-body)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)', overflowWrap: 'break-word' },
-  infoSub: { fontFamily: 'var(--font-body)', fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.25, overflowWrap: 'break-word', maxWidth: '100%' },
-  // Réservé aux cellules dont le contenu doit tenir sur une ligne (ex. Thème) plutôt que
-  // retomber à la ligne : Lieu/Itinéraire gardent le retour à la ligne normal ci-dessus, un
-  // nom de lieu long doit rester lisible en entier plutôt qu'être tronqué.
-  infoSubNowrap: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' },
+  // Pas de overflowWrap: break-word ici volontairement : ça autoriserait un mot à être coupé
+  // en plein milieu ("Smo" / "king") pour tenir dans la colonne. Le comportement par défaut
+  // (retour à la ligne uniquement aux espaces) laisse "Smoking" entier sur sa propre ligne et
+  // "doré" passer à la ligne suivante plutôt que de couper ou tronquer quoi que ce soit.
+  infoSub: { fontFamily: 'var(--font-body)', fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.25, maxWidth: '100%' },
 
   closingLine: {
     fontFamily: 'var(--font-body)',
