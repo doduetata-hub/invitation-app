@@ -75,6 +75,15 @@ export function ChevronDownIcon(props) {
   );
 }
 
+export function SparkleIcon(props) {
+  return (
+    <svg {...common} fill="currentColor" stroke="none" {...props}>
+      <path d="M12 2.5c.5 4 2.7 6.2 6.7 6.7-4 .5-6.2 2.7-6.7 6.7-.5-4-2.7-6.2-6.7-6.7 4-.5 6.2-2.7 6.7-6.7z" />
+      <path d="M19 15c.25 1.8 1.2 2.75 3 3-1.8.25-2.75 1.2-3 3-.25-1.8-1.2-2.75-3-3 1.8-.25 2.75-1.2 3-3z" />
+    </svg>
+  );
+}
+
 export function DiamondIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>

@@ -1,30 +1,22 @@
 export default function ProgramSection({ invitation }) {
   const events = invitation.events || [];
-  const { dressCode } = invitation;
-  if (events.length === 0 && !dressCode) return null;
+  if (events.length === 0) return null;
 
   return (
     <section style={styles.section}>
       <h2 style={styles.title}>Programme</h2>
-      {dressCode && (
-        <p style={styles.dressCode}>
-          <span style={styles.dressCodeLabel}>Thème</span> {dressCode}
-        </p>
-      )}
-      {events.length > 0 && (
-        <ol style={styles.list}>
-          {events.map((ev) => (
-            <li key={ev.id || ev.title} style={styles.item}>
-              {ev.time && <span style={styles.time}>{ev.time}</span>}
-              <div>
-                <div style={styles.eventTitle}>{ev.title}</div>
-                {ev.location && <div style={styles.location}>{ev.location}</div>}
-                {ev.description && <div style={styles.description}>{ev.description}</div>}
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
+      <ol style={styles.list}>
+        {events.map((ev) => (
+          <li key={ev.id || ev.title} style={styles.item}>
+            {ev.time && <span style={styles.time}>{ev.time}</span>}
+            <div>
+              <div style={styles.eventTitle}>{ev.title}</div>
+              {ev.location && <div style={styles.location}>{ev.location}</div>}
+              {ev.description && <div style={styles.description}>{ev.description}</div>}
+            </div>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }
@@ -37,21 +29,6 @@ const styles = {
     color: 'var(--color-text)',
     fontSize: '1.6rem',
     marginBottom: '1.5rem',
-  },
-  dressCode: {
-    textAlign: 'center',
-    fontFamily: 'var(--font-body)',
-    color: 'var(--color-text)',
-    fontSize: '1rem',
-    margin: '0 0 1.5rem',
-  },
-  dressCodeLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: '0.1em',
-    fontSize: '0.72rem',
-    fontWeight: 'bold',
-    color: 'var(--color-secondary)',
-    marginRight: '0.4rem',
   },
   list: {
     listStyle: 'none',

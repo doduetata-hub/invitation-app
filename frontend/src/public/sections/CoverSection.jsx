@@ -1,5 +1,5 @@
 export default function CoverSection({ invitation }) {
-  const { title, namesLine, eventDate } = invitation;
+  const { title, namesLine, eventDate, dressCode } = invitation;
   const coverUrl = (invitation.media || []).find((m) => m.type === 'cover')?.url;
 
   const formattedDate = eventDate
@@ -14,6 +14,11 @@ export default function CoverSection({ invitation }) {
       <p style={styles.eyebrow}>{title}</p>
       {namesLine && <h1 style={styles.names}>{namesLine}</h1>}
       {formattedDate && <p style={styles.date}>{formattedDate}</p>}
+      {dressCode && (
+        <p style={styles.dressCode}>
+          <span style={styles.dressCodeLabel}>Thème</span> {dressCode}
+        </p>
+      )}
     </section>
   );
 }
@@ -49,5 +54,19 @@ const styles = {
     fontSize: '1.2rem',
     color: 'var(--color-secondary)',
     margin: 0,
+  },
+  dressCode: {
+    fontFamily: 'var(--font-body)',
+    fontSize: '0.95rem',
+    color: 'var(--color-text)',
+    margin: '0.6rem 0 0',
+  },
+  dressCodeLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    fontSize: '0.7rem',
+    fontWeight: 'bold',
+    color: 'var(--color-secondary)',
+    marginRight: '0.4rem',
   },
 };

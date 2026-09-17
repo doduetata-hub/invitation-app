@@ -1,6 +1,6 @@
 import { injectStylesOnce } from '../../utils/injectStyles';
 import { buildMapsUrl } from '../../utils/mapsUrl';
-import { CalendarIcon, ClockIcon, PinIcon, MapIcon, HeartIcon, ChevronDownIcon, DiamondIcon } from './icons';
+import { CalendarIcon, ClockIcon, PinIcon, MapIcon, HeartIcon, ChevronDownIcon, DiamondIcon, SparkleIcon } from './icons';
 import leafBranchLeft from './assets/leaf-branch-left.webp';
 import leafBranchRight from './assets/leaf-branch-right.webp';
 import ornamentDivider from './assets/ornament-divider.webp';
@@ -78,7 +78,7 @@ function InfoCell({ icon, label, sub, href, isLast }) {
 }
 
 export default function LuxuryGoldCoverSection({ invitation }) {
-  const { title, namesLine, eventDate, eventTime, venueName, address, invitationText, personalMessage } = invitation;
+  const { title, namesLine, eventDate, eventTime, venueName, address, invitationText, personalMessage, dressCode } = invitation;
   const coverUrl = (invitation.media || []).find((m) => m.type === 'cover')?.url;
   const mapsUrl = buildMapsUrl(invitation);
   const namePair = splitNames(namesLine);
@@ -92,6 +92,7 @@ export default function LuxuryGoldCoverSection({ invitation }) {
     eventTime && { icon: <ClockIcon />, label: 'Heure', sub: eventTime },
     venueName && { icon: <PinIcon />, label: 'Lieu', sub: venueName },
     mapsUrl && { icon: <MapIcon />, label: 'Itin.', sub: 'Voir la carte', href: mapsUrl },
+    dressCode && { icon: <SparkleIcon />, label: 'Thème', sub: dressCode },
   ].filter(Boolean);
 
   return (
