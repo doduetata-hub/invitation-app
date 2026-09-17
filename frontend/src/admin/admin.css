@@ -836,25 +836,34 @@ textarea.input {
   max-width: 220px;
 }
 
+/* Le clamp vit sur un <span> interne, pas sur le <button> lui-même : un <button> a son propre
+   rendu de boîte en interne (chrome UA notamment) et ignore/casse `display: -webkit-box` de
+   façon peu fiable selon les navigateurs — le texte non tronqué débordait alors par-dessus les
+   boutons voisins au lieu d'être coupé à 2 lignes. */
 .cell-message-btn {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: block;
+  width: 100%;
   text-align: left;
   background: none;
   border: none;
   padding: 0;
   margin: 0;
   font: inherit;
-  color: var(--color-ink);
   cursor: pointer;
-  line-height: 1.4;
 }
 
-.cell-message-btn:hover {
+.cell-message-btn:hover .cell-message-btn-text {
   color: var(--color-accent-dark);
   text-decoration: underline;
+}
+
+.cell-message-btn-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--color-ink);
+  line-height: 1.4;
 }
 
 .preview-column {

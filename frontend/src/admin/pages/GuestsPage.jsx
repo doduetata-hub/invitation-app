@@ -274,7 +274,7 @@ export default function GuestsPage() {
                     <td className="cell-message">
                       {g.rsvp?.message ? (
                         <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.rsvp?.name || g.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
-                          {g.rsvp.message}
+                          <span className="cell-message-btn-text">{g.rsvp.message}</span>
                         </button>
                       ) : '—'}
                     </td>
@@ -357,7 +357,7 @@ export default function GuestsPage() {
                   <td className="cell-message">
                     {r.message ? (
                       <button type="button" className="cell-message-btn" onClick={() => setMessageView(r)}>
-                        {r.message}
+                        <span className="cell-message-btn-text">{r.message}</span>
                       </button>
                     ) : '—'}
                   </td>
