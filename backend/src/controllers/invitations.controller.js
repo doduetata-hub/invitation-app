@@ -56,6 +56,7 @@ function toInvitationInput(body) {
     longitude,
     invitationText,
     personalMessage,
+    dressCode,
     musicUrl,
     price,
     paymentStatus,
@@ -74,6 +75,7 @@ function toInvitationInput(body) {
     longitude: longitude === '' || longitude == null ? null : Number(longitude),
     invitationText: invitationText?.trim() || null,
     personalMessage: personalMessage?.trim() || null,
+    dressCode: dressCode?.trim() || null,
     price: price === '' || price == null ? null : price,
   };
 

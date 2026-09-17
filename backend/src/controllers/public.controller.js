@@ -59,6 +59,7 @@ async function getInvitationBySlug(req, res) {
     longitude: invitation.longitude,
     invitationText: invitation.invitationText,
     personalMessage: invitation.personalMessage,
+    dressCode: invitation.dressCode,
     musicUrl: invitation.musicUrl,
     theme: invitation.theme,
     template: invitation.template,

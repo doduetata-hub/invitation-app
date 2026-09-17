@@ -13,6 +13,7 @@ export function buildSampleInvitation(templateKey) {
     invitationText:
       "Avec joie, nous vous invitons à célébrer notre union entourés de notre famille et de nos amis.",
     personalMessage: 'Votre présence sera le plus beau des cadeaux.',
+    dressCode: 'Smoking et doré',
     contactPhone: '+33612345678',
     contactWhatsapp: '+33612345678',
     events: [

@@ -84,6 +84,7 @@ model Invitation {
   longitude       Float?
   invitationText  String?  @map("invitation_text")
   personalMessage String?  @map("personal_message")
+  dressCode       String?  @map("dress_code")
 
   theme    Json?
   musicUrl String? @map("music_url")

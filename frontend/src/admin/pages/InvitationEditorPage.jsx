@@ -25,6 +25,7 @@ const emptyForm = {
   longitude: '',
   invitationText: '',
   personalMessage: '',
+  dressCode: '',
   price: '',
   paymentStatus: 'PENDING',
 };
@@ -78,6 +79,7 @@ export default function InvitationEditorPage() {
           longitude: data.longitude ?? '',
           invitationText: data.invitationText || '',
           personalMessage: data.personalMessage || '',
+          dressCode: data.dressCode || '',
           price: data.price ?? '',
           paymentStatus: data.paymentStatus,
         });
@@ -361,6 +363,10 @@ export default function InvitationEditorPage() {
           <label className="field">
             Message personnalisé
             <textarea value={form.personalMessage} onChange={handleChange('personalMessage')} rows={2} className="input" />
+          </label>
+          <label className="field">
+            Thème <span className="admin-muted" style={{ fontWeight: 400 }}>(optionnel, ex. tenue attendue)</span>
+            <input value={form.dressCode} onChange={handleChange('dressCode')} placeholder="Smoking et doré" className="input" />
           </label>
 
           <div className="field-row">
