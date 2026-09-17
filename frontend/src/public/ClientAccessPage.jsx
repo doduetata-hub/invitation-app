@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import QrCodeModal from '../shared/components/QrCodeModal';
+import GuestMessageModal from '../shared/components/GuestMessageModal';
 import { buildWhatsappShareUrl } from '../shared/utils/whatsapp';
 import { buildGuestDeleteWarning } from '../shared/utils/guestWarnings';
 
@@ -32,6 +33,7 @@ export default function ClientAccessPage() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [savingEdit, setSavingEdit] = useState(false);
   const [qrGuest, setQrGuest] = useState(null);
+  const [messageView, setMessageView] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
 
@@ -269,7 +271,13 @@ export default function ClientAccessPage() {
                       )}
                       <td><AnswerBadge answer={g.rsvp?.answer} /></td>
                       <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
-                      <td>{g.rsvp?.message || '—'}</td>
+                      <td className="cell-message">
+                        {g.rsvp?.message ? (
+                          <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.rsvp?.name || g.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
+                            {g.rsvp.message}
+                          </button>
+                        ) : '—'}
+                      </td>
                       {isEditing ? (
                         <td colSpan={2} style={{ display: 'flex', gap: '0.4rem' }}>
                           <button type="button" onClick={() => saveEdit(g.id)} disabled={savingEdit} className="btn btn-primary btn-sm">
@@ -328,6 +336,13 @@ export default function ClientAccessPage() {
           qrUrl={`/api/client-access/${token}/guests/${qrGuest.id}/qrcode`}
           downloadName={`qrcode-${qrGuest.guestCode}.png`}
           onClose={() => setQrGuest(null)}
+        />
+      )}
+
+      {messageView && (
+        <GuestMessageModal
+          {...messageView}
+          onClose={() => setMessageView(null)}
         />
       )}
     </div>

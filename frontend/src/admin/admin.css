@@ -793,6 +793,70 @@ textarea.input {
   padding: 0.5rem 0.7rem;
 }
 
+/* --- Modale de lecture d'un message RSVP --- */
+
+.modal-card--wide {
+  max-width: 480px;
+  text-align: left;
+}
+
+.message-modal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.message-full-text {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-ink);
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.message-modal-date {
+  margin: 0.7rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-ink-faint);
+}
+
+/* Colonne "Message" dans .table : le reste du tableau reste en nowrap (comparaison rapide
+   ligne par ligne), mais un message tronqué sur une seule ligne est illisible et pousse le
+   lecteur à scroller horizontalement caractère par caractère — on clamp sur 2 lignes ici et
+   on renvoie vers GuestMessageModal pour le texte complet. */
+.cell-message {
+  white-space: normal;
+  max-width: 220px;
+}
+
+.cell-message-btn {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--color-ink);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.cell-message-btn:hover {
+  color: var(--color-accent-dark);
+  text-decoration: underline;
+}
+
 .preview-column {
   position: sticky;
   top: 1.5rem;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import QrCodeModal from '../../shared/components/QrCodeModal';
+import GuestMessageModal from '../../shared/components/GuestMessageModal';
 import { buildWhatsappShareUrl } from '../../shared/utils/whatsapp';
 import { buildGuestDeleteWarning } from '../../shared/utils/guestWarnings';
 
@@ -25,6 +26,7 @@ export default function GuestsPage() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [savingEdit, setSavingEdit] = useState(false);
   const [qrGuest, setQrGuest] = useState(null);
+  const [messageView, setMessageView] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
 
@@ -269,7 +271,13 @@ export default function GuestsPage() {
                     <td><AnswerBadge answer={g.rsvp?.answer} /></td>
                     <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
                     <td>{g.rsvp?.drink || '—'}</td>
-                    <td>{g.rsvp?.message || '—'}</td>
+                    <td className="cell-message">
+                      {g.rsvp?.message ? (
+                        <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.rsvp?.name || g.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
+                          {g.rsvp.message}
+                        </button>
+                      ) : '—'}
+                    </td>
                     <td>{g.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
                     {isEditing ? (
                       <td colSpan={2} style={{ display: 'flex', gap: '0.4rem' }}>
@@ -346,7 +354,13 @@ export default function GuestsPage() {
                   <td><AnswerBadge answer={r.answer} /></td>
                   <td>{r.numberOfPersons}</td>
                   <td>{r.drink || '—'}</td>
-                  <td>{r.message || '—'}</td>
+                  <td className="cell-message">
+                    {r.message ? (
+                      <button type="button" className="cell-message-btn" onClick={() => setMessageView(r)}>
+                        {r.message}
+                      </button>
+                    ) : '—'}
+                  </td>
                   <td>{r.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
                   <td>{new Date(r.respondedAt).toLocaleDateString('fr-FR')}</td>
                 </tr>
@@ -364,6 +378,13 @@ export default function GuestsPage() {
           qrUrl={`/api/guests/${qrGuest.id}/qrcode`}
           downloadName={`qrcode-${qrGuest.guestCode}.png`}
           onClose={() => setQrGuest(null)}
+        />
+      )}
+
+      {messageView && (
+        <GuestMessageModal
+          {...messageView}
+          onClose={() => setMessageView(null)}
         />
       )}
     </div>
