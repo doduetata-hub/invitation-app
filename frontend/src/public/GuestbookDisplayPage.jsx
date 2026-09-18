@@ -52,6 +52,16 @@ injectStylesOnce(
   .gb-countdown-pop { animation: gbCountdownPop 1000ms ease both; }
   @keyframes gbCountdownPop { 0% { opacity: 0; transform: scale(1.5); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
 
+  .gb-music-btn {
+    position: absolute; z-index: 2; bottom: 2.5vh; right: 2.5vh;
+    width: 48px; height: 48px;
+    border-radius: 50%; border: 1px solid rgba(216,181,109,0.5);
+    background: rgba(17,17,17,0.55); color: #D6B56D;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; backdrop-filter: blur(4px);
+  }
+  .gb-music-btn:hover { background: rgba(17,17,17,0.8); }
+
   @media (prefers-reduced-motion: reduce) {
     .gb-glow, .gb-particle { animation: none !important; }
     .gb-fade-rise { animation: gbFadeOnly 500ms ease both; }
@@ -107,6 +117,8 @@ export default function GuestbookDisplayPage() {
   const [introStep, setIntroStep] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/guestbook/display/${slug}`)
@@ -121,6 +133,29 @@ export default function GuestbookDisplayPage() {
       })
       .catch(() => setNotFound(true));
   }, [slug]);
+
+  // Cet écran tourne seul, sans personne pour cliquer "Jouer" — on tente donc le démarrage
+  // automatique dès que possible. Si le navigateur le bloque (politique anti-autoplay tant
+  // qu'aucune interaction n'a eu lieu sur la page), le bouton musical reste affiché et permet
+  // de démarrer manuellement d'un seul clic ; une fois lancée, la musique boucle sans y retoucher.
+  useEffect(() => {
+    if (!data?.musicUrl || !audioRef.current) return;
+    audioRef.current
+      .play()
+      .then(() => setMusicPlaying(true))
+      .catch(() => setMusicPlaying(false));
+  }, [data?.musicUrl]);
+
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (musicPlaying) {
+      audio.pause();
+      setMusicPlaying(false);
+    } else {
+      audio.play().then(() => setMusicPlaying(true)).catch(() => {});
+    }
+  };
 
   // Compte à rebours d'ouverture (5, 4, 3, 2, 1) : premier écran affiché, pour attirer l'œil
   // avant même le début de la séquence d'intro — personne ne doit rater le tout premier écran.
@@ -198,6 +233,20 @@ export default function GuestbookDisplayPage() {
       <div className="gb-glow gb-glow-a" />
       <div className="gb-glow gb-glow-b" />
       <Particles />
+
+      {data.musicUrl && (
+        <>
+          <audio ref={audioRef} src={data.musicUrl} loop />
+          <button
+            type="button"
+            onClick={toggleMusic}
+            className="gb-music-btn"
+            aria-label={musicPlaying ? 'Couper la musique' : 'Jouer la musique'}
+          >
+            {musicPlaying ? '♪' : '🔇'}
+          </button>
+        </>
+      )}
 
       {phase === 'countdown' && (
         <div className="gb-intro">
