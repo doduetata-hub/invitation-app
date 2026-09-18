@@ -36,6 +36,7 @@ export default function ClientAccessPage() {
   const [messageView, setMessageView] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
+  const [search, setSearch] = useState('');
 
   const load = () => {
     api
@@ -131,6 +132,14 @@ export default function ClientAccessPage() {
   }
 
   const { guests, stats, invitation } = data;
+  const q = search.trim().toLowerCase();
+  const filteredGuests = q
+    ? guests.filter((g) =>
+        [g.rsvp?.name || g.name, g.phone, g.tableNumber]
+          .filter(Boolean)
+          .some((field) => field.toLowerCase().includes(q))
+      )
+    : guests;
 
   return (
     <div style={styles.page}>
@@ -204,6 +213,18 @@ export default function ClientAccessPage() {
           {guests.length === 0 ? (
             <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
           ) : (
+            <>
+            <input
+              type="text"
+              placeholder="Rechercher un invité (nom, téléphone, table)..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input"
+              style={{ maxWidth: '340px', marginBottom: '1rem' }}
+            />
+            {filteredGuests.length === 0 ? (
+              <div className="empty-state">Aucun invité ne correspond à "{search}".</div>
+            ) : (
             <div className="table-wrap">
             <table className="table">
               <thead>
@@ -220,7 +241,7 @@ export default function ClientAccessPage() {
                 </tr>
               </thead>
               <tbody>
-                {guests.map((g) => {
+                {filteredGuests.map((g) => {
                   const isEditing = editingId === g.id;
                   return (
                     <tr key={g.id}>
@@ -325,6 +346,8 @@ export default function ClientAccessPage() {
               </tbody>
             </table>
             </div>
+            )}
+            </>
           )}
         </div>
       </div>
