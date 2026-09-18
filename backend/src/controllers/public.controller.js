@@ -1,6 +1,7 @@
 const QRCode = require('qrcode');
 const prisma = require('../db/prismaClient');
 const env = require('../config/env');
+const { broadcast } = require('../services/guestbookRealtime.service');
 
 function badRequest(message) {
   const err = new Error(message);
@@ -11,40 +12,48 @@ function badRequest(message) {
 
 // Connecte le RSVP existant au livre d'or SANS créer de deuxième système de messages : une
 // entrée "DIGITAL" est un simple reflet du message déjà écrit dans Rsvp.message, liée par
-// rsvpId (contrainte unique), jamais saisie indépendamment. Un lien personnalisé reste
-// modifiable à tout moment (avant comme après l'événement) : si le texte change réellement,
-// une entrée déjà approuvée repasse en attente pour revalidation avant de réapparaître sur le
-// grand écran. Mais une simple resoumission identique (l'invité rouvre son lien et clique
-// Confirmer sans rien changer) ne doit pas faire disparaître un message déjà approuvé du
-// diaporama en cours de soirée pour rien. Si l'invité vide son message, l'entrée disparaît.
-async function syncGuestbookEntry(rsvp) {
+// rsvpId (contrainte unique), jamais saisie indépendamment.
+//
+// Une fois approuvée (donc déjà passée au diaporama), l'entrée est figée : ni son texte ni son
+// statut ne bougent plus ici, même si l'invité modifie encore son message depuis son lien —
+// il reste libre de changer sa présence/le nombre de personnes à tout moment (ça, c'est le
+// RSVP lui-même, jamais restreint), juste plus son mot du livre d'or une fois diffusé. Tant
+// qu'elle n'est pas encore approuvée, l'entrée suit le message normalement ; une simple
+// resoumission identique (l'invité rouvre son lien et reclique Confirmer sans rien changer) ne
+// déclenche aucune mise à jour inutile. Si l'invité vide son message avant approbation,
+// l'entrée disparaît — après, elle reste (voir plus haut, figée).
+async function syncGuestbookEntry(rsvp, autoApprove) {
   const message = rsvp.message?.trim();
+  const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id } });
+
+  if (existing?.status === 'APPROVED') return;
+
   if (!message) {
-    await prisma.guestbookEntry.deleteMany({ where: { rsvpId: rsvp.id } });
+    if (existing) await prisma.guestbookEntry.delete({ where: { id: existing.id } });
     return;
   }
 
-  const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id } });
   const changed = !existing || existing.guestName !== rsvp.name || existing.message !== message;
+  if (!changed) return;
 
-  const update = { guestName: rsvp.name, message };
-  if (changed && existing?.status === 'APPROVED') {
-    update.status = 'PENDING';
-    update.approvedAt = null;
-  }
+  const status = autoApprove ? 'APPROVED' : 'PENDING';
+  const approvedAt = status === 'APPROVED' ? new Date() : null;
 
-  await prisma.guestbookEntry.upsert({
+  const entry = await prisma.guestbookEntry.upsert({
     where: { rsvpId: rsvp.id },
-    update,
+    update: { guestName: rsvp.name, message, status, approvedAt },
     create: {
       invitationId: rsvp.invitationId,
       rsvpId: rsvp.id,
       source: 'DIGITAL',
       guestName: rsvp.name,
       message,
-      status: 'PENDING',
+      status,
+      approvedAt,
     },
   });
+
+  if (status === 'APPROVED') broadcast(entry.invitationId, 'entry', entry);
 }
 
 async function getInvitationBySlug(req, res) {
@@ -152,14 +161,14 @@ async function submitRsvp(req, res) {
       update: rsvpData,
       create: { ...rsvpData, guestId: guest.id, invitationId: invitation.id },
     });
-    await syncGuestbookEntry(rsvp);
+    await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
     return res.status(201).json(rsvp);
   }
 
   const rsvp = await prisma.rsvp.create({
     data: { ...rsvpData, invitationId: invitation.id },
   });
-  await syncGuestbookEntry(rsvp);
+  await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
   res.status(201).json(rsvp);
 }
 

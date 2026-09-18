@@ -43,6 +43,8 @@ export default function GuestbookQrPage() {
   const [notFound, setNotFound] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [existingEntryId, setExistingEntryId] = useState(null);
+  const [locked, setLocked] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -54,10 +56,28 @@ export default function GuestbookQrPage() {
       .then((data) => {
         setInfo(data);
         const remembered = loadRemembered(data.invitationId);
-        if (remembered) {
-          setExistingEntryId(remembered.entryId);
-          setForm({ guestName: remembered.guestName, message: remembered.message });
-        }
+        if (!remembered) return;
+
+        // Vérifie le statut réel côté serveur : un message déjà approuvé (donc déjà diffusé au
+        // diaporama) n'est plus modifiable — on affiche alors un état verrouillé plutôt que le
+        // formulaire d'édition. Si l'entrée n'existe plus (supprimée côté admin), on oublie
+        // simplement ce souvenir local et l'invité repart d'un formulaire vierge.
+        setCheckingExisting(true);
+        api
+          .get(`/guestbook/${token}/entry/${remembered.entryId}`)
+          .then((entry) => {
+            setExistingEntryId(entry.id);
+            setForm({ guestName: entry.guestName, message: entry.message });
+            if (entry.status === 'APPROVED') setLocked(true);
+          })
+          .catch(() => {
+            try {
+              localStorage.removeItem(storageKey(data.invitationId));
+            } catch {
+              // rien à faire de plus si le stockage local n'est pas accessible
+            }
+          })
+          .finally(() => setCheckingExisting(false));
       })
       .catch(() => setNotFound(true));
   }, [token]);
@@ -77,6 +97,9 @@ export default function GuestbookQrPage() {
       saveRemembered(result.invitationId, { entryId: result.id, guestName: form.guestName, message: form.message });
       setSubmitted(true);
       setEditing(false);
+      // Approbation automatique activée par l'organisateur : le message est déjà diffusé,
+      // inutile d'afficher un bouton "Modifier" qui échouerait de toute façon côté serveur.
+      if (result.status === 'APPROVED') setLocked(true);
     } catch (err) {
       setError(err.message || 'Une erreur est survenue, veuillez réessayer.');
     } finally {
@@ -92,13 +115,13 @@ export default function GuestbookQrPage() {
     );
   }
 
-  if (!info) {
+  if (!info || checkingExisting) {
     return <div style={styles.centerScreen}><p style={styles.centerText}>Chargement...</p></div>;
   }
 
   const template = getTemplate(info.templateKey);
   const cssVars = tokensToCssVars(template.tokens);
-  const showForm = !submitted || editing;
+  const showForm = !locked && (!submitted || editing);
 
   return (
     <div style={{ ...styles.page, ...cssVars }}>
@@ -109,7 +132,20 @@ export default function GuestbookQrPage() {
         <p style={styles.eyebrow}>Livre d'or</p>
         {info.tableLabel && <p style={styles.tableBadge}>{info.tableLabel}</p>}
 
-        {submitted && !editing && (
+        {locked && (
+          <div style={styles.confirmation}>
+            <p style={styles.confirmationTitle}>Votre message a déjà été approuvé et diffusé.</p>
+            <p style={styles.confirmationSub}>
+              « {form.message} » — {form.guestName}
+            </p>
+            <p style={{ ...styles.hint, margin: '1rem 0 0' }}>
+              Il fait maintenant partie du livre d'or et n'est plus modifiable. Merci encore
+              d'avoir partagé ce moment.
+            </p>
+          </div>
+        )}
+
+        {!locked && submitted && !editing && (
           <div style={styles.confirmation}>
             <p style={styles.confirmationTitle}>Votre message a bien été déposé dans le livre d'or.</p>
             <p style={styles.confirmationSub}>Merci d'avoir partagé ce moment avec eux.</p>
@@ -119,7 +155,7 @@ export default function GuestbookQrPage() {
           </div>
         )}
 
-        {!submitted && existingEntryId && (
+        {!locked && !submitted && existingEntryId && (
           <p style={styles.hint}>
             Vous avez déjà laissé un mot depuis cet appareil — vous pouvez le modifier ci-dessous.
           </p>
@@ -211,6 +247,9 @@ const styles = {
     height: '128px',
     borderRadius: '50%',
     objectFit: 'cover',
+    // Même cadrage que LuxuryGoldCoverSection pour cette même photo : "cover" centré coupait
+    // le haut du visage sur une photo de couple prise en plan large.
+    objectPosition: '50% 22%',
     border: '3px solid var(--color-secondary)',
     margin: '0 auto 1.25rem',
     display: 'block',

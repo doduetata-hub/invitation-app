@@ -93,6 +93,19 @@ async function remove(req, res) {
   }
 }
 
+async function updateSettings(req, res) {
+  try {
+    const invitation = await prisma.invitation.update({
+      where: { id: req.params.id },
+      data: { guestbookAutoApprove: Boolean((req.body || {}).autoApprove) },
+    });
+    res.json({ guestbookAutoApprove: invitation.guestbookAutoApprove });
+  } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ error: 'Invitation introuvable' });
+    throw err;
+  }
+}
+
 async function listQrTokens(req, res) {
   const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
   if (!invitation) return res.status(404).json({ error: 'Invitation introuvable' });
@@ -169,6 +182,7 @@ module.exports = {
   updateStatus,
   bulkApprove,
   remove,
+  updateSettings,
   listQrTokens,
   createQrToken,
   setQrTokenActive,

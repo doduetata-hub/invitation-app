@@ -36,7 +36,7 @@ const {
   create: createPayment,
 } = require('../controllers/payments.controller');
 const { lookupByCode } = require('../controllers/checkin.controller');
-const { listForInvitation: listGuestbook, listQrTokens, createQrToken } = require('../controllers/guestbook.controller');
+const { listForInvitation: listGuestbook, updateSettings: updateGuestbookSettings, listQrTokens, createQrToken } = require('../controllers/guestbook.controller');
 const { upload, uploadAudio, uploadSpreadsheet } = require('../middleware/upload');
 
 const router = express.Router();
@@ -86,6 +86,7 @@ router.post('/:id/payments', createPayment);
 router.get('/:id/checkin/lookup', lookupByCode);
 
 router.get('/:id/guestbook', listGuestbook);
+router.patch('/:id/guestbook/settings', updateGuestbookSettings);
 router.get('/:id/guestbook/qr-tokens', listQrTokens);
 router.post('/:id/guestbook/qr-tokens', createQrToken);
 

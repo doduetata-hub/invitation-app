@@ -97,6 +97,11 @@ model Invitation {
   personalMessage String?  @map("personal_message")
   dressCode       String?  @map("dress_code")
 
+  // Par defaut, chaque message (numerique ou QR) attend une approbation avant d'apparaitre au
+  // diaporama. Active ici au cas par cas quand le contexte est de confiance (mariage entre
+  // proches) pour supprimer cette friction : le message passe directement en APPROVED.
+  guestbookAutoApprove Boolean @default(false) @map("guestbook_auto_approve")
+
   theme    Json?
   musicUrl String? @map("music_url")
 

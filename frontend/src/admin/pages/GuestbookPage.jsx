@@ -23,6 +23,7 @@ export default function GuestbookPage() {
   const [tokenForm, setTokenForm] = useState({ label: '', tableNumber: '' });
   const [creatingToken, setCreatingToken] = useState(false);
   const [busyIds, setBusyIds] = useState(new Set());
+  const [savingAutoApprove, setSavingAutoApprove] = useState(false);
 
   const loadEntries = () => api.get(`/invitations/${id}/guestbook`).then(setData).catch((err) => setError(err.message));
   const loadTokens = () => api.get(`/invitations/${id}/guestbook/qr-tokens`).then(setTokens).catch((err) => setError(err.message));
@@ -98,6 +99,19 @@ export default function GuestbookPage() {
     }
   };
 
+  const toggleAutoApprove = async () => {
+    setSavingAutoApprove(true);
+    setError('');
+    try {
+      const result = await api.patch(`/invitations/${id}/guestbook/settings`, { autoApprove: !invitation.guestbookAutoApprove });
+      setInvitation((inv) => ({ ...inv, guestbookAutoApprove: result.guestbookAutoApprove }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingAutoApprove(false);
+    }
+  };
+
   const toggleTokenActive = async (token) => {
     try {
       await api.patch(`/guestbook-qr-tokens/${token.id}`, { active: !token.active });
@@ -152,6 +166,29 @@ export default function GuestbookPage() {
         <StatCard label="Rejetés" value={stats.rejected} />
         <StatCard label="Via invitation numérique" value={stats.bySource.DIGITAL || 0} />
         <StatCard label="Via QR code" value={stats.bySource.QR || 0} />
+      </div>
+
+      <div className="editor-section">
+        <h2>Modération</h2>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={invitation.guestbookAutoApprove}
+            onChange={toggleAutoApprove}
+            disabled={savingAutoApprove}
+            style={{ marginTop: '0.2rem' }}
+          />
+          <span>
+            <strong>Approuver automatiquement les nouveaux messages</strong>
+            <br />
+            <span className="admin-muted">
+              Désactivé par défaut : chaque message (numérique ou QR) attend ta validation avant
+              d'apparaître au diaporama. À activer seulement si tu es en confiance sur le
+              contexte (mariage entre proches, faible risque) — les messages passeront alors
+              directement au diaporama, sans relecture de ta part.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="editor-section">

@@ -4,6 +4,8 @@ import { injectStylesOnce } from './utils/injectStyles';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+const COUNTDOWN_START = 5;
+const COUNTDOWN_STEP_MS = 1000;
 const INTRO_STEP_MS = 2600;
 const LOOP_STEP_MS = 8000;
 const FADE_MS = 700;
@@ -12,7 +14,9 @@ injectStylesOnce(
   'guestbook-display',
   `
   .gb-display { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(circle at 50% 20%, #201a10 0%, #111111 55%, #0a0908 100%); font-family: 'Cormorant Garamond', Georgia, serif; }
-  .gb-photo-bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.22; filter: saturate(0.7) brightness(0.75); }
+  /* 50% 22% : même cadrage que LuxuryGoldCoverSection pour cette photo (remonte le point de
+     recadrage, sinon "cover" + position centrée coupe le haut des visages sur un plan large). */
+  .gb-photo-bg { position: absolute; inset: 0; background-size: cover; background-position: 50% 22%; opacity: 0.22; filter: saturate(0.7) brightness(0.75); }
   .gb-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,9,8,0.55) 0%, rgba(10,9,8,0.75) 60%, rgba(10,9,8,0.92) 100%); }
   .gb-glow { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
   .gb-glow-a { width: 46vw; height: 46vw; top: -14vw; left: 50%; transform: translateX(-50%); background: radial-gradient(circle, rgba(216,181,109,0.28), transparent 70%); animation: gbPulse 9s ease-in-out infinite; }
@@ -27,7 +31,7 @@ injectStylesOnce(
   .gb-intro-names { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 7vw, 6rem); color: #D6B56D; margin: 0; }
   .gb-intro-title { font-family: 'Playfair Display', serif; font-size: clamp(2.6rem, 5.5vw, 4.5rem); letter-spacing: 0.2em; text-transform: uppercase; color: #F7F1E5; margin: 0; }
 
-  .gb-couple-photo { width: clamp(96px, 11vw, 160px); height: clamp(96px, 11vw, 160px); border-radius: 50%; object-fit: cover; border: 2px solid #B88A32; margin-bottom: 2.2vh; box-shadow: 0 0 40px rgba(184,138,50,0.35); }
+  .gb-couple-photo { width: clamp(96px, 11vw, 160px); height: clamp(96px, 11vw, 160px); border-radius: 50%; object-fit: cover; object-position: 50% 22%; border: 2px solid #B88A32; margin-bottom: 2.2vh; box-shadow: 0 0 40px rgba(184,138,50,0.35); }
   .gb-eyebrow { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.3em; font-size: clamp(0.75rem, 1vw, 1rem); color: #B88A32; margin: 0 0 5vh; }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
@@ -41,9 +45,17 @@ injectStylesOnce(
   .gb-fade-rise { animation: gbFadeRise 900ms ease both; }
   @keyframes gbFadeRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
+  /* Premier écran, avant même l'intro : capte l'attention de la salle tout de suite, pour que
+     personne ne rate le début du diaporama en train de discuter/manger. */
+  .gb-countdown-caption { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.25em; font-size: clamp(0.85rem, 1.4vw, 1.1rem); color: #F7F1E5; opacity: 0.8; margin: 0 0 1.5vh; }
+  .gb-countdown-number { font-family: 'Playfair Display', serif; font-size: clamp(6rem, 16vw, 13rem); color: #D6B56D; margin: 0; line-height: 1; text-shadow: 0 0 60px rgba(216,181,109,0.5); }
+  .gb-countdown-pop { animation: gbCountdownPop 1000ms ease both; }
+  @keyframes gbCountdownPop { 0% { opacity: 0; transform: scale(1.5); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
+
   @media (prefers-reduced-motion: reduce) {
     .gb-glow, .gb-particle { animation: none !important; }
     .gb-fade-rise { animation: gbFadeOnly 500ms ease both; }
+    .gb-countdown-pop { animation: gbFadeOnly 400ms ease both; }
     .gb-card { transition: opacity 500ms ease; }
     .gb-card-hidden, .gb-card-visible { transform: none; }
   }
@@ -91,6 +103,7 @@ export default function GuestbookDisplayPage() {
   const [notFound, setNotFound] = useState(false);
   const [entries, setEntries] = useState([]);
   const [phase, setPhase] = useState('loading');
+  const [countdownValue, setCountdownValue] = useState(COUNTDOWN_START);
   const [introStep, setIntroStep] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [visible, setVisible] = useState(true);
@@ -104,10 +117,22 @@ export default function GuestbookDisplayPage() {
       .then((d) => {
         setData(d);
         setEntries(d.entries || []);
-        setPhase('intro');
+        setPhase('countdown');
       })
       .catch(() => setNotFound(true));
   }, [slug]);
+
+  // Compte à rebours d'ouverture (5, 4, 3, 2, 1) : premier écran affiché, pour attirer l'œil
+  // avant même le début de la séquence d'intro — personne ne doit rater le tout premier écran.
+  useEffect(() => {
+    if (phase !== 'countdown') return undefined;
+    if (countdownValue <= 0) {
+      setPhase('intro');
+      return undefined;
+    }
+    const t = setTimeout(() => setCountdownValue((v) => v - 1), COUNTDOWN_STEP_MS);
+    return () => clearTimeout(t);
+  }, [phase, countdownValue]);
 
   // Flux temps réel : un message approuvé depuis l'admin arrive ici sans recharger la page.
   useEffect(() => {
@@ -173,6 +198,13 @@ export default function GuestbookDisplayPage() {
       <div className="gb-glow gb-glow-a" />
       <div className="gb-glow gb-glow-b" />
       <Particles />
+
+      {phase === 'countdown' && (
+        <div className="gb-intro">
+          <p className="gb-countdown-caption gb-fade-rise">Regardez l'écran...</p>
+          <p key={countdownValue} className="gb-countdown-number gb-countdown-pop">{countdownValue}</p>
+        </div>
+      )}
 
       {phase === 'intro' && (
         <div className="gb-intro">
