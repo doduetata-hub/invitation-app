@@ -51,6 +51,22 @@ injectStylesOnce(
   `
 );
 
+// Un message va de quelques mots à 1000 caractères (limite du formulaire) : une taille de
+// police fixe déborde du plein écran pour les plus longs (overflow: hidden sur .gb-display les
+// coupait purement et simplement, illisibles). Plus le message est long, plus on réduit la
+// police ET on retire les éléments décoratifs (photo, guillemet) pour rendre la place
+// verticale au texte — jamais l'inverse (jamais de police agrandie au point de dépasser).
+function presentationForMessage(message) {
+  const len = message.length;
+  if (len <= 70) return { fontSize: 'clamp(2rem, 3.6vw, 3.4rem)', lineHeight: 1.4, maxWidth: '58vw', showPhoto: true, showQuote: true, showEyebrow: true };
+  if (len <= 160) return { fontSize: 'clamp(1.55rem, 2.8vw, 2.5rem)', lineHeight: 1.4, maxWidth: '64vw', showPhoto: true, showQuote: true, showEyebrow: true };
+  if (len <= 320) return { fontSize: 'clamp(1.2rem, 2.1vw, 1.85rem)', lineHeight: 1.35, maxWidth: '70vw', showPhoto: false, showQuote: true, showEyebrow: true };
+  if (len <= 560) return { fontSize: 'clamp(1.02rem, 1.7vw, 1.45rem)', lineHeight: 1.3, maxWidth: '76vw', showPhoto: false, showQuote: false, showEyebrow: true };
+  return { fontSize: 'clamp(0.88rem, 1.4vw, 1.18rem)', lineHeight: 1.25, maxWidth: '82vw', showPhoto: false, showQuote: false, showEyebrow: false };
+}
+
+const DEFAULT_PRESENTATION = presentationForMessage('');
+
 function Particles() {
   const specs = useRef(
     Array.from({ length: 14 }, () => ({
@@ -148,6 +164,7 @@ export default function GuestbookDisplayPage() {
   }
 
   const currentEntry = entries[activeIndex] || null;
+  const presentation = currentEntry ? presentationForMessage(currentEntry.message) : DEFAULT_PRESENTATION;
 
   return (
     <div className="gb-display">
@@ -170,15 +187,21 @@ export default function GuestbookDisplayPage() {
 
       {phase === 'loop' && (
         <div className="gb-loop">
-          {data.coverUrl && <img src={data.coverUrl} className="gb-couple-photo" alt="" />}
-          <p className="gb-eyebrow">Livre d'or — {data.namesLine || data.title}</p>
+          {data.coverUrl && presentation.showPhoto && <img src={data.coverUrl} className="gb-couple-photo" alt="" />}
+          {presentation.showEyebrow && <p className="gb-eyebrow">Livre d'or — {data.namesLine || data.title}</p>}
 
           {!currentEntry ? (
             <p className="gb-waiting gb-fade-rise">Les premiers mots arrivent bientôt...</p>
           ) : (
-            <div key={currentEntry.id} className={`gb-card ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}>
-              <p className="gb-quote" aria-hidden="true">"</p>
-              <p className="gb-message">{currentEntry.message}</p>
+            <div
+              key={currentEntry.id}
+              className={`gb-card ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}
+              style={{ maxWidth: presentation.maxWidth }}
+            >
+              {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
+              <p className="gb-message" style={{ fontSize: presentation.fontSize, lineHeight: presentation.lineHeight }}>
+                {currentEntry.message}
+              </p>
               <p className="gb-name">— {currentEntry.guestName}</p>
             </div>
           )}
