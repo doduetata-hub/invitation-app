@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { getByToken, submitEntry, getDisplayData, streamDisplay } = require('../controllers/guestbookAccess.controller');
+const { getByToken, submitEntry, updateEntry, getDisplayData, streamDisplay } = require('../controllers/guestbookAccess.controller');
 
 const router = express.Router();
 
@@ -17,5 +17,6 @@ router.get('/display/:slug', getDisplayData);
 router.get('/display/:slug/stream', streamDisplay);
 router.get('/:token', getByToken);
 router.post('/:token', submitLimiter, submitEntry);
+router.patch('/:token/:entryId', submitLimiter, updateEntry);
 
 module.exports = router;

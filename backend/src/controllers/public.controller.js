@@ -11,10 +11,12 @@ function badRequest(message) {
 
 // Connecte le RSVP existant au livre d'or SANS créer de deuxième système de messages : une
 // entrée "DIGITAL" est un simple reflet du message déjà écrit dans Rsvp.message, liée par
-// rsvpId (contrainte unique), jamais saisie indépendamment. Remise à PENDING à chaque écriture
-// (y compris une modification d'un message déjà approuvé) pour qu'un texte changé après coup
-// repasse devant l'admin avant de réapparaître sur le grand écran. Si l'invité vide son
-// message, l'entrée correspondante disparaît (il n'y a plus rien à montrer).
+// rsvpId (contrainte unique), jamais saisie indépendamment. Un lien personnalisé reste
+// modifiable à tout moment (avant comme après l'événement) : si le texte change réellement,
+// une entrée déjà approuvée repasse en attente pour revalidation avant de réapparaître sur le
+// grand écran. Mais une simple resoumission identique (l'invité rouvre son lien et clique
+// Confirmer sans rien changer) ne doit pas faire disparaître un message déjà approuvé du
+// diaporama en cours de soirée pour rien. Si l'invité vide son message, l'entrée disparaît.
 async function syncGuestbookEntry(rsvp) {
   const message = rsvp.message?.trim();
   if (!message) {
@@ -22,9 +24,18 @@ async function syncGuestbookEntry(rsvp) {
     return;
   }
 
+  const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id } });
+  const changed = !existing || existing.guestName !== rsvp.name || existing.message !== message;
+
+  const update = { guestName: rsvp.name, message };
+  if (changed && existing?.status === 'APPROVED') {
+    update.status = 'PENDING';
+    update.approvedAt = null;
+  }
+
   await prisma.guestbookEntry.upsert({
     where: { rsvpId: rsvp.id },
-    update: { guestName: rsvp.name, message, status: 'PENDING', approvedAt: null },
+    update,
     create: {
       invitationId: rsvp.invitationId,
       rsvpId: rsvp.id,

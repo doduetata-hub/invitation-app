@@ -6,6 +6,33 @@ import { tokensToCssVars } from './theme/tokens';
 
 const emptyForm = { guestName: '', message: '' };
 
+// Un invité papier n'a pas de compte : impossible de savoir côté serveur qu'il a déjà déposé
+// un message. On se souvient localement (par appareil/navigateur, scopé à L'INVITATION —
+// pas au QR d'une table précise, pour qu'un même invité passant par deux QR différents reste
+// quand même reconnu) de l'entrée déjà créée, pour proposer de la MODIFIER plutôt que d'en
+// créer une nouvelle à chaque revisite — "un invité = un message", même sans identité serveur.
+function storageKey(invitationId) {
+  return `gb_entry_${invitationId}`;
+}
+
+function loadRemembered(invitationId) {
+  try {
+    const raw = localStorage.getItem(storageKey(invitationId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveRemembered(invitationId, record) {
+  try {
+    localStorage.setItem(storageKey(invitationId), JSON.stringify(record));
+  } catch {
+    // Stockage indisponible (navigation privée, quota) : tant pis, l'invité pourra toujours
+    // renvoyer un message, juste sans se faire reconnaître à la prochaine visite.
+  }
+}
+
 // Page ouverte après un scan de QR code posé sur table (invité "papier", sans lien
 // personnalisé ni compte) — reprend l'identité visuelle réelle de l'invitation (mêmes
 // couleurs/police que son template, même photo de couverture déjà en base) plutôt qu'un
@@ -15,6 +42,8 @@ export default function GuestbookQrPage() {
   const [info, setInfo] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [existingEntryId, setExistingEntryId] = useState(null);
+  const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +51,14 @@ export default function GuestbookQrPage() {
   useEffect(() => {
     api
       .get(`/guestbook/${token}`)
-      .then(setInfo)
+      .then((data) => {
+        setInfo(data);
+        const remembered = loadRemembered(data.invitationId);
+        if (remembered) {
+          setExistingEntryId(remembered.entryId);
+          setForm({ guestName: remembered.guestName, message: remembered.message });
+        }
+      })
       .catch(() => setNotFound(true));
   }, [token]);
 
@@ -34,8 +70,13 @@ export default function GuestbookQrPage() {
 
     setSubmitting(true);
     try {
-      await api.post(`/guestbook/${token}`, form);
+      const result = existingEntryId
+        ? await api.patch(`/guestbook/${token}/${existingEntryId}`, form)
+        : await api.post(`/guestbook/${token}`, form);
+      setExistingEntryId(result.id);
+      saveRemembered(result.invitationId, { entryId: result.id, guestName: form.guestName, message: form.message });
       setSubmitted(true);
+      setEditing(false);
     } catch (err) {
       setError(err.message || 'Une erreur est survenue, veuillez réessayer.');
     } finally {
@@ -57,6 +98,7 @@ export default function GuestbookQrPage() {
 
   const template = getTemplate(info.templateKey);
   const cssVars = tokensToCssVars(template.tokens);
+  const showForm = !submitted || editing;
 
   return (
     <div style={{ ...styles.page, ...cssVars }}>
@@ -67,18 +109,33 @@ export default function GuestbookQrPage() {
         <p style={styles.eyebrow}>Livre d'or</p>
         {info.tableLabel && <p style={styles.tableBadge}>{info.tableLabel}</p>}
 
-        {submitted ? (
+        {submitted && !editing && (
           <div style={styles.confirmation}>
             <p style={styles.confirmationTitle}>Votre message a bien été déposé dans le livre d'or.</p>
             <p style={styles.confirmationSub}>Merci d'avoir partagé ce moment avec eux.</p>
+            <button type="button" onClick={() => setEditing(true)} style={styles.linkButton}>
+              Modifier mon message
+            </button>
           </div>
-        ) : (
+        )}
+
+        {!submitted && existingEntryId && (
+          <p style={styles.hint}>
+            Vous avez déjà laissé un mot depuis cet appareil — vous pouvez le modifier ci-dessous.
+          </p>
+        )}
+
+        {showForm && (
           <>
-            <p style={styles.intro}>Laissez un mot{info.namesLine ? ` à ${info.namesLine}` : ' aux mariés'}.</p>
-            <p style={styles.hint}>
-              Votre message sera conservé dans leur livre d'or et pourra être découvert pendant la
-              célébration.
-            </p>
+            {!submitted && (
+              <>
+                <p style={styles.intro}>Laissez un mot{info.namesLine ? ` à ${info.namesLine}` : ' aux mariés'}.</p>
+                <p style={styles.hint}>
+                  Votre message sera conservé dans leur livre d'or et pourra être découvert pendant la
+                  célébration.
+                </p>
+              </>
+            )}
 
             <form onSubmit={handleSubmit} style={styles.form}>
               <label style={styles.label}>
@@ -107,8 +164,13 @@ export default function GuestbookQrPage() {
               {error && <p style={styles.error}>{error}</p>}
 
               <button type="submit" disabled={submitting} style={styles.button}>
-                {submitting ? 'Envoi...' : 'Déposer mon message'}
+                {submitting ? 'Envoi...' : existingEntryId ? 'Mettre à jour mon message' : 'Déposer mon message'}
               </button>
+              {editing && (
+                <button type="button" onClick={() => setEditing(false)} style={styles.linkButton}>
+                  Annuler
+                </button>
+              )}
             </form>
           </>
         )}
@@ -188,6 +250,18 @@ const styles = {
     fontFamily: 'var(--font-body)',
     fontWeight: 'bold',
     fontSize: '1.05rem',
+    cursor: 'pointer',
+  },
+  linkButton: {
+    marginTop: '0.75rem',
+    padding: 0,
+    border: 'none',
+    background: 'none',
+    color: 'var(--color-secondary)',
+    fontFamily: 'var(--font-body)',
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    textDecoration: 'underline',
     cursor: 'pointer',
   },
   confirmation: { padding: '1rem 0' },
