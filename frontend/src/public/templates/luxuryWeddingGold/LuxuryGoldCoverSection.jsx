@@ -300,7 +300,7 @@ const styles = {
     border: '1px solid var(--color-secondary)',
     borderRadius: '16px',
     overflow: 'hidden',
-    margin: '0 -1rem',
+    margin: '0 -0.55rem',
   },
   infoCell: { flex: 1, minWidth: 0 },
   infoCellInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', padding: '0.85rem 0.3rem', color: 'var(--color-text)' },
