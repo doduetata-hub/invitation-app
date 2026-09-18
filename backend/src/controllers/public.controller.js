@@ -9,6 +9,33 @@ function badRequest(message) {
   throw err;
 }
 
+// Connecte le RSVP existant au livre d'or SANS créer de deuxième système de messages : une
+// entrée "DIGITAL" est un simple reflet du message déjà écrit dans Rsvp.message, liée par
+// rsvpId (contrainte unique), jamais saisie indépendamment. Remise à PENDING à chaque écriture
+// (y compris une modification d'un message déjà approuvé) pour qu'un texte changé après coup
+// repasse devant l'admin avant de réapparaître sur le grand écran. Si l'invité vide son
+// message, l'entrée correspondante disparaît (il n'y a plus rien à montrer).
+async function syncGuestbookEntry(rsvp) {
+  const message = rsvp.message?.trim();
+  if (!message) {
+    await prisma.guestbookEntry.deleteMany({ where: { rsvpId: rsvp.id } });
+    return;
+  }
+
+  await prisma.guestbookEntry.upsert({
+    where: { rsvpId: rsvp.id },
+    update: { guestName: rsvp.name, message, status: 'PENDING', approvedAt: null },
+    create: {
+      invitationId: rsvp.invitationId,
+      rsvpId: rsvp.id,
+      source: 'DIGITAL',
+      guestName: rsvp.name,
+      message,
+      status: 'PENDING',
+    },
+  });
+}
+
 async function getInvitationBySlug(req, res) {
   const invitation = await prisma.invitation.findUnique({
     where: { slug: req.params.slug },
@@ -114,12 +141,14 @@ async function submitRsvp(req, res) {
       update: rsvpData,
       create: { ...rsvpData, guestId: guest.id, invitationId: invitation.id },
     });
+    await syncGuestbookEntry(rsvp);
     return res.status(201).json(rsvp);
   }
 
   const rsvp = await prisma.rsvp.create({
     data: { ...rsvpData, invitationId: invitation.id },
   });
+  await syncGuestbookEntry(rsvp);
   res.status(201).json(rsvp);
 }
 

@@ -21,8 +21,11 @@ const TemplatesLibraryPage = lazy(() => import('./admin/pages/TemplatesLibraryPa
 const TemplatePreviewPage = lazy(() => import('./admin/pages/TemplatePreviewPage'));
 const GuestsPage = lazy(() => import('./admin/pages/GuestsPage'));
 const CheckInPage = lazy(() => import('./admin/pages/CheckInPage'));
+const GuestbookPage = lazy(() => import('./admin/pages/GuestbookPage'));
 const ClientAccessPage = lazy(() => import('./public/ClientAccessPage'));
 const CheckinAccessPage = lazy(() => import('./public/CheckinAccessPage'));
+const GuestbookQrPage = lazy(() => import('./public/GuestbookQrPage'));
+const GuestbookDisplayPage = lazy(() => import('./public/GuestbookDisplayPage'));
 
 function PageFallback() {
   return <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>Chargement...</div>;
@@ -38,6 +41,8 @@ export default function App() {
             <Route path="/i/:slug" element={<PublicInvitationPage />} />
             <Route path="/gerer/:token" element={<ClientAccessPage />} />
             <Route path="/checkin/:token" element={<CheckinAccessPage />} />
+            <Route path="/guestbook/:slug/display" element={<GuestbookDisplayPage />} />
+            <Route path="/guestbook/:token" element={<GuestbookQrPage />} />
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
@@ -74,6 +79,7 @@ export default function App() {
               <Route path="invitations/new" element={<InvitationEditorPage />} />
               <Route path="invitations/:id/edit" element={<InvitationEditorPage />} />
               <Route path="invitations/:id/guests" element={<GuestsPage />} />
+              <Route path="invitations/:id/guestbook" element={<GuestbookPage />} />
               <Route path="templates" element={<TemplatesLibraryPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>

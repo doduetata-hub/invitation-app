@@ -28,6 +28,17 @@ enum PaymentStatus {
   PAID
 }
 
+enum GuestbookSource {
+  DIGITAL
+  QR
+}
+
+enum GuestbookStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Admin {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -107,11 +118,13 @@ model Invitation {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   publishedAt DateTime? @map("published_at")
 
-  media    Media[]
-  events   Event[]
-  guests   Guest[]
-  payments Payment[]
-  rsvps    Rsvp[]
+  media           Media[]
+  events          Event[]
+  guests          Guest[]
+  payments        Payment[]
+  rsvps           Rsvp[]
+  guestbookEntries   GuestbookEntry[]
+  guestbookQrTokens  GuestbookQrToken[]
 
   @@map("invitations")
 }
@@ -173,7 +186,64 @@ model Rsvp {
   respondedAt     DateTime   @default(now()) @map("responded_at")
   checkedInAt     DateTime?  @map("checked_in_at")
 
+  guestbookEntry  GuestbookEntry?
+
   @@map("rsvps")
+}
+
+// Une entrée du livre d'or, alimentée par DEUX voies distinctes — jamais un système de
+// messages parallèle : côté numérique, elle est un simple REFLET du message déjà écrit dans
+// Rsvp.message (liée par rsvpId, synchronisée à chaque soumission de RSVP, jamais saisie
+// indépendamment) ; côté papier, elle est créée directement ici depuis la page publique
+// /guestbook/:token (pas de Guest/Rsvp associé, l'invité papier n'est enregistré nulle part
+// ailleurs). guestName/message sont dénormalisés (copiés) plutôt que relationnels dans les
+// deux cas : un livre d'or doit rester lisible même si le Rsvp ou le Guest d'origine est
+// supprimé plus tard (d'où onDelete: SetNull sur rsvpId, jamais Cascade).
+model GuestbookEntry {
+  id           String @id @default(uuid())
+  invitationId String @map("invitation_id")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  rsvpId String? @unique @map("rsvp_id")
+  rsvp   Rsvp?   @relation(fields: [rsvpId], references: [id], onDelete: SetNull)
+
+  qrTokenId String?           @map("qr_token_id")
+  qrToken   GuestbookQrToken? @relation(fields: [qrTokenId], references: [id], onDelete: SetNull)
+
+  source      GuestbookSource
+  guestName   String
+  message     String
+  tableNumber String?         @map("table_number")
+
+  status     GuestbookStatus @default(PENDING)
+  approvedAt DateTime?       @map("approved_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("guestbook_entries")
+}
+
+// Un événement peut avoir plusieurs QR codes actifs en parallèle (un global "posé à l'accueil"
+// + un par table) — jamais un seul champ token sur Invitation comme clientAccessToken/
+// checkinAccessToken, qui supposent une relation 1:1. `active` permet de désactiver un QR
+// (ex: table renumérotée) sans perdre l'historique des messages déjà déposés via ce token
+// (qrTokenId sur GuestbookEntry reste, en SetNull seulement si le token est supprimé pour de bon).
+model GuestbookQrToken {
+  id           String @id @default(uuid())
+  invitationId String @map("invitation_id")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  token       String  @unique
+  label       String?
+  tableNumber String? @map("table_number")
+  active      Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  entries GuestbookEntry[]
+
+  @@map("guestbook_qr_tokens")
 }
 
 model Payment {

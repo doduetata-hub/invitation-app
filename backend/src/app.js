@@ -22,6 +22,9 @@ const checkinAccessRoutes = require('./routes/checkinAccess.routes');
 const paymentsRoutes = require('./routes/payments.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const rsvpsRoutes = require('./routes/rsvps.routes');
+const guestbookEntriesRoutes = require('./routes/guestbookEntries.routes');
+const guestbookQrTokensRoutes = require('./routes/guestbookQrTokens.routes');
+const guestbookAccessRoutes = require('./routes/guestbookAccess.routes');
 const env = require('./config/env');
 
 const app = express();
@@ -79,6 +82,9 @@ app.use('/api/checkin-access', checkinAccessRoutes);
 app.use('/api/payments', requireAuth, paymentsRoutes);
 app.use('/api/dashboard', requireAuth, dashboardRoutes);
 app.use('/api/rsvps', requireAuth, rsvpsRoutes);
+app.use('/api/guestbook-entries', requireAuth, guestbookEntriesRoutes);
+app.use('/api/guestbook-qr-tokens', requireAuth, guestbookQrTokensRoutes);
+app.use('/api/guestbook', guestbookAccessRoutes);
 
 app.use(errorHandler);
 

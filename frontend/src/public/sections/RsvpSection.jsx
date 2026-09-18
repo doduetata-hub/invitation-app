@@ -17,7 +17,7 @@ function GuestQrCard({ slug, guestInfo }) {
   );
 }
 
-export default function RsvpSection({ onSubmit, guestInfo, slug }) {
+export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
   const [form, setForm] = useState(emptyForm);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -128,8 +128,15 @@ export default function RsvpSection({ onSubmit, guestInfo, slug }) {
         )}
 
         <label style={styles.label}>
-          Message
-          <textarea value={form.message} onChange={handleChange('message')} rows={2} style={styles.input} />
+          Laisser un mot{namesLine ? ` à ${namesLine}` : ' aux mariés'}
+          <textarea
+            value={form.message}
+            onChange={handleChange('message')}
+            rows={3}
+            placeholder={`Écrivez quelques mots pour ${namesLine || 'les mariés'}...`}
+            style={styles.input}
+          />
+          <span style={styles.hint}>Votre mot sera conservé dans leur livre d'or.</span>
         </label>
 
         {error && <p style={styles.error}>{error}</p>}

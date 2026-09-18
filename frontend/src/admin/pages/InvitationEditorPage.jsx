@@ -446,6 +446,20 @@ export default function InvitationEditorPage() {
           </div>
         )}
 
+        {isEdit && (
+          <div className="editor-section">
+            <h2>Livre d'or</h2>
+            <p className="admin-muted" style={{ marginTop: 0 }}>
+              Rassemble les mots laissés par les invités, que ce soit via leur invitation numérique
+              ou en scannant un QR code posé sur table (invités papier). Modération et mode écran
+              pour la soirée.
+            </p>
+            <Link to={`/admin/invitations/${id}/guestbook`} className="btn btn-primary">
+              Ouvrir le livre d'or →
+            </Link>
+          </div>
+        )}
+
         {isEdit && invitation && (
           <div className="editor-section">
             <h2>Accès client</h2>
