@@ -132,6 +132,9 @@ export default function ClientAccessPage() {
   }
 
   const { guests, stats, invitation } = data;
+  // Suggestions de table : derivees des tables deja saisies pour cette invitation, pas de
+  // stockage a part -- des qu'un nom de table est utilise une fois, il reapparait ici.
+  const tableSuggestions = [...new Set(guests.map((g) => g.tableNumber).filter(Boolean))].sort();
   const q = search.trim().toLowerCase();
   const filteredGuests = q
     ? guests.filter((g) =>
@@ -187,6 +190,7 @@ export default function ClientAccessPage() {
               onChange={(e) => setForm((f) => ({ ...f, tableNumber: e.target.value }))}
               className="input"
               style={{ width: '130px', flex: 'none' }}
+              list="table-suggestions"
             />
             <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>
               + Générer un lien
@@ -279,6 +283,7 @@ export default function ClientAccessPage() {
                               onChange={(e) => setEditForm((f) => ({ ...f, tableNumber: e.target.value }))}
                               className="input"
                               style={{ width: '90px' }}
+                              list="table-suggestions"
                             />
                           </td>
                         </>
@@ -368,6 +373,10 @@ export default function ClientAccessPage() {
           onClose={() => setMessageView(null)}
         />
       )}
+
+      <datalist id="table-suggestions">
+        {tableSuggestions.map((t) => <option key={t} value={t} />)}
+      </datalist>
     </div>
   );
 }

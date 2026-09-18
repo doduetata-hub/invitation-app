@@ -36,7 +36,20 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet());
-app.use(compression());
+// Le flux SSE du mode écran (guestbook/display/:slug/stream) doit être exclu de la
+// compression : `compression` bufferise la réponse pour construire ses frames gzip, ce qui va
+// totalement à l'encontre d'un flux censé pousser chaque événement immédiatement. Sans ce
+// filtre, la connexion reste bloquée en attente côté client (constaté avec un vrai navigateur :
+// EventSource ne quitte jamais CONNECTING, alors qu'un client sans Accept-Encoding comme un
+// simple curl passait au travers sans jamais révéler le problème).
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.path.endsWith('/stream')) return false;
+      return compression.filter(req, res);
+    },
+  })
+);
 app.use(
   cors({
     origin: env.publicBaseUrl,

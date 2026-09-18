@@ -243,6 +243,9 @@ export default function GuestbookPage() {
                       <button type="button" onClick={() => setQrView(t)} className="btn btn-outline btn-sm">
                         Voir le QR
                       </button>
+                      <Link to={`/admin/invitations/${id}/guestbook/print/${t.id}`} target="_blank" className="btn btn-outline btn-sm">
+                        Imprimer
+                      </Link>
                       <button type="button" onClick={() => toggleTokenActive(t)} className="btn btn-outline btn-sm">
                         {t.active ? 'Désactiver' : 'Réactiver'}
                       </button>

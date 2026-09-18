@@ -116,6 +116,9 @@ export default function GuestsPage() {
   if (!data || !invitation) return <p className="admin-muted">Chargement...</p>;
 
   const { guests, walkInRsvps, stats } = data;
+  // Suggestions de table : derivees des tables deja saisies pour cette invitation, pas de
+  // stockage a part -- des qu'un nom de table est utilise une fois, il reapparait ici.
+  const tableSuggestions = [...new Set(guests.map((g) => g.tableNumber).filter(Boolean))].sort();
   const q = search.trim().toLowerCase();
   const filteredGuests = q
     ? guests.filter((g) =>
@@ -186,6 +189,7 @@ export default function GuestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, tableNumber: e.target.value }))}
             className="input"
             style={{ width: '130px', flex: 'none' }}
+            list="table-suggestions"
           />
           <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>+ Générer un lien</button>
         </form>
@@ -278,6 +282,7 @@ export default function GuestsPage() {
                             onChange={(e) => setEditForm((f) => ({ ...f, tableNumber: e.target.value }))}
                             className="input"
                             style={{ width: '90px' }}
+                            list="table-suggestions"
                           />
                         </td>
                       </>
@@ -410,6 +415,10 @@ export default function GuestsPage() {
           onClose={() => setMessageView(null)}
         />
       )}
+
+      <datalist id="table-suggestions">
+        {tableSuggestions.map((t) => <option key={t} value={t} />)}
+      </datalist>
     </div>
   );
 }

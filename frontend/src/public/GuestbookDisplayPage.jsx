@@ -27,28 +27,32 @@ injectStylesOnce(
   @keyframes gbDrift { 0% { opacity: 0; transform: translateY(0); } 10% { opacity: 0.7; } 90% { opacity: 0.4; } 100% { opacity: 0; transform: translateY(-90vh); } }
 
   .gb-intro, .gb-loop { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4vh 6vw; box-sizing: border-box; }
-  .gb-intro-line { font-size: clamp(1.4rem, 2.6vw, 2.2rem); color: #F7F1E5; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
-  .gb-intro-names { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 7vw, 6rem); color: #D6B56D; margin: 0; }
-  .gb-intro-title { font-family: 'Playfair Display', serif; font-size: clamp(2.6rem, 5.5vw, 4.5rem); letter-spacing: 0.2em; text-transform: uppercase; color: #F7F1E5; margin: 0; }
+  /* Chaque clamp() ici est calé pour reproduire EXACTEMENT le rendu 1080p déjà validé (le vw
+     du milieu atteint le plafond pile à 1920px), puis continue de grossir linéairement au-delà
+     — sans ce plafond relevé, tout restait bloqué à sa taille 1080p en pixels, donc paraissait
+     deux fois plus petit à l'écran une fois monté en 4K (3840px = 2x1920px). */
+  .gb-intro-line { font-size: clamp(1.4rem, 1.83vw, 4.4rem); color: #F7F1E5; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
+  .gb-intro-names { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 5vw, 12rem); color: #D6B56D; margin: 0; }
+  .gb-intro-title { font-family: 'Playfair Display', serif; font-size: clamp(2.6rem, 3.75vw, 9rem); letter-spacing: 0.2em; text-transform: uppercase; color: #F7F1E5; margin: 0; }
 
-  .gb-couple-photo { width: clamp(96px, 11vw, 160px); height: clamp(96px, 11vw, 160px); border-radius: 50%; object-fit: cover; object-position: 50% 22%; border: 2px solid #B88A32; margin-bottom: 2.2vh; box-shadow: 0 0 40px rgba(184,138,50,0.35); }
-  .gb-eyebrow { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.3em; font-size: clamp(0.75rem, 1vw, 1rem); color: #B88A32; margin: 0 0 5vh; }
+  .gb-couple-photo { width: clamp(96px, 8.33vw, 320px); height: clamp(96px, 8.33vw, 320px); border-radius: 50%; object-fit: cover; object-position: 50% 22%; border: 2px solid #B88A32; margin-bottom: 2.2vh; box-shadow: 0 0 40px rgba(184,138,50,0.35); }
+  .gb-eyebrow { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.3em; font-size: clamp(0.75rem, 0.83vw, 2rem); color: #B88A32; margin: 0 0 5vh; }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
   .gb-card { max-width: 62vw; transition: opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease; }
   .gb-card-hidden { opacity: 0; transform: translateY(18px); }
   .gb-card-visible { opacity: 1; transform: translateY(0); }
-  .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 6vw, 5rem); color: #B88A32; margin: 0 0 -2vh; opacity: 0.6; }
+  .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 4.17vw, 10rem); color: #B88A32; margin: 0 0 -2vh; opacity: 0.6; }
   .gb-message { font-size: clamp(1.8rem, 3.4vw, 3.2rem); line-height: 1.45; color: #FFFDF8; margin: 0 0 3vh; font-weight: 500; }
-  .gb-name { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(0.95rem, 1.3vw, 1.3rem); color: #D6B56D; margin: 0; }
+  .gb-name { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(0.95rem, 1.08vw, 2.6rem); color: #D6B56D; margin: 0; }
 
   .gb-fade-rise { animation: gbFadeRise 900ms ease both; }
   @keyframes gbFadeRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
   /* Premier écran, avant même l'intro : capte l'attention de la salle tout de suite, pour que
      personne ne rate le début du diaporama en train de discuter/manger. */
-  .gb-countdown-caption { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.25em; font-size: clamp(0.85rem, 1.4vw, 1.1rem); color: #F7F1E5; opacity: 0.8; margin: 0 0 1.5vh; }
-  .gb-countdown-number { font-family: 'Playfair Display', serif; font-size: clamp(6rem, 16vw, 13rem); color: #D6B56D; margin: 0; line-height: 1; text-shadow: 0 0 60px rgba(216,181,109,0.5); }
+  .gb-countdown-caption { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.25em; font-size: clamp(0.85rem, 0.92vw, 2.2rem); color: #F7F1E5; opacity: 0.8; margin: 0 0 1.5vh; }
+  .gb-countdown-number { font-family: 'Playfair Display', serif; font-size: clamp(6rem, 10.83vw, 26rem); color: #D6B56D; margin: 0; line-height: 1; text-shadow: 0 0 60px rgba(216,181,109,0.5); }
   .gb-countdown-pop { animation: gbCountdownPop 1000ms ease both; }
   @keyframes gbCountdownPop { 0% { opacity: 0; transform: scale(1.5); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
 
@@ -78,13 +82,16 @@ injectStylesOnce(
 // coupait purement et simplement, illisibles). Plus le message est long, plus on réduit la
 // police ET on retire les éléments décoratifs (photo, guillemet) pour rendre la place
 // verticale au texte — jamais l'inverse (jamais de police agrandie au point de dépasser).
+// Chaque plafond est calé pour reproduire le rendu 1080p déjà validé (le vw du milieu atteint
+// le plafond pile à 1920px) puis continue de grossir linéairement jusqu'en 4K — sinon le texte
+// reste bloqué à sa taille 1080p en pixels et paraît deux fois plus petit sur un écran 3840px.
 function presentationForMessage(message) {
   const len = message.length;
-  if (len <= 70) return { fontSize: 'clamp(2rem, 3.6vw, 3.4rem)', lineHeight: 1.4, maxWidth: '58vw', showPhoto: true, showQuote: true, showEyebrow: true };
-  if (len <= 160) return { fontSize: 'clamp(1.55rem, 2.8vw, 2.5rem)', lineHeight: 1.4, maxWidth: '64vw', showPhoto: true, showQuote: true, showEyebrow: true };
-  if (len <= 320) return { fontSize: 'clamp(1.2rem, 2.1vw, 1.85rem)', lineHeight: 1.35, maxWidth: '70vw', showPhoto: false, showQuote: true, showEyebrow: true };
-  if (len <= 560) return { fontSize: 'clamp(1.02rem, 1.7vw, 1.45rem)', lineHeight: 1.3, maxWidth: '76vw', showPhoto: false, showQuote: false, showEyebrow: true };
-  return { fontSize: 'clamp(0.88rem, 1.4vw, 1.18rem)', lineHeight: 1.25, maxWidth: '82vw', showPhoto: false, showQuote: false, showEyebrow: false };
+  if (len <= 70) return { fontSize: 'clamp(2rem, 2.83vw, 6.8rem)', lineHeight: 1.4, maxWidth: '58vw', showPhoto: true, showQuote: true, showEyebrow: true };
+  if (len <= 160) return { fontSize: 'clamp(1.55rem, 2.08vw, 5rem)', lineHeight: 1.4, maxWidth: '64vw', showPhoto: true, showQuote: true, showEyebrow: true };
+  if (len <= 320) return { fontSize: 'clamp(1.2rem, 1.54vw, 3.7rem)', lineHeight: 1.35, maxWidth: '70vw', showPhoto: false, showQuote: true, showEyebrow: true };
+  if (len <= 560) return { fontSize: 'clamp(1.02rem, 1.21vw, 2.9rem)', lineHeight: 1.3, maxWidth: '76vw', showPhoto: false, showQuote: false, showEyebrow: true };
+  return { fontSize: 'clamp(0.88rem, 0.98vw, 2.36rem)', lineHeight: 1.25, maxWidth: '82vw', showPhoto: false, showQuote: false, showEyebrow: false };
 }
 
 const DEFAULT_PRESENTATION = presentationForMessage('');
@@ -170,17 +177,42 @@ export default function GuestbookDisplayPage() {
   }, [phase, countdownValue]);
 
   // Flux temps réel : un message approuvé depuis l'admin arrive ici sans recharger la page.
+  // Reconnexion manuelle en secours : le navigateur ne retente indéfiniment que si une
+  // connexion déjà ouverte est coupée en cours de route. Si la toute PROCHAINE tentative de
+  // reconnexion tombe pendant que le backend est encore en train de redémarrer (nginx renvoie
+  // alors une erreur, pas juste une coupure), le navigateur considère ça comme un échec de
+  // connexion et abandonne pour de bon (readyState CLOSED) sans jamais réessayer — vérifié en
+  // coupant le backend en plein direct. Cet écran tourne sans personne pour recharger la page
+  // de la soirée, donc on reprend nous-mêmes la main dans ce cas précis.
   useEffect(() => {
     if (!data) return undefined;
-    const es = new EventSource(`${API_BASE}/guestbook/display/${slug}/stream`);
-    es.addEventListener('entry', (e) => {
-      const entry = JSON.parse(e.data);
-      setEntries((prev) => {
-        const exists = prev.some((x) => x.id === entry.id);
-        return exists ? prev.map((x) => (x.id === entry.id ? entry : x)) : [...prev, entry];
+    let es;
+    let retryTimer;
+    let stopped = false;
+
+    const connect = () => {
+      es = new EventSource(`${API_BASE}/guestbook/display/${slug}/stream`);
+      es.addEventListener('entry', (e) => {
+        const entry = JSON.parse(e.data);
+        setEntries((prev) => {
+          const exists = prev.some((x) => x.id === entry.id);
+          return exists ? prev.map((x) => (x.id === entry.id ? entry : x)) : [...prev, entry];
+        });
       });
-    });
-    return () => es.close();
+      es.addEventListener('error', () => {
+        if (stopped) return;
+        if (es.readyState === EventSource.CLOSED) {
+          retryTimer = setTimeout(connect, 3000);
+        }
+      });
+    };
+    connect();
+
+    return () => {
+      stopped = true;
+      clearTimeout(retryTimer);
+      es?.close();
+    };
   }, [data, slug]);
 
   // Séquence d'introduction : un pas toutes les ~2.6s, puis bascule vers la boucle des messages.
