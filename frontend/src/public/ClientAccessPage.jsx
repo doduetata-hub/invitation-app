@@ -138,7 +138,7 @@ export default function ClientAccessPage() {
   const q = search.trim().toLowerCase();
   const filteredGuests = q
     ? guests.filter((g) =>
-        [g.rsvp?.name || g.name, g.phone, g.tableNumber]
+        [g.name || g.rsvp?.name, g.phone, g.tableNumber]
           .filter(Boolean)
           .some((field) => field.toLowerCase().includes(q))
       )
@@ -289,7 +289,7 @@ export default function ClientAccessPage() {
                         </>
                       ) : (
                         <>
-                          <td>{g.rsvp?.name || g.name || '—'}</td>
+                          <td>{g.name || g.rsvp?.name || '—'}</td>
                           <td>{g.phone || '—'}</td>
                           <td>{g.maxPersons ?? '—'}</td>
                           <td>{g.tableNumber || '—'}</td>
@@ -299,7 +299,7 @@ export default function ClientAccessPage() {
                       <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
                       <td className="cell-message">
                         {g.rsvp?.message ? (
-                          <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.rsvp?.name || g.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
+                          <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.name || g.rsvp?.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
                             <span className="cell-message-btn-text">{g.rsvp.message}</span>
                           </button>
                         ) : '—'}
@@ -329,7 +329,7 @@ export default function ClientAccessPage() {
                               <a
                                 href={buildWhatsappShareUrl(
                                   g.phone,
-                                  `Bonjour${g.rsvp?.name || g.name ? ' ' + (g.rsvp?.name || g.name) : ''}, voici votre invitation : ${guestUrl(g.guestCode)}`
+                                  `Bonjour${g.name || g.rsvp?.name ? ' ' + (g.name || g.rsvp?.name) : ''}, voici votre invitation : ${guestUrl(g.guestCode)}`
                                 )}
                                 target="_blank"
                                 rel="noreferrer"
@@ -359,7 +359,7 @@ export default function ClientAccessPage() {
 
       {qrGuest && (
         <QrCodeModal
-          title={qrGuest.rsvp?.name || qrGuest.name || 'Lien invité'}
+          title={qrGuest.name || qrGuest.rsvp?.name || 'Lien invité'}
           link={guestUrl(qrGuest.guestCode)}
           qrUrl={`/api/client-access/${token}/guests/${qrGuest.id}/qrcode`}
           downloadName={`qrcode-${qrGuest.guestCode}.png`}

@@ -17,9 +17,32 @@ function GuestQrCard({ slug, guestInfo }) {
   );
 }
 
-export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
+// Coordonnées de contact affichées quand une modification n'est plus possible (verrou admin)
+// ou pour signaler une erreur sur le nom, qui reste toujours imposé par l'admin (voir
+// submitRsvp côté serveur) et jamais modifiable par l'invité lui-même.
+function ContactHint({ invitation, children }) {
+  const whatsapp = invitation?.contactWhatsapp;
+  const phone = invitation?.contactPhone;
+  if (!whatsapp && !phone) return null;
+  return (
+    <p style={styles.hint}>
+      {children}{' '}
+      {whatsapp && (
+        <a href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={styles.link}>
+          Contactez-nous sur WhatsApp
+        </a>
+      )}
+      {!whatsapp && phone && (
+        <a href={`tel:${phone}`} style={styles.link}>Contactez-nous par téléphone</a>
+      )}
+    </p>
+  );
+}
+
+export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invitation }) {
   const [form, setForm] = useState(emptyForm);
   const [submitted, setSubmitted] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,6 +54,18 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
 
   const handleChange = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const startEdit = () => {
+    setForm({
+      name: guestInfo?.name || guestInfo?.rsvp?.name || '',
+      answer: guestInfo?.rsvp?.answer || 'YES',
+      numberOfPersons: guestInfo?.rsvp?.numberOfPersons || 1,
+      drink: guestInfo?.rsvp?.drink || '',
+      message: guestInfo?.rsvp?.message || '',
+    });
+    setError('');
+    setEditing(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,6 +81,7 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
       if (onSubmit) {
         await onSubmit(form);
       }
+      setEditing(false);
       setSubmitted(true);
     } catch (err) {
       setError(err.message || "Une erreur est survenue, veuillez réessayer.");
@@ -54,13 +90,22 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
     }
   };
 
-  if (guestInfo?.alreadyAnswered && !submitted) {
+  if (guestInfo?.alreadyAnswered && !submitted && !editing) {
     return (
       <section style={styles.section}>
-        <h2 style={styles.title}>Merci {guestInfo.rsvp?.name || ''} !</h2>
+        <h2 style={styles.title}>Merci {guestInfo.name || guestInfo.rsvp?.name || ''} !</h2>
         <p style={styles.confirmation}>
           Vous avez déjà confirmé : {guestInfo.rsvp?.answer === 'YES' ? 'présent(e)' : 'absent(e)'}.
         </p>
+        {invitation?.rsvpEditLocked ? (
+          <ContactHint invitation={invitation}>
+            Les modifications ne sont plus possibles depuis ce lien.
+          </ContactHint>
+        ) : (
+          <button type="button" onClick={startEdit} style={styles.linkButton}>
+            Modifier ma réponse
+          </button>
+        )}
         <GuestQrCard slug={slug} guestInfo={guestInfo} />
       </section>
     );
@@ -78,7 +123,7 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
 
   return (
     <section style={styles.section}>
-      <h2 style={styles.title}>Confirmez votre présence</h2>
+      <h2 style={styles.title}>{editing ? 'Modifiez votre réponse' : 'Confirmez votre présence'}</h2>
       <GuestQrCard slug={slug} guestInfo={guestInfo} />
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
@@ -90,7 +135,11 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
             readOnly={Boolean(guestInfo?.name)}
             style={guestInfo?.name ? { ...styles.input, ...styles.inputLocked } : styles.input}
           />
-          {guestInfo?.name && <span style={styles.hint}>Ce lien vous est réservé personnellement</span>}
+          {guestInfo?.name && (
+            <ContactHint invitation={invitation}>
+              Ce lien vous est réservé personnellement. Une erreur sur votre nom ?
+            </ContactHint>
+          )}
         </label>
 
         <div style={styles.radioGroup}>
@@ -142,8 +191,13 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine }) {
         {error && <p style={styles.error}>{error}</p>}
 
         <button type="submit" disabled={submitting} style={styles.button}>
-          {submitting ? 'Envoi...' : 'Confirmer'}
+          {submitting ? 'Envoi...' : editing ? 'Enregistrer les modifications' : 'Confirmer'}
         </button>
+        {editing && (
+          <button type="button" onClick={() => setEditing(false)} style={styles.linkButton}>
+            Annuler
+          </button>
+        )}
       </form>
     </section>
   );
@@ -172,6 +226,19 @@ const styles = {
   input: { padding: '0.55rem', border: '1px solid var(--color-secondary)', borderRadius: 'var(--radius)', fontFamily: 'var(--font-body)', fontSize: '1rem', color: 'var(--color-text)' },
   inputLocked: { background: 'var(--color-bg)', color: 'var(--color-text)', cursor: 'not-allowed' },
   hint: { fontSize: '0.75rem', color: 'var(--color-text)', fontFamily: 'var(--font-body)' },
+  link: { color: 'var(--color-secondary)', fontWeight: 600 },
+  linkButton: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--color-secondary)',
+    fontFamily: 'var(--font-body)',
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    textDecoration: 'underline',
+    cursor: 'pointer',
+    marginTop: '0.75rem',
+    padding: 0,
+  },
   radioGroup: { display: 'flex', flexDirection: 'column', gap: '0.4rem', fontFamily: 'var(--font-body)', color: 'var(--color-text)' },
   radioLabel: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
   error: { color: '#dc2626', fontFamily: 'var(--font-body)', fontSize: '0.9rem', margin: 0 },

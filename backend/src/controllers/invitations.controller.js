@@ -227,6 +227,19 @@ async function updateStatus(req, res) {
   res.json(invitation);
 }
 
+async function updateRsvpSettings(req, res) {
+  try {
+    const invitation = await prisma.invitation.update({
+      where: { id: req.params.id },
+      data: { rsvpEditLocked: Boolean((req.body || {}).rsvpEditLocked) },
+    });
+    res.json({ rsvpEditLocked: invitation.rsvpEditLocked });
+  } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ error: 'Invitation introuvable' });
+    throw err;
+  }
+}
+
 async function remove(req, res) {
   try {
     const media = await prisma.media.findMany({ where: { invitationId: req.params.id } });
@@ -311,6 +324,7 @@ module.exports = {
   create,
   update,
   updateStatus,
+  updateRsvpSettings,
   remove,
   regenerateClientAccessToken,
   revokeClientAccessToken,

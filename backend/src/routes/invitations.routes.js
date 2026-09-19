@@ -6,6 +6,7 @@ const {
   create,
   update,
   updateStatus,
+  updateRsvpSettings,
   remove,
   regenerateClientAccessToken,
   revokeClientAccessToken,
@@ -54,6 +55,7 @@ router.post('/', create);
 router.get('/:id', getById);
 router.patch('/:id', update);
 router.patch('/:id/status', updateStatus);
+router.patch('/:id/rsvp-settings', updateRsvpSettings);
 router.delete('/:id', remove);
 
 router.get('/:id/events', listForInvitation);

@@ -30,6 +30,7 @@ export default function GuestsPage() {
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
   const [search, setSearch] = useState('');
+  const [savingLock, setSavingLock] = useState(false);
 
   const load = () => {
     api.get(`/invitations/${id}/guests`).then(setData).catch((err) => setError(err.message));
@@ -107,6 +108,19 @@ export default function GuestsPage() {
     }
   };
 
+  const toggleRsvpLock = async () => {
+    setSavingLock(true);
+    setError('');
+    try {
+      const result = await api.patch(`/invitations/${id}/rsvp-settings`, { rsvpEditLocked: !invitation.rsvpEditLocked });
+      setInvitation((inv) => ({ ...inv, rsvpEditLocked: result.rsvpEditLocked }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingLock(false);
+    }
+  };
+
   const handleCopy = (code) => {
     navigator.clipboard?.writeText(guestUrl(code));
     setCopiedId(code);
@@ -122,7 +136,7 @@ export default function GuestsPage() {
   const q = search.trim().toLowerCase();
   const filteredGuests = q
     ? guests.filter((g) =>
-        [g.rsvp?.name || g.name, g.phone, g.tableNumber]
+        [g.name || g.rsvp?.name, g.phone, g.tableNumber]
           .filter(Boolean)
           .some((field) => field.toLowerCase().includes(q))
       )
@@ -149,6 +163,25 @@ export default function GuestsPage() {
       </div>
 
       {error && <p className="error-text">{error}</p>}
+
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '1rem' }}>
+        <input
+          type="checkbox"
+          checked={Boolean(invitation.rsvpEditLocked)}
+          onChange={toggleRsvpLock}
+          disabled={savingLock}
+          style={{ marginTop: '0.2rem' }}
+        />
+        <span>
+          <strong>Verrouiller les modifications de réponse RSVP</strong>
+          <br />
+          <span className="admin-muted">
+            Une fois activé, un invité ayant déjà répondu ne peut plus changer sa présence, le nombre de
+            personnes, la boisson ou son message depuis son lien — il est invité à vous contacter directement.
+            Le nom reste dans tous les cas toujours réservé par vos soins, jamais modifiable par l'invité.
+          </span>
+        </span>
+      </label>
 
       <div className="stats-grid" style={{ marginTop: '1.25rem' }}>
         <StatCard label="Invitations envoyées" value={stats.totalGuests} />
@@ -288,7 +321,7 @@ export default function GuestsPage() {
                       </>
                     ) : (
                       <>
-                        <td>{g.rsvp?.name || g.name || '—'}</td>
+                        <td>{g.name || g.rsvp?.name || '—'}</td>
                         <td>{g.phone || '—'}</td>
                         <td>{g.maxPersons ?? '—'}</td>
                         <td>{g.tableNumber || '—'}</td>
@@ -299,7 +332,7 @@ export default function GuestsPage() {
                     <td>{g.rsvp?.drink || '—'}</td>
                     <td className="cell-message">
                       {g.rsvp?.message ? (
-                        <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.rsvp?.name || g.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
+                        <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.name || g.rsvp?.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
                           <span className="cell-message-btn-text">{g.rsvp.message}</span>
                         </button>
                       ) : '—'}
@@ -330,7 +363,7 @@ export default function GuestsPage() {
                             <a
                               href={buildWhatsappShareUrl(
                                 g.phone,
-                                `Bonjour${g.rsvp?.name || g.name ? ' ' + (g.rsvp?.name || g.name) : ''}, voici votre invitation : ${guestUrl(g.guestCode)}`
+                                `Bonjour${g.name || g.rsvp?.name ? ' ' + (g.name || g.rsvp?.name) : ''}, voici votre invitation : ${guestUrl(g.guestCode)}`
                               )}
                               target="_blank"
                               rel="noreferrer"
@@ -401,7 +434,7 @@ export default function GuestsPage() {
 
       {qrGuest && (
         <QrCodeModal
-          title={qrGuest.rsvp?.name || qrGuest.name || 'Lien invité'}
+          title={qrGuest.name || qrGuest.rsvp?.name || 'Lien invité'}
           link={guestUrl(qrGuest.guestCode)}
           qrUrl={`/api/guests/${qrGuest.id}/qrcode`}
           downloadName={`qrcode-${qrGuest.guestCode}.png`}

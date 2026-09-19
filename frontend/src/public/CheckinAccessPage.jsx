@@ -159,7 +159,7 @@ export default function CheckinAccessPage() {
 
   const { guests, stats, invitation } = data;
   const q = search.trim().toLowerCase();
-  const filteredGuests = guests.filter((g) => (g.rsvp?.name || g.name || '').toLowerCase().includes(q));
+  const filteredGuests = guests.filter((g) => (g.name || g.rsvp?.name || '').toLowerCase().includes(q));
 
   return (
     <div style={styles.page}>
@@ -254,7 +254,7 @@ export default function CheckinAccessPage() {
             <tbody>
               {filteredGuests.map((g) => (
                 <tr key={g.id}>
-                  <td>{g.rsvp?.name || g.name || '—'}</td>
+                  <td>{g.name || g.rsvp?.name || '—'}</td>
                   <td>{g.rsvp ? (g.rsvp.answer === 'YES' ? 'Présent' : 'Absent') : 'En attente'}</td>
                   <td>{g.checkedInAt ? new Date(g.checkedInAt).toLocaleTimeString('fr-FR') : '—'}</td>
                   <td>

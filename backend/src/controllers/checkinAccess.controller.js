@@ -58,7 +58,7 @@ async function lookupGuestByCode(req, res) {
 
   res.json({
     id: guest.id,
-    name: guest.rsvp?.name || guest.name,
+    name: guest.name || guest.rsvp?.name,
     phone: guest.phone,
     maxPersons: guest.maxPersons,
     checkedInAt: guest.checkedInAt,

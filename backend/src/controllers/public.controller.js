@@ -114,6 +114,7 @@ async function getInvitationBySlug(req, res) {
     media: invitation.media,
     contactPhone: invitation.client.phone,
     contactWhatsapp: invitation.client.whatsapp,
+    rsvpEditLocked: invitation.rsvpEditLocked,
     guest: guestInfo,
   });
 }
@@ -143,8 +144,17 @@ async function submitRsvp(req, res) {
   if (guestCode) {
     const guest = await prisma.guest.findFirst({
       where: { invitationId: invitation.id, guestCode: String(guestCode).toUpperCase() },
+      include: { rsvp: true },
     });
     if (!guest) badRequest('Lien invité invalide');
+    // Le verrou ne bloque qu'une modification d'une réponse déjà donnée, jamais la toute
+    // première confirmation d'un invité qui n'a pas encore répondu.
+    if (guest.rsvp && invitation.rsvpEditLocked) {
+      const err = new Error('Les modifications ne sont plus autorisées, contactez l\'organisateur.');
+      err.status = 403;
+      err.publicMessage = err.message;
+      throw err;
+    }
     if (guest.maxPersons != null && persons > guest.maxPersons) {
       badRequest(`Le nombre de personnes dépasse le maximum autorisé (${guest.maxPersons})`);
     }

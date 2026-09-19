@@ -137,16 +137,23 @@ async function downloadImportTemplate(req, res) {
 // Ne touche jamais guestCode : un lien déjà envoyé à l'invité reste valide après correction.
 async function update(req, res) {
   const { name, phone, maxPersons, tableNumber } = req.body || {};
+  const trimmedName = name?.trim() || null;
   try {
     const guest = await prisma.guest.update({
       where: { id: req.params.id },
       data: {
-        name: name?.trim() || null,
+        name: trimmedName,
         phone: phone?.trim() || null,
         maxPersons: maxPersons === '' || maxPersons == null ? null : Number(maxPersons),
         tableNumber: tableNumber?.trim() || null,
       },
     });
+    // Le nom du RSVP déjà soumis est une copie figée prise à la confirmation (submitRsvp) : une
+    // correction du nom ici doit s'y répercuter, sinon l'export et le livre d'or restent bloqués
+    // sur l'ancienne orthographe indéfiniment.
+    if (trimmedName) {
+      await prisma.rsvp.updateMany({ where: { guestId: guest.id }, data: { name: trimmedName } });
+    }
     res.json(guest);
   } catch (err) {
     if (err.code === 'P2025') {
@@ -181,7 +188,7 @@ async function fetchExportData(invitationId) {
 
   for (const g of guests) {
     rows.push([
-      g.rsvp?.name || g.name || '',
+      g.name || g.rsvp?.name || '',
       g.phone || '',
       g.tableNumber || '',
       g.guestCode,

@@ -102,6 +102,13 @@ model Invitation {
   // proches) pour supprimer cette friction : le message passe directement en APPROVED.
   guestbookAutoApprove Boolean @default(false) @map("guestbook_auto_approve")
 
+  // Par defaut, un invite peut rouvrir et corriger sa reponse RSVP (presence/nombre/boisson/
+  // message) a tout moment depuis son lien -- le nom, lui, reste toujours impose par l'admin
+  // (voir submitRsvp). Active ici pour figer les reponses au-dela d'un certain moment (jour J
+  // approchant, logistique traiteur figee...) : l'invite est alors redirige vers le contact
+  // WhatsApp/telephone de l'organisateur au lieu de pouvoir resoumettre.
+  rsvpEditLocked Boolean @default(false) @map("rsvp_edit_locked")
+
   theme    Json?
   musicUrl String? @map("music_url")
 
