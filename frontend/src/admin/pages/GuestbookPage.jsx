@@ -136,6 +136,19 @@ export default function GuestbookPage() {
   const { entries, stats } = data;
   const guestbookUrl = (token) => `${window.location.origin}/guestbook/${token}`;
 
+  // Aide à la modération, purement indicative : un même invité peut se retrouver avec deux
+  // messages (invitation numérique + QR papier scanné en plus, ou l'inverse) sans qu'on puisse
+  // le garantir côté serveur (voir le commentaire de submitEntry) — on compare seulement les
+  // noms ici pour signaler un doublon PROBABLE ; à l'admin de vérifier le contenu et de
+  // supprimer si besoin, jamais fusionné/bloqué automatiquement.
+  const normalizeGuestName = (name) => (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const guestNameCounts = entries.reduce((acc, e) => {
+    const key = normalizeGuestName(e.guestName);
+    if (key) acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const isPossibleDuplicate = (entry) => guestNameCounts[normalizeGuestName(entry.guestName)] > 1;
+
   return (
     <div>
       <div className="page-header">
@@ -301,7 +314,18 @@ export default function GuestbookPage() {
                           onChange={() => toggleSelected(entry.id)}
                         />
                       </td>
-                      <td>{entry.guestName}</td>
+                      <td>
+                        {entry.guestName}
+                        {isPossibleDuplicate(entry) && (
+                          <span
+                            className="badge"
+                            title="Un autre message porte le même nom pour cette invitation — vérifiez qu'il ne s'agit pas du même invité (invitation numérique + QR, par exemple)."
+                            style={{ marginLeft: '0.4rem' }}
+                          >
+                            Doublon possible ?
+                          </span>
+                        )}
+                      </td>
                       <td className="cell-message">
                         <button
                           type="button"

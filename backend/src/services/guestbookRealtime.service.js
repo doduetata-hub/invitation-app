@@ -18,11 +18,20 @@ function subscribe(invitationId, res) {
   });
 }
 
+// submissionKey/editToken (GuestbookEntry) sont des secrets internes à l'idempotence/l'édition
+// d'une entrée QR (voir schema.prisma) : ce flux est public et non authentifié (grand écran),
+// donc jamais question qu'ils y transitent, quel que soit l'appelant.
+function sanitizeForBroadcast(data) {
+  if (!data || typeof data !== 'object') return data;
+  const { submissionKey, editToken, ...safe } = data;
+  return safe;
+}
+
 function broadcast(invitationId, event, data) {
   const set = subscribersByInvitation.get(invitationId);
   if (!set || set.size === 0) return;
 
-  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  const payload = `event: ${event}\ndata: ${JSON.stringify(sanitizeForBroadcast(data))}\n\n`;
   for (const res of set) {
     res.write(payload);
   }

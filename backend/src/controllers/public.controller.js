@@ -22,19 +22,23 @@ function badRequest(message) {
 // resoumission identique (l'invité rouvre son lien et reclique Confirmer sans rien changer) ne
 // déclenche aucune mise à jour inutile. Si l'invité vide son message avant approbation,
 // l'entrée disparaît — après, elle reste (voir plus haut, figée).
+// Valeur de retour utilisée par submitRsvp() pour permettre au frontend de reconnaître ce même
+// message si l'invité scanne ensuite un QR papier du livre d'or depuis le même appareil (voir
+// GuestbookQrPage.jsx) — jamais pour l'éditer depuis là, seulement pour éviter d'en recréer un
+// second par mégarde.
 async function syncGuestbookEntry(rsvp, autoApprove) {
   const message = rsvp.message?.trim();
   const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id } });
 
-  if (existing?.status === 'APPROVED') return;
+  if (existing?.status === 'APPROVED') return existing;
 
   if (!message) {
     if (existing) await prisma.guestbookEntry.delete({ where: { id: existing.id } });
-    return;
+    return null;
   }
 
   const changed = !existing || existing.guestName !== rsvp.name || existing.message !== message;
-  if (!changed) return;
+  if (!changed) return existing;
 
   const status = autoApprove ? 'APPROVED' : 'PENDING';
   const approvedAt = status === 'APPROVED' ? new Date() : null;
@@ -54,6 +58,7 @@ async function syncGuestbookEntry(rsvp, autoApprove) {
   });
 
   if (status === 'APPROVED') broadcast(entry.invitationId, 'entry', entry);
+  return entry;
 }
 
 async function getInvitationBySlug(req, res) {
@@ -171,15 +176,15 @@ async function submitRsvp(req, res) {
       update: rsvpData,
       create: { ...rsvpData, guestId: guest.id, invitationId: invitation.id },
     });
-    await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
-    return res.status(201).json(rsvp);
+    const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
+    return res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null });
   }
 
   const rsvp = await prisma.rsvp.create({
     data: { ...rsvpData, invitationId: invitation.id },
   });
-  await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
-  res.status(201).json(rsvp);
+  const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
+  res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null });
 }
 
 // QR code du lien personnalisé de l'invité, servi depuis sa propre page d'invitation

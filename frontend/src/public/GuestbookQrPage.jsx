@@ -3,33 +3,33 @@ import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import { getTemplate } from './templates/registry';
 import { tokensToCssVars } from './theme/tokens';
+import { loadRememberedGuestbookEntry, rememberGuestbookEntry, forgetRememberedGuestbookEntry } from '../shared/utils/guestbookMemory';
 
 const emptyForm = { guestName: '', message: '' };
 
-// Un invité papier n'a pas de compte : impossible de savoir côté serveur qu'il a déjà déposé
-// un message. On se souvient localement (par appareil/navigateur, scopé à L'INVITATION —
-// pas au QR d'une table précise, pour qu'un même invité passant par deux QR différents reste
-// quand même reconnu) de l'entrée déjà créée, pour proposer de la MODIFIER plutôt que d'en
-// créer une nouvelle à chaque revisite — "un invité = un message", même sans identité serveur.
-function storageKey(invitationId) {
-  return `gb_entry_${invitationId}`;
+// Clé d'idempotence d'UNE soumission, distincte du souvenir "entrée déjà créée" ci-dessus :
+// générée et écrite ici AVANT le tout premier essai d'envoi (pas seulement après une réponse
+// réussie), pour qu'un rafraîchissement en plein envoi la retrouve et la renvoie identique —
+// le serveur ne crée alors jamais de deuxième entrée pour la même clé (voir submitEntry côté
+// backend). Scopée au token QR (toujours connu tout de suite), pas à l'invitation : son rôle
+// est de protéger UN essai d'envoi, pas de reconnaître l'invité d'une visite à l'autre.
+function submissionKeyStorageKey(token) {
+  return `gb_submission_key_${token}`;
 }
 
-function loadRemembered(invitationId) {
+function getOrCreateSubmissionKey(token) {
   try {
-    const raw = localStorage.getItem(storageKey(invitationId));
-    return raw ? JSON.parse(raw) : null;
+    const key = submissionKeyStorageKey(token);
+    let value = localStorage.getItem(key);
+    if (!value) {
+      value = crypto.randomUUID();
+      localStorage.setItem(key, value);
+    }
+    return value;
   } catch {
-    return null;
-  }
-}
-
-function saveRemembered(invitationId, record) {
-  try {
-    localStorage.setItem(storageKey(invitationId), JSON.stringify(record));
-  } catch {
-    // Stockage indisponible (navigation privée, quota) : tant pis, l'invité pourra toujours
-    // renvoyer un message, juste sans se faire reconnaître à la prochaine visite.
+    // Stockage indisponible : dégrade sans bloquer l'envoi, juste sans protection anti-doublon
+    // en cas de rafraîchissement en plein envoi.
+    return crypto.randomUUID();
   }
 }
 
@@ -43,6 +43,8 @@ export default function GuestbookQrPage() {
   const [notFound, setNotFound] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [existingEntryId, setExistingEntryId] = useState(null);
+  const [existingEntrySource, setExistingEntrySource] = useState(null);
+  const [editToken, setEditToken] = useState(null);
   const [locked, setLocked] = useState(false);
   const [checkingExisting, setCheckingExisting] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -55,7 +57,10 @@ export default function GuestbookQrPage() {
       .get(`/guestbook/${token}`)
       .then((data) => {
         setInfo(data);
-        const remembered = loadRemembered(data.invitationId);
+        // Reconnaît aussi bien une entrée déjà créée depuis CETTE page (scan précédent) qu'un
+        // message déjà laissé via le lien d'invitation personnalisé, sur ce même appareil (voir
+        // guestbookMemory.js) — pour ne jamais faire déposer un second message par mégarde.
+        const remembered = loadRememberedGuestbookEntry(data.invitationId);
         if (!remembered) return;
 
         // Vérifie le statut réel côté serveur : un message déjà approuvé (donc déjà diffusé au
@@ -67,16 +72,15 @@ export default function GuestbookQrPage() {
           .get(`/guestbook/${token}/entry/${remembered.entryId}`)
           .then((entry) => {
             setExistingEntryId(entry.id);
+            setExistingEntrySource(entry.source);
+            setEditToken(remembered.editToken || null);
             setForm({ guestName: entry.guestName, message: entry.message });
-            if (entry.status === 'APPROVED') setLocked(true);
+            // Une entrée DIGITAL (laissée via l'invitation personnalisée) n'est jamais éditable
+            // depuis cette page QR — seule sa propre invitation le permet (voir RsvpSection) —
+            // donc on la traite comme verrouillée ici, même si elle n'est pas encore approuvée.
+            if (entry.status === 'APPROVED' || entry.source === 'DIGITAL') setLocked(true);
           })
-          .catch(() => {
-            try {
-              localStorage.removeItem(storageKey(data.invitationId));
-            } catch {
-              // rien à faire de plus si le stockage local n'est pas accessible
-            }
-          })
+          .catch(() => forgetRememberedGuestbookEntry(data.invitationId))
           .finally(() => setCheckingExisting(false));
       })
       .catch(() => setNotFound(true));
@@ -91,10 +95,15 @@ export default function GuestbookQrPage() {
     setSubmitting(true);
     try {
       const result = existingEntryId
-        ? await api.patch(`/guestbook/${token}/${existingEntryId}`, form)
-        : await api.post(`/guestbook/${token}`, form);
+        ? await api.patch(`/guestbook/${token}/${existingEntryId}`, { ...form, editToken })
+        : await api.post(`/guestbook/${token}`, { ...form, submissionKey: getOrCreateSubmissionKey(token) });
       setExistingEntryId(result.id);
-      saveRemembered(result.invitationId, { entryId: result.id, guestName: form.guestName, message: form.message });
+      setExistingEntrySource('QR');
+      // result.editToken n'est renvoyé qu'à la création (et lors d'un renvoi identique détecté
+      // par le serveur) : sur une mise à jour, on garde celui déjà en main.
+      const nextEditToken = result.editToken || editToken;
+      setEditToken(nextEditToken);
+      rememberGuestbookEntry(result.invitationId, { entryId: result.id, guestName: form.guestName, message: form.message, editToken: nextEditToken });
       setSubmitted(true);
       setEditing(false);
       // Approbation automatique activée par l'organisateur : le message est déjà diffusé,
@@ -132,7 +141,20 @@ export default function GuestbookQrPage() {
         <p style={styles.eyebrow}>Livre d'or</p>
         {info.tableLabel && <p style={styles.tableBadge}>{info.tableLabel}</p>}
 
-        {locked && (
+        {locked && existingEntrySource === 'DIGITAL' && (
+          <div style={styles.confirmation}>
+            <p style={styles.confirmationTitle}>Vous avez déjà laissé un mot via votre invitation.</p>
+            <p style={styles.confirmationSub}>
+              « {form.message} » — {form.guestName}
+            </p>
+            <p style={{ ...styles.hint, margin: '1rem 0 0' }}>
+              Inutile d'en déposer un second ici — pour le modifier, retournez sur le lien de
+              votre invitation.
+            </p>
+          </div>
+        )}
+
+        {locked && existingEntrySource !== 'DIGITAL' && (
           <div style={styles.confirmation}>
             <p style={styles.confirmationTitle}>Votre message a déjà été approuvé et diffusé.</p>
             <p style={styles.confirmationSub}>

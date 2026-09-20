@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import InvitationPage from './InvitationPage';
+import { rememberGuestbookEntry, forgetRememberedGuestbookEntry } from '../shared/utils/guestbookMemory';
 
 function usePageMeta(invitation) {
   useEffect(() => {
@@ -54,7 +55,16 @@ export default function PublicInvitationPage() {
   usePageMeta(invitation);
 
   const handleRsvpSubmit = async (form) => {
-    await api.post(`/public/invitations/${slug}/rsvp`, { ...form, guestCode });
+    const result = await api.post(`/public/invitations/${slug}/rsvp`, { ...form, guestCode });
+    // Se souvient (même appareil uniquement) du mot laissé ici, pour que l'invité soit
+    // reconnu s'il scanne aussi un QR papier du livre d'or — voir guestbookMemory.js et
+    // GuestbookQrPage.jsx. Un message vidé (RSVP resoumis sans mot) efface ce souvenir : rien
+    // à reconnaître, syncGuestbookEntry a déjà supprimé l'entrée côté serveur.
+    if (result.guestbookEntryId) {
+      rememberGuestbookEntry(result.invitationId, { entryId: result.guestbookEntryId, guestName: form.name, message: form.message });
+    } else {
+      forgetRememberedGuestbookEntry(result.invitationId);
+    }
   };
 
   if (notFound) {

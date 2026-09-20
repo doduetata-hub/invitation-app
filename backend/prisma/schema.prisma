@@ -227,6 +227,18 @@ model GuestbookEntry {
   message     String
   tableNumber String?         @map("table_number")
 
+  // QR uniquement (toujours null pour source DIGITAL, déjà protégée par rsvpId ci-dessus) :
+  // submissionKey est une clé d'idempotence générée et conservée par le NAVIGATEUR avant même
+  // le premier essai d'envoi (voir GuestbookQrPage.jsx) — un double clic, un renvoi identique
+  // ou un rafraîchissement en plein envoi renvoient donc la même clé, et submitEntry() ne crée
+  // jamais qu'une seule entrée par clé (contrainte unique + capture de l'erreur P2002). editToken
+  // est un secret distinct, propre à CETTE entrée, renvoyé une seule fois à la création et
+  // requis par updateEntry() pour l'éditer ensuite — le token QR (public, partagé, imprimé)
+  // n'autorise plus à lui seul la modification de n'importe quelle entrée PENDING de
+  // l'invitation, seul le porteur de cet editToken précis le peut.
+  submissionKey String? @unique @map("submission_key")
+  editToken     String? @unique @map("edit_token")
+
   status     GuestbookStatus @default(PENDING)
   approvedAt DateTime?       @map("approved_at")
 
