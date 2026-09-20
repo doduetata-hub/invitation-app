@@ -9,6 +9,7 @@ const COUNTDOWN_STEP_MS = 1000;
 const INTRO_STEP_MS = 2600;
 const LOOP_STEP_MS = 8000;
 const FADE_MS = 700;
+const POLL_INTERVAL_MS = 2000;
 
 injectStylesOnce(
   'guestbook-display',
@@ -176,64 +177,36 @@ export default function GuestbookDisplayPage() {
     return () => clearTimeout(t);
   }, [phase, countdownValue]);
 
-  // Flux temps réel : un message approuvé depuis l'admin arrive ici sans recharger la page.
-  // Reconnexion manuelle en secours : le navigateur ne retente indéfiniment que si une
-  // connexion déjà ouverte est coupée en cours de route. Si la toute PROCHAINE tentative de
-  // reconnexion tombe pendant que le backend est encore en train de redémarrer (nginx renvoie
-  // alors une erreur, pas juste une coupure), le navigateur considère ça comme un échec de
-  // connexion et abandonne pour de bon (readyState CLOSED) sans jamais réessayer — vérifié en
-  // coupant le backend en plein direct. Cet écran tourne sans personne pour recharger la page
-  // de la soirée, donc on reprend nous-mêmes la main dans ce cas précis.
-  //
-  // Testé en coupant/relançant un serveur en direct (Phase 3) : la reconnexion NATIVE
-  // d'EventSource (sur une simple perte de connexion, sans réponse d'erreur nginx) se rétablit
-  // souvent d'elle-même SANS jamais passer par readyState CLOSED ni par connect() ci-dessous —
-  // elle reste juste en CONNECTING et réessaie seule. Se resynchroniser uniquement dans le
-  // retry manuel (sur CLOSED) manque donc ce cas très courant. D'où l'écoute de 'open', qui se
-  // déclenche après CHAQUE reconnexion réussie, native ou manuelle, pour rattraper les messages
-  // approuvés pendant n'importe quelle coupure, aussi brève soit-elle.
+  // Mise à jour de la liste par interrogation régulière plutôt que par flux SSE : le backend
+  // tourne sur Vercel (fonctions serverless, coupées après 30 s, chaque requête pouvant tomber
+  // sur une instance différente), donc un flux ouvert en continu et un registre de connexions
+  // en mémoire n'y sont pas fiables — l'approbation faite dans l'admin n'atteignait l'écran que
+  // par hasard, et chaque coupure de 30 s remplissait les logs d'erreurs de timeout. Redemander
+  // la liste toutes les POLL_INTERVAL_MS marche partout et rattrape aussi tout seul n'importe
+  // quelle coupure réseau. On ne remplace l'état que si la liste a réellement changé, pour ne pas
+  // relancer le minuteur de rotation des messages à chaque interrogation.
   useEffect(() => {
     if (!data) return undefined;
-    let es;
-    let retryTimer;
     let stopped = false;
-    let hasConnectedOnce = false;
 
-    const mergeEntry = (entry) => {
-      setEntries((prev) => {
-        const exists = prev.some((x) => x.id === entry.id);
-        return exists ? prev.map((x) => (x.id === entry.id ? entry : x)) : [...prev, entry];
-      });
+    const sameList = (a, b) =>
+      a.length === b.length &&
+      a.every((x, i) => x.id === b[i].id && x.message === b[i].message && x.guestName === b[i].guestName);
+
+    const poll = () => {
+      fetch(`${API_BASE}/guestbook/display/${slug}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (stopped || !d?.entries) return;
+          setEntries((prev) => (sameList(prev, d.entries) ? prev : d.entries));
+        })
+        .catch(() => {});
     };
 
-    const connect = () => {
-      es = new EventSource(`${API_BASE}/guestbook/display/${slug}/stream`);
-      es.addEventListener('open', () => {
-        // Jamais au tout premier chargement (l'instantané REST initial est déjà à jour) —
-        // seulement à partir de la 2e connexion, qu'elle vienne d'ici ou du retry natif.
-        if (!hasConnectedOnce) {
-          hasConnectedOnce = true;
-          return;
-        }
-        fetch(`${API_BASE}/guestbook/display/${slug}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d) => d?.entries?.forEach(mergeEntry))
-          .catch(() => {});
-      });
-      es.addEventListener('entry', (e) => mergeEntry(JSON.parse(e.data)));
-      es.addEventListener('error', () => {
-        if (stopped) return;
-        if (es.readyState === EventSource.CLOSED) {
-          retryTimer = setTimeout(connect, 3000);
-        }
-      });
-    };
-    connect();
-
+    const timer = setInterval(poll, POLL_INTERVAL_MS);
     return () => {
       stopped = true;
-      clearTimeout(retryTimer);
-      es?.close();
+      clearInterval(timer);
     };
   }, [data, slug]);
 
