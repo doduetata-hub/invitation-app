@@ -184,21 +184,43 @@ export default function GuestbookDisplayPage() {
   // connexion et abandonne pour de bon (readyState CLOSED) sans jamais réessayer — vérifié en
   // coupant le backend en plein direct. Cet écran tourne sans personne pour recharger la page
   // de la soirée, donc on reprend nous-mêmes la main dans ce cas précis.
+  //
+  // Testé en coupant/relançant un serveur en direct (Phase 3) : la reconnexion NATIVE
+  // d'EventSource (sur une simple perte de connexion, sans réponse d'erreur nginx) se rétablit
+  // souvent d'elle-même SANS jamais passer par readyState CLOSED ni par connect() ci-dessous —
+  // elle reste juste en CONNECTING et réessaie seule. Se resynchroniser uniquement dans le
+  // retry manuel (sur CLOSED) manque donc ce cas très courant. D'où l'écoute de 'open', qui se
+  // déclenche après CHAQUE reconnexion réussie, native ou manuelle, pour rattraper les messages
+  // approuvés pendant n'importe quelle coupure, aussi brève soit-elle.
   useEffect(() => {
     if (!data) return undefined;
     let es;
     let retryTimer;
     let stopped = false;
+    let hasConnectedOnce = false;
+
+    const mergeEntry = (entry) => {
+      setEntries((prev) => {
+        const exists = prev.some((x) => x.id === entry.id);
+        return exists ? prev.map((x) => (x.id === entry.id ? entry : x)) : [...prev, entry];
+      });
+    };
 
     const connect = () => {
       es = new EventSource(`${API_BASE}/guestbook/display/${slug}/stream`);
-      es.addEventListener('entry', (e) => {
-        const entry = JSON.parse(e.data);
-        setEntries((prev) => {
-          const exists = prev.some((x) => x.id === entry.id);
-          return exists ? prev.map((x) => (x.id === entry.id ? entry : x)) : [...prev, entry];
-        });
+      es.addEventListener('open', () => {
+        // Jamais au tout premier chargement (l'instantané REST initial est déjà à jour) —
+        // seulement à partir de la 2e connexion, qu'elle vienne d'ici ou du retry natif.
+        if (!hasConnectedOnce) {
+          hasConnectedOnce = true;
+          return;
+        }
+        fetch(`${API_BASE}/guestbook/display/${slug}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => d?.entries?.forEach(mergeEntry))
+          .catch(() => {});
       });
+      es.addEventListener('entry', (e) => mergeEntry(JSON.parse(e.data)));
       es.addEventListener('error', () => {
         if (stopped) return;
         if (es.readyState === EventSource.CLOSED) {

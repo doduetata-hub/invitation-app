@@ -29,7 +29,7 @@ export default function GuestbookQrPrintPage() {
   if (!invitation || !token) return <p className="admin-muted" style={{ padding: '2rem' }}>Chargement...</p>;
 
   return (
-    <div style={styles.page}>
+    <div className="gb-print-page" style={styles.page}>
       <div className="no-print" style={styles.toolbar}>
         <Link to={`/admin/invitations/${id}/guestbook`} className="btn btn-outline btn-sm">← Retour au livre d'or</Link>
         <button type="button" onClick={() => window.print()} className="btn btn-primary btn-sm">
@@ -37,7 +37,7 @@ export default function GuestbookQrPrintPage() {
         </button>
       </div>
 
-      <div style={styles.sheet}>
+      <div className="gb-print-sheet" style={styles.sheet}>
         <p style={styles.eyebrow}>{invitation.namesLine || invitation.title}</p>
         <h1 style={styles.title}>Livre d'or</h1>
         <p style={styles.subtitle}>Laissez un mot aux mariés</p>
@@ -68,6 +68,12 @@ export default function GuestbookQrPrintPage() {
           .no-print { display: none !important; }
           @page { size: A5 portrait; margin: 0; }
           body { margin: 0; }
+          /* Sans ça, le fond beige et le padding de la page (pensés pour l'écran, où ils
+             centrent joliment la carte) impriment autour d'elle sur le papier — un
+             gaspillage d'encre que le fond clair de la carte elle-même cherche justement
+             à éviter (voir le commentaire d'en-tête du fichier). */
+          .gb-print-page { background: #fff !important; padding: 0 !important; min-height: 0 !important; }
+          .gb-print-sheet { box-shadow: none !important; border: none !important; border-radius: 0 !important; max-width: none !important; width: 100%; height: 100vh; }
         }
       `}</style>
     </div>
