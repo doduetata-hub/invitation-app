@@ -18,6 +18,8 @@ export default function GuestbookPage() {
   const [tokens, setTokens] = useState(null);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(new Set());
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [messageView, setMessageView] = useState(null);
   const [qrView, setQrView] = useState(null);
   const [tokenForm, setTokenForm] = useState({ label: '', tableNumber: '' });
@@ -148,6 +150,26 @@ export default function GuestbookPage() {
     return acc;
   }, {});
   const isPossibleDuplicate = (entry) => guestNameCounts[normalizeGuestName(entry.guestName)] > 1;
+
+  const q = search.trim().toLowerCase();
+  const filteredEntries = entries.filter((e) => {
+    if (statusFilter !== 'ALL' && e.status !== statusFilter) return false;
+    if (!q) return true;
+    return [e.guestName, e.message, e.tableNumber, SOURCE_LABELS[e.source]]
+      .filter(Boolean)
+      .some((field) => field.toLowerCase().includes(q));
+  });
+
+  // Changer de recherche/filtre vide la sélection : sinon « Approuver la sélection » agirait
+  // sur des messages qu'on ne voit plus à l'écran.
+  const changeSearch = (value) => {
+    setSearch(value);
+    setSelected(new Set());
+  };
+  const changeStatusFilter = (value) => {
+    setStatusFilter(value);
+    setSelected(new Set());
+  };
 
   return (
     <div>
@@ -288,6 +310,31 @@ export default function GuestbookPage() {
         {entries.length === 0 ? (
           <div className="empty-state">Aucun message pour le moment.</div>
         ) : (
+          <>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <input
+              type="text"
+              placeholder="Rechercher un message (nom, texte, table)..."
+              value={search}
+              onChange={(e) => changeSearch(e.target.value)}
+              className="input"
+              style={{ maxWidth: '340px' }}
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => changeStatusFilter(e.target.value)}
+              className="input"
+              style={{ width: '170px', flex: 'none' }}
+            >
+              <option value="ALL">Tous les statuts</option>
+              <option value="PENDING">En attente</option>
+              <option value="APPROVED">Approuvés</option>
+              <option value="REJECTED">Rejetés</option>
+            </select>
+          </div>
+          {filteredEntries.length === 0 ? (
+            <div className="empty-state">Aucun message ne correspond à votre recherche.</div>
+          ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -303,7 +350,7 @@ export default function GuestbookPage() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => {
+                {filteredEntries.map((entry) => {
                   const isBusy = busyIds.has(entry.id);
                   return (
                     <tr key={entry.id}>
@@ -360,6 +407,8 @@ export default function GuestbookPage() {
               </tbody>
             </table>
           </div>
+          )}
+          </>
         )}
       </div>
 
