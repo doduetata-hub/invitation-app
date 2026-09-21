@@ -181,14 +181,25 @@ export default function GuestbookPage() {
           <h1 style={{ margin: '0.3rem 0 0' }}>Livre d'or</h1>
         </div>
         {invitation.status === 'PUBLISHED' && (
-          <a
-            href={`/guestbook/${invitation.slug}/display`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-accent"
-          >
-            Ouvrir le mode écran →
-          </a>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <a
+              href={`/guestbook/${invitation.slug}/display?reset=1`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-outline"
+              title="Ouvre l'écran en oubliant les messages déjà passés dans ce navigateur : tous les messages approuvés repassent depuis le début (pour un essai)."
+            >
+              ↺ Rejouer tous les messages
+            </a>
+            <a
+              href={`/guestbook/${invitation.slug}/display`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-accent"
+            >
+              Ouvrir le mode écran →
+            </a>
+          </div>
         )}
       </div>
 

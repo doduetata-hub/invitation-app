@@ -95,6 +95,48 @@ function presentationForMessage(message) {
 
 const DEFAULT_PRESENTATION = presentationForMessage('');
 
+// Mémoire des messages déjà présentés, gardée dans le navigateur de l'écran : sans elle, un
+// simple rechargement de la page en pleine soirée (écran qui se met en veille, onglet fermé par
+// erreur...) refaisait repasser tous les messages depuis le début. Ajouter `?reset=1` à
+// l'adresse de l'écran l'efface une fois (puis retire le paramètre de l'adresse, pour qu'un
+// rechargement suivant ne la réinitialise pas encore) : c'est le moyen de tout rejouer pour un
+// essai. Ne concerne que le navigateur qui ouvre cette adresse. localStorage peut être
+// indisponible (navigation privée, stockage bloqué) : dans ce cas on retombe sur une mémoire
+// vide, valable jusqu'au prochain rechargement.
+const shownStorageKey = (slug) => `guestbook-shown:${slug}`;
+
+function loadShown(slug) {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('reset')) {
+      window.localStorage.removeItem(shownStorageKey(slug));
+      params.delete('reset');
+      const query = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+      return new Set();
+    }
+    return new Set(JSON.parse(window.localStorage.getItem(shownStorageKey(slug)) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveShown(slug, shown) {
+  try {
+    window.localStorage.setItem(shownStorageKey(slug), JSON.stringify([...shown]));
+  } catch {
+    // stockage indisponible : la mémoire reste valable jusqu'au rechargement
+  }
+}
+
+// Empreinte courte du texte (djb2) : la clé d'un message présenté contient son texte pour qu'une
+// correction repasse à l'écran, sans stocker jusqu'à 1000 caractères par message.
+function hashText(text) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i += 1) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
 // Plafond : au-delà, un message très court (« Félicitations ! ») devient ridiculement énorme et
 // la lecture se fait plus difficile, pas plus facile. Plancher : ne jamais descendre sous une
 // taille lisible à distance, même si un message de 1000 caractères devait alors déborder.
@@ -147,10 +189,13 @@ export default function GuestbookDisplayPage() {
   const [phase, setPhase] = useState('loading');
   const [countdownValue, setCountdownValue] = useState(COUNTDOWN_START);
   const [introStep, setIntroStep] = useState(0);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentEntry, setCurrentEntry] = useState(null);
   const [visible, setVisible] = useState(true);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const audioRef = useRef(null);
+  const shownRef = useRef(null);
+  if (shownRef.current === null) shownRef.current = loadShown(slug);
+  const entriesRef = useRef([]);
   const loopRef = useRef(null);
   const groupRef = useRef(null);
   const messageRef = useRef(null);
@@ -248,21 +293,55 @@ export default function GuestbookDisplayPage() {
     return () => clearTimeout(t);
   }, [phase, introStep]);
 
-  // Boucle : fondu sortant, changement de message, fondu entrant, toutes les LOOP_STEP_MS —
-  // redémarre automatiquement dès qu'un nouveau message approuvé arrive (entries change).
+  // Chaque message n'est présenté qu'UNE fois (un invité = un passage, pour que tout le monde
+  // ait sa chance) : plus de boucle une fois la liste épuisée. Les messages approuvés arrivent
+  // dans l'ordre d'approbation ; on prend toujours le premier pas encore présenté, donc un
+  // message approuvé pendant un passage passe juste après le message en cours, sans attendre la
+  // fin de quoi que ce soit. Plus rien à présenter : l'écran d'attente reste affiché jusqu'à la
+  // prochaine approbation. La clé inclut le texte, pour qu'un message corrigé par son auteur
+  // puis ré-approuvé soit bien présenté à nouveau.
+  // entriesRef : les minuteurs ci-dessous durent plusieurs secondes, ils doivent lire la liste
+  // la plus récente et non celle capturée au moment où ils ont été lancés.
+  entriesRef.current = entries;
+  const entryKey = (e) => `${e.id}:${hashText(e.message)}`;
+  const nextUnseen = () => entriesRef.current.find((e) => !shownRef.current.has(entryKey(e))) || null;
+  const present = (entry) => {
+    shownRef.current.add(entryKey(entry));
+    saveShown(slug, shownRef.current);
+    setCurrentEntry(entry);
+    setVisible(true);
+  };
+
+  // Écran d'attente -> premier message non présenté dès qu'il y en a un (fin de l'intro, ou
+  // nouvelle approbation arrivée pendant l'attente).
   useEffect(() => {
-    if (phase !== 'loop' || entries.length === 0) return undefined;
+    if (phase !== 'loop' || currentEntry) return;
+    const next = nextUnseen();
+    if (next) present(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, entries, currentEntry]);
+
+  // Message affiché : fondu sortant après LOOP_STEP_MS, puis le suivant non présenté, ou
+  // l'écran d'attente s'il n'y en a plus. `entries` volontairement hors dépendances : une
+  // nouvelle approbation ne doit pas relancer le minuteur du message en cours d'affichage.
+  useEffect(() => {
+    if (phase !== 'loop' || !currentEntry) return undefined;
+    let fadeTimer;
     const t = setTimeout(() => {
       setVisible(false);
-      setTimeout(() => {
-        setActiveIndex((i) => (i + 1) % entries.length);
-        setVisible(true);
+      fadeTimer = setTimeout(() => {
+        const next = nextUnseen();
+        if (next) present(next);
+        else setCurrentEntry(null);
       }, FADE_MS);
     }, LOOP_STEP_MS);
-    return () => clearTimeout(t);
-  }, [phase, entries, activeIndex]);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(fadeTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, currentEntry]);
 
-  const currentEntry = entries[activeIndex] || null;
   const presentation = currentEntry ? presentationForMessage(currentEntry.message) : DEFAULT_PRESENTATION;
 
   // Avant la peinture, pour qu'on ne voie jamais le message à une taille provisoire. Refait
@@ -345,7 +424,7 @@ export default function GuestbookDisplayPage() {
             <p className="gb-eyebrow">Livre d'or — {data.namesLine || data.title}</p>
 
             {!currentEntry ? (
-              <p className="gb-waiting gb-fade-rise">Les premiers mots arrivent bientôt...</p>
+              <p className="gb-waiting gb-fade-rise">{shownRef.current.size > 0 ? "D'autres mots arrivent bientôt..." : 'Les premiers mots arrivent bientôt...'}</p>
             ) : (
               <div key={currentEntry.id} className={`gb-card ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}>
                 {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
