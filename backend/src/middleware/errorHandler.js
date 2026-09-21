@@ -2,8 +2,11 @@ const multer = require('multer');
 
 function errorHandler(err, req, res, next) {
   if (err instanceof multer.MulterError) {
-    const message =
-      err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop volumineux (10 Mo maximum)' : err.message;
+    // Les limites de nombre de fichiers/champs ne sont jamais atteintes par le formulaire réel :
+    // ne pas relayer le texte technique de multer à un invité.
+    let message = 'Envoi invalide';
+    if (err.code === 'LIMIT_FILE_SIZE') message = 'Fichier trop volumineux (10 Mo maximum)';
+    else if (err.code === 'LIMIT_UNEXPECTED_FILE') message = 'Fichier inattendu';
     return res.status(400).json({ error: message });
   }
 

@@ -3,6 +3,8 @@
 // donc un simple Map suffit : pas besoin de pub/sub inter-process. Si le backend redémarre,
 // les connexions SSE ouvertes se referment et le navigateur du mode écran les rouvre tout seul
 // (EventSource se reconnecte automatiquement nativement).
+const { toPublicEntry } = require('./guestbookPhoto.service');
+
 const subscribersByInvitation = new Map();
 
 function subscribe(invitationId, res) {
@@ -18,13 +20,15 @@ function subscribe(invitationId, res) {
   });
 }
 
-// submissionKey/editToken (GuestbookEntry) sont des secrets internes à l'idempotence/l'édition
-// d'une entrée QR (voir schema.prisma) : ce flux est public et non authentifié (grand écran),
-// donc jamais question qu'ils y transitent, quel que soit l'appelant.
+// Ce flux est public et non authentifié (grand écran) : submissionKey/editToken (secrets
+// d'idempotence/d'édition d'une entrée QR, voir schema.prisma), identifiants internes (rsvpId,
+// qrTokenId, photoId) et informations de stockage n'y transitent jamais, quel que soit
+// l'appelant. Liste blanche via toPublicEntry : seul ce que le grand écran affiche est émis
+// (message, nom, table, origine, et l'URL/les dimensions de la photo si l'entrée en a une — pour
+// cela l'appelant doit charger la relation `photo`).
 function sanitizeForBroadcast(data) {
   if (!data || typeof data !== 'object') return data;
-  const { submissionKey, editToken, ...safe } = data;
-  return safe;
+  return toPublicEntry(data);
 }
 
 function broadcast(invitationId, event, data) {

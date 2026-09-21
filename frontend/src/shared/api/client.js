@@ -25,9 +25,10 @@ async function request(path, options = {}) {
   return data;
 }
 
-async function upload(path, formData) {
+// Pas de Content-Type ici : le navigateur le pose lui-même avec la bonne "boundary" multipart.
+async function upload(path, formData, { method = 'POST' } = {}) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
+    method,
     credentials: 'include',
     body: formData,
   });

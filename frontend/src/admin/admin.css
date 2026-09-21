@@ -866,6 +866,50 @@ textarea.input {
   line-height: 1.4;
 }
 
+/* Photo jointe à un message du livre d'or : miniature cliquable sous le texte, dans la colonne
+   Message — l'admin voit d'un coup d'œil quelles entrées en ont une. */
+.cell-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--color-ink-muted, inherit);
+  cursor: pointer;
+}
+
+.cell-photo-btn img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.cell-photo-btn:hover span {
+  text-decoration: underline;
+}
+
+.message-modal-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+}
+
+.message-modal-photo img {
+  max-width: 100%;
+  max-height: 46vh;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
 .preview-column {
   position: sticky;
   top: 1.5rem;

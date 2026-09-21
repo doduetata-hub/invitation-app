@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import GuestbookPhotoPicker from '../../shared/components/GuestbookPhotoPicker';
 
 const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, drink: '', message: '' };
 
@@ -45,6 +46,18 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Photo facultative du mot du livre d'or : `photo` = nouvelle photo choisie ;
+  // `removeExistingPhoto` = l'invité a retiré celle déjà jointe à sa réponse précédente.
+  const [photo, setPhoto] = useState(null);
+  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  // Photo déjà enregistrée pour CET invité (lien personnalisé) et son statut : une fois le mot
+  // approuvé, il est figé côté serveur (voir syncGuestbookEntry) — on ne propose donc plus de
+  // changer la photo, pour ne pas laisser croire qu'elle serait prise en compte.
+  const guestbookLocked = guestInfo?.guestbook?.status === 'APPROVED';
+  const existingPhotoUrl = photoRemoved ? null : guestInfo?.guestbook?.photoUrl || null;
 
   useEffect(() => {
     if (guestInfo?.name) {
@@ -64,6 +77,9 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
       message: guestInfo?.rsvp?.message || '',
     });
     setError('');
+    setPhoto(null);
+    setRemoveExistingPhoto(false);
+    setPhotoRemoved(false);
     setEditing(true);
   };
 
@@ -76,10 +92,15 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
       return;
     }
 
+    if (photo && !form.message.trim()) {
+      setError('Ajoutez un message pour accompagner votre photo.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (onSubmit) {
-        await onSubmit(form);
+        await onSubmit(form, { photo: photo?.file || null, removePhoto: removeExistingPhoto && !photo });
       }
       setEditing(false);
       setSubmitted(true);
@@ -188,9 +209,30 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
           <span style={styles.hint}>Votre mot sera conservé dans leur livre d'or.</span>
         </label>
 
+        {!guestbookLocked && (
+          <GuestbookPhotoPicker
+            photo={photo}
+            existingUrl={existingPhotoUrl}
+            onChange={(prepared) => {
+              setPhoto(prepared);
+              setRemoveExistingPhoto(false);
+            }}
+            onRemove={() => {
+              // Retirer la photo choisie ; s'il n'y en a plus, retirer celle déjà enregistrée.
+              if (photo) setPhoto(null);
+              else {
+                setPhotoRemoved(true);
+                setRemoveExistingPhoto(true);
+              }
+            }}
+            onBusyChange={setPhotoBusy}
+            disabled={submitting}
+          />
+        )}
+
         {error && <p style={styles.error}>{error}</p>}
 
-        <button type="submit" disabled={submitting} style={styles.button}>
+        <button type="submit" disabled={submitting || photoBusy} style={styles.button}>
           {submitting ? 'Envoi...' : editing ? 'Enregistrer les modifications' : 'Confirmer'}
         </button>
         {editing && (

@@ -4,6 +4,7 @@ import { api } from '../shared/api/client';
 import { getTemplate } from './templates/registry';
 import { tokensToCssVars } from './theme/tokens';
 import { loadRememberedGuestbookEntry, rememberGuestbookEntry, forgetRememberedGuestbookEntry } from '../shared/utils/guestbookMemory';
+import GuestbookPhotoPicker from '../shared/components/GuestbookPhotoPicker';
 
 const emptyForm = { guestName: '', message: '' };
 
@@ -51,6 +52,14 @@ export default function GuestbookQrPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  // Photo facultative : `photo` = nouvelle photo choisie (préparée côté navigateur, voir
+  // guestbookPhoto.js) ; `existingPhotoUrl` = miniature de celle déjà enregistrée sur cette
+  // entrée ; `removeExistingPhoto` = l'invité l'a retirée sans en choisir une autre.
+  const [photo, setPhoto] = useState(null);
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState(null);
+  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
+  const [hasPhoto, setHasPhoto] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   useEffect(() => {
     api
@@ -75,6 +84,8 @@ export default function GuestbookQrPage() {
             setExistingEntrySource(entry.source);
             setEditToken(remembered.editToken || null);
             setForm({ guestName: entry.guestName, message: entry.message });
+            setExistingPhotoUrl(entry.photoUrl || null);
+            setHasPhoto(Boolean(entry.photoUrl));
             // Une entrée DIGITAL (laissée via l'invitation personnalisée) n'est jamais éditable
             // depuis cette page QR — seule sa propre invitation le permet (voir RsvpSection) —
             // donc on la traite comme verrouillée ici, même si elle n'est pas encore approuvée.
@@ -94,9 +105,33 @@ export default function GuestbookQrPage() {
 
     setSubmitting(true);
     try {
-      const result = existingEntryId
-        ? await api.patch(`/guestbook/${token}/${existingEntryId}`, { ...form, editToken })
-        : await api.post(`/guestbook/${token}`, { ...form, submissionKey: getOrCreateSubmissionKey(token) });
+      let result;
+      if (photo || removeExistingPhoto) {
+        // Avec photo (ou retrait de la photo existante) : envoi multipart. Sans photo, le JSON
+        // d'origine ci-dessous reste STRICTEMENT identique à avant l'ajout des photos.
+        const body = new FormData();
+        body.append('guestName', form.guestName);
+        body.append('message', form.message);
+        if (existingEntryId) {
+          body.append('editToken', editToken || '');
+          if (removeExistingPhoto && !photo) body.append('removePhoto', 'true');
+        } else {
+          body.append('submissionKey', getOrCreateSubmissionKey(token));
+        }
+        if (photo) body.append('photo', photo.file, photo.file.name || 'photo.jpg');
+        result = await api.upload(existingEntryId ? `/guestbook/${token}/${existingEntryId}` : `/guestbook/${token}`, body, {
+          method: existingEntryId ? 'PATCH' : 'POST',
+        });
+      } else {
+        result = existingEntryId
+          ? await api.patch(`/guestbook/${token}/${existingEntryId}`, { ...form, editToken })
+          : await api.post(`/guestbook/${token}`, { ...form, submissionKey: getOrCreateSubmissionKey(token) });
+      }
+      if (photo) setExistingPhotoUrl(photo.previewUrl); // l'aperçu local devient "la photo enregistrée"
+      else if (removeExistingPhoto) setExistingPhotoUrl(null);
+      setPhoto(null);
+      setRemoveExistingPhoto(false);
+      setHasPhoto(Boolean(result.hasPhoto));
       setExistingEntryId(result.id);
       setExistingEntrySource('QR');
       // result.editToken n'est renvoyé qu'à la création (et lors d'un renvoi identique détecté
@@ -171,6 +206,7 @@ export default function GuestbookQrPage() {
           <div style={styles.confirmation}>
             <p style={styles.confirmationTitle}>Votre message a bien été déposé dans le livre d'or.</p>
             <p style={styles.confirmationSub}>Merci d'avoir partagé ce moment avec eux.</p>
+            {hasPhoto && <p style={styles.confirmationSub}>📷 Votre photo est jointe à votre message.</p>}
             <button type="button" onClick={() => setEditing(true)} style={styles.linkButton}>
               Modifier mon message
             </button>
@@ -219,9 +255,28 @@ export default function GuestbookQrPage() {
                 />
               </label>
 
+              <GuestbookPhotoPicker
+                photo={photo}
+                existingUrl={removeExistingPhoto ? null : existingPhotoUrl}
+                onChange={(prepared) => {
+                  setPhoto(prepared);
+                  setRemoveExistingPhoto(false);
+                }}
+                onRemove={() => {
+                  // Retirer la photo choisie ; s'il n'y en a plus, retirer celle déjà enregistrée.
+                  if (photo) setPhoto(null);
+                  else {
+                    setExistingPhotoUrl(null);
+                    setRemoveExistingPhoto(true);
+                  }
+                }}
+                onBusyChange={setPhotoBusy}
+                disabled={submitting}
+              />
+
               {error && <p style={styles.error}>{error}</p>}
 
-              <button type="submit" disabled={submitting} style={styles.button}>
+              <button type="submit" disabled={submitting || photoBusy} style={styles.button}>
                 {submitting ? 'Envoi...' : existingEntryId ? 'Mettre à jour mon message' : 'Déposer mon message'}
               </button>
               {editing && (

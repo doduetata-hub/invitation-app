@@ -2,6 +2,7 @@ const QRCode = require('qrcode');
 const prisma = require('../db/prismaClient');
 const env = require('../config/env');
 const { broadcast } = require('../services/guestbookRealtime.service');
+const { PUBLIC_MEDIA_TYPES, storeGuestbookPhoto, deleteGuestbookPhoto } = require('../services/guestbookPhoto.service');
 
 function badRequest(message) {
   const err = new Error(message);
@@ -26,37 +27,65 @@ function badRequest(message) {
 // message si l'invité scanne ensuite un QR papier du livre d'or depuis le même appareil (voir
 // GuestbookQrPage.jsx) — jamais pour l'éditer depuis là, seulement pour éviter d'en recréer un
 // second par mégarde.
-async function syncGuestbookEntry(rsvp, autoApprove) {
+//
+// Photo facultative (photoOp = { newPhoto, removePhoto }) : elle suit exactement le même cycle
+// que le texte — figée une fois approuvée, remplacée/retirée tant que l'entrée ne l'est pas,
+// supprimée avec l'entrée si l'invité vide son message. `newPhoto` est une ligne Media déjà
+// créée par l'appelant : cette fonction la rattache, ou la supprime si elle ne peut pas l'être
+// (entrée figée, message vidé, écriture en base échouée) — jamais de fichier laissé orphelin.
+async function syncGuestbookEntry(rsvp, autoApprove, { newPhoto = null, removePhoto = false } = {}) {
   const message = rsvp.message?.trim();
-  const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id } });
+  const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id }, include: { photo: true } });
 
-  if (existing?.status === 'APPROVED') return existing;
+  if (existing?.status === 'APPROVED') {
+    await deleteGuestbookPhoto(newPhoto);
+    return existing;
+  }
 
   if (!message) {
-    if (existing) await prisma.guestbookEntry.delete({ where: { id: existing.id } });
+    if (existing) {
+      await prisma.guestbookEntry.delete({ where: { id: existing.id } });
+      await deleteGuestbookPhoto(existing.photo);
+    }
+    await deleteGuestbookPhoto(newPhoto);
     return null;
   }
 
-  const changed = !existing || existing.guestName !== rsvp.name || existing.message !== message;
+  const photoChanged = Boolean(newPhoto) || (removePhoto && Boolean(existing?.photo));
+  const changed = !existing || existing.guestName !== rsvp.name || existing.message !== message || photoChanged;
   if (!changed) return existing;
 
   const status = autoApprove ? 'APPROVED' : 'PENDING';
   const approvedAt = status === 'APPROVED' ? new Date() : null;
 
-  const entry = await prisma.guestbookEntry.upsert({
-    where: { rsvpId: rsvp.id },
-    update: { guestName: rsvp.name, message, status, approvedAt },
-    create: {
-      invitationId: rsvp.invitationId,
-      rsvpId: rsvp.id,
-      source: 'DIGITAL',
-      guestName: rsvp.name,
-      message,
-      status,
-      approvedAt,
-    },
-  });
+  // Sans nouvelle photo ni demande de retrait, la photo actuelle est conservée telle quelle.
+  let photoId = existing?.photoId ?? null;
+  if (newPhoto) photoId = newPhoto.id;
+  else if (removePhoto) photoId = null;
 
+  let entry;
+  try {
+    entry = await prisma.guestbookEntry.upsert({
+      where: { rsvpId: rsvp.id },
+      update: { guestName: rsvp.name, message, status, approvedAt, photoId },
+      create: {
+        invitationId: rsvp.invitationId,
+        rsvpId: rsvp.id,
+        source: 'DIGITAL',
+        guestName: rsvp.name,
+        message,
+        status,
+        approvedAt,
+        photoId,
+      },
+      include: { photo: true },
+    });
+  } catch (err) {
+    await deleteGuestbookPhoto(newPhoto).catch(() => {});
+    throw err;
+  }
+
+  if (existing?.photo && existing.photoId !== entry.photoId) await deleteGuestbookPhoto(existing.photo);
   if (status === 'APPROVED') broadcast(entry.invitationId, 'entry', entry);
   return entry;
 }
@@ -68,7 +97,9 @@ async function getInvitationBySlug(req, res) {
       client: { select: { phone: true, whatsapp: true } },
       template: { select: { key: true, name: true } },
       events: { orderBy: { order: 'asc' } },
-      media: { orderBy: { order: 'asc' } },
+      // Jamais les photos du livre d'or (type "guestbook") : elles suivent la modération du message
+      // et ne doivent pas fuiter par la charge utile publique de l'invitation.
+      media: { where: { type: { in: PUBLIC_MEDIA_TYPES } }, orderBy: { order: 'asc' } },
     },
   });
 
@@ -89,6 +120,12 @@ async function getInvitationBySlug(req, res) {
     if (!guest) {
       return res.status(404).json({ error: "Ce lien personnalisé n'est plus valide" });
     }
+    // État de SON mot du livre d'or (statut + miniature de sa propre photo), pour que le formulaire
+    // de modification affiche la photo déjà jointe et la verrouille une fois diffusée. Lié à son
+    // lien personnel (guestCode), jamais exposé à quelqu'un d'autre.
+    const guestbookEntry = guest.rsvp
+      ? await prisma.guestbookEntry.findUnique({ where: { rsvpId: guest.rsvp.id }, include: { photo: true } })
+      : null;
     guestInfo = {
       code: guest.guestCode,
       name: guest.name,
@@ -96,6 +133,7 @@ async function getInvitationBySlug(req, res) {
       tableNumber: guest.tableNumber,
       alreadyAnswered: Boolean(guest.rsvp),
       rsvp: guest.rsvp,
+      guestbook: guestbookEntry ? { status: guestbookEntry.status, photoUrl: guestbookEntry.photo?.thumbUrl ?? null } : null,
     };
   }
 
@@ -135,6 +173,12 @@ async function submitRsvp(req, res) {
   if (!name?.trim()) badRequest('Le nom est requis');
   if (!['YES', 'NO'].includes(answer)) badRequest('Réponse invalide');
 
+  // Photo facultative (envoi multipart, voir uploadGuestbookPhoto) : elle illustre le MOT du
+  // livre d'or, elle n'a donc pas de sens sans message. removePhoto arrive en texte ("true")
+  // quand la requête est multipart.
+  const removePhoto = String((req.body || {}).removePhoto) === 'true';
+  if (req.file && !message?.trim()) badRequest('Ajoutez un message pour accompagner votre photo.');
+
   const persons = Number.isFinite(Number(numberOfPersons)) ? Math.max(1, Math.trunc(Number(numberOfPersons))) : 1;
 
   const rsvpData = {
@@ -171,20 +215,38 @@ async function submitRsvp(req, res) {
       rsvpData.name = guest.name;
     }
 
-    const rsvp = await prisma.rsvp.upsert({
-      where: { guestId: guest.id },
-      update: rsvpData,
-      create: { ...rsvpData, guestId: guest.id, invitationId: invitation.id },
-    });
-    const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
-    return res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null });
+    // La photo n'est traitée/stockée qu'ici, une fois TOUS les contrôles passés (lien valide,
+    // verrou, maximum de personnes) : une requête refusée n'écrit aucun fichier. Si l'écriture
+    // du RSVP échoue ensuite, la photo déjà stockée est supprimée avant de remonter l'erreur ;
+    // une fois passée à syncGuestbookEntry, c'est elle qui en répond.
+    const newPhoto = req.file ? await storeGuestbookPhoto(req.file, invitation.id) : null;
+    let rsvp;
+    try {
+      rsvp = await prisma.rsvp.upsert({
+        where: { guestId: guest.id },
+        update: rsvpData,
+        create: { ...rsvpData, guestId: guest.id, invitationId: invitation.id },
+      });
+    } catch (err) {
+      await deleteGuestbookPhoto(newPhoto).catch(() => {});
+      throw err;
+    }
+    const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove, { newPhoto, removePhoto });
+    return res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null, guestbookHasPhoto: Boolean(guestbookEntry?.photoId) });
   }
 
-  const rsvp = await prisma.rsvp.create({
-    data: { ...rsvpData, invitationId: invitation.id },
-  });
-  const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove);
-  res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null });
+  const newPhoto = req.file ? await storeGuestbookPhoto(req.file, invitation.id) : null;
+  let rsvp;
+  try {
+    rsvp = await prisma.rsvp.create({
+      data: { ...rsvpData, invitationId: invitation.id },
+    });
+  } catch (err) {
+    await deleteGuestbookPhoto(newPhoto).catch(() => {});
+    throw err;
+  }
+  const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove, { newPhoto, removePhoto });
+  res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null, guestbookHasPhoto: Boolean(guestbookEntry?.photoId) });
 }
 
 // QR code du lien personnalisé de l'invité, servi depuis sa propre page d'invitation

@@ -43,10 +43,34 @@ injectStylesOnce(
   /* Le groupe (photo + intitulé + message) garde sa hauteur naturelle : c'est lui qu'on mesure
      pour caler la taille du message (voir fitMessageFont), et .gb-loop le centre à l'écran. */
   .gb-group { display: flex; flex-direction: column; align-items: center; max-width: 80vw; }
-  .gb-card { transition: opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease; }
+  .gb-group-photo { max-width: 90vw; }
+  .gb-card { display: flex; flex-direction: column; align-items: center; transition: opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease; }
+  .gb-text { max-width: 80vw; }
+
+  /* Message + photo : composition en deux colonnes sur un écran large (photo encadrée à gauche,
+     message à droite), en pile sur un écran en portrait. Toutes les tailles sont en vw/vh : la
+     composition est identique en 1366x768, 1080p et 4K. --gb-photo-scale réduit la photo quand
+     le message est long, pour que le message reste TOUJOURS l'élément principal. La photo garde
+     son ratio d'origine (largeur/hauteur auto + object-fit: contain) : jamais déformée ni
+     recadrée, jamais agrandie au-delà de sa définition (pas de pixellisation inutile). */
+  .gb-card-photo { flex-direction: row; justify-content: center; gap: clamp(28px, 4.2vw, 160px); }
+  .gb-card-photo .gb-text { flex: 0 1 auto; min-width: 0; max-width: 44vw; }
+  .gb-photo-frame { --gb-photo-scale: 1; margin: 0; flex: none; line-height: 0; padding: clamp(6px, 0.65vw, 24px); border: 1px solid rgba(214,181,109,0.65); background: linear-gradient(145deg, rgba(38,30,17,0.92), rgba(10,9,8,0.92)); box-shadow: 0 0 0 clamp(3px, 0.3vw, 12px) rgba(10,9,8,0.55), 0 0 5vw rgba(216,181,109,0.16), 0 2.4vh 6vh rgba(0,0,0,0.6); }
+  .gb-photo-frame img { display: block; width: auto; height: auto; object-fit: contain; }
+  .gb-photo-landscape img { max-width: calc(40vw * var(--gb-photo-scale)); max-height: calc(50vh * var(--gb-photo-scale)); }
+  .gb-photo-square img { max-width: calc(32vw * var(--gb-photo-scale)); max-height: calc(54vh * var(--gb-photo-scale)); }
+  .gb-photo-portrait img { max-width: calc(26vw * var(--gb-photo-scale)); max-height: calc(62vh * var(--gb-photo-scale)); }
+  @media (max-aspect-ratio: 1/1) {
+    .gb-card-photo { flex-direction: column; gap: 3vh; }
+    .gb-card-photo .gb-text { max-width: 84vw; }
+    .gb-photo-landscape img, .gb-photo-square img, .gb-photo-portrait img { max-width: calc(78vw * var(--gb-photo-scale)); max-height: calc(34vh * var(--gb-photo-scale)); }
+  }
+
   .gb-card-hidden { opacity: 0; transform: translateY(18px); }
   .gb-card-visible { opacity: 1; transform: translateY(0); }
-  .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 4.17vw, 10rem); color: #B88A32; margin: 0 0 -2vh; opacity: 0.6; }
+  /* Marge en vw (comme la taille du guillemet) et non en vh : identique en 16:9 (-2vh = -1.125vw), mais
+     ne vient plus mordre sur la 1re ligne du message sur un écran vertical. */
+  .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 4.17vw, 10rem); color: #B88A32; margin: 0 0 -1.125vw; opacity: 0.6; }
   /* font-size posée en JS (fitMessageFont) ; la valeur ci-dessous ne sert que de repli avant la mesure. */
   .gb-message { font-size: clamp(1.8rem, 3vw, 6rem); line-height: 1.35; color: #FFFDF8; margin: 0 0 3vh; font-weight: 600; text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
   .gb-name { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(1.05rem, 1.35vw, 3.2rem); font-weight: 500; color: #E3C57F; margin: 0; }
@@ -88,9 +112,39 @@ injectStylesOnce(
 // vide autour) : fitMessageFont mesure le rendu réel et prend la plus grande taille qui tient à
 // l'écran, quelle que soit sa résolution (1080p comme 4K). Seuls les éléments décoratifs restent
 // conditionnés à la longueur, pour rendre la place verticale au texte quand il est long.
-function presentationForMessage(message) {
+function presentationForMessage(message, hasPhoto = false) {
   const len = message.length;
-  return { showPhoto: len <= 120, showQuote: len <= 400 };
+  // Avec une photo de l'invité, la photo du couple (cercle) est remplacée par la sienne, et le
+  // guillemet décoratif disparaît plus tôt pour laisser la hauteur au texte.
+  return {
+    showPhoto: !hasPhoto && len <= 120,
+    showQuote: len <= (hasPhoto ? 240 : 400),
+    // Plus le message est long, plus la photo se fait discrète (le texte est le cœur du souvenir).
+    photoScale: len <= 160 ? 1 : len <= 400 ? 0.8 : 0.6,
+  };
+}
+
+function photoOrientation(photo) {
+  if (!photo?.width || !photo?.height) return 'landscape';
+  const ratio = photo.width / photo.height;
+  if (ratio >= 1.2) return 'landscape';
+  if (ratio <= 0.85) return 'portrait';
+  return 'square';
+}
+
+// Charge une image AVANT de l'afficher : le message n'apparaît pas avec un cadre vide, et sa
+// mesure de mise en page (voir fitMessageFont) se fait sur la photo réellement dimensionnée.
+// Résout dans tous les cas (erreur, délai dépassé) — une photo cassée ne doit jamais bloquer le
+// diaporama, il continue simplement avec le message seul.
+function preloadImage(url, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const done = () => resolve();
+    img.onload = done;
+    img.onerror = done;
+    setTimeout(done, timeoutMs);
+    img.src = url;
+  });
 }
 
 const DEFAULT_PRESENTATION = presentationForMessage('');
@@ -191,11 +245,15 @@ export default function GuestbookDisplayPage() {
   const [introStep, setIntroStep] = useState(0);
   const [currentEntry, setCurrentEntry] = useState(null);
   const [visible, setVisible] = useState(true);
+  // Photo qui n'a pas pu s'afficher (fichier supprimé entre-temps...) : on retombe sur le
+  // message seul plutôt que d'afficher un cadre cassé.
+  const [failedPhotoId, setFailedPhotoId] = useState(null);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const audioRef = useRef(null);
   const shownRef = useRef(null);
   if (shownRef.current === null) shownRef.current = loadShown(slug);
   const entriesRef = useRef([]);
+  const presentingRef = useRef(false);
   const loopRef = useRef(null);
   const groupRef = useRef(null);
   const messageRef = useRef(null);
@@ -263,7 +321,13 @@ export default function GuestbookDisplayPage() {
 
     const sameList = (a, b) =>
       a.length === b.length &&
-      a.every((x, i) => x.id === b[i].id && x.message === b[i].message && x.guestName === b[i].guestName);
+      a.every(
+        (x, i) =>
+          x.id === b[i].id &&
+          x.message === b[i].message &&
+          x.guestName === b[i].guestName &&
+          (x.photo?.url || null) === (b[i].photo?.url || null)
+      );
 
     const poll = () => {
       fetch(`${API_BASE}/guestbook/display/${slug}`, { cache: 'no-store' })
@@ -305,17 +369,24 @@ export default function GuestbookDisplayPage() {
   entriesRef.current = entries;
   const entryKey = (e) => `${e.id}:${hashText(e.message)}`;
   const nextUnseen = () => entriesRef.current.find((e) => !shownRef.current.has(entryKey(e))) || null;
-  const present = (entry) => {
+  // Le message est marqué "présenté" tout de suite, AVANT d'attendre sa photo : ainsi ni un
+  // nouveau cycle de l'effet ci-dessous ni une actualisation de la liste ne peut le présenter
+  // deux fois pendant le chargement (presentingRef bloque aussi toute présentation concurrente).
+  const present = async (entry) => {
+    presentingRef.current = true;
     shownRef.current.add(entryKey(entry));
     saveShown(slug, shownRef.current);
+    if (entry.photo?.url) await preloadImage(entry.photo.url);
+    setFailedPhotoId(null);
     setCurrentEntry(entry);
     setVisible(true);
+    presentingRef.current = false;
   };
 
   // Écran d'attente -> premier message non présenté dès qu'il y en a un (fin de l'intro, ou
   // nouvelle approbation arrivée pendant l'attente).
   useEffect(() => {
-    if (phase !== 'loop' || currentEntry) return;
+    if (phase !== 'loop' || currentEntry || presentingRef.current) return;
     const next = nextUnseen();
     if (next) present(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -326,6 +397,11 @@ export default function GuestbookDisplayPage() {
   // nouvelle approbation ne doit pas relancer le minuteur du message en cours d'affichage.
   useEffect(() => {
     if (phase !== 'loop' || !currentEntry) return undefined;
+    // Précharge la photo du PROCHAIN message seulement (jamais toute la liste) : elle est déjà
+    // en cache quand vient son tour, sans télécharger des dizaines d'images d'avance.
+    const upcoming = nextUnseen();
+    if (upcoming?.photo?.url) preloadImage(upcoming.photo.url);
+
     let fadeTimer;
     const t = setTimeout(() => {
       setVisible(false);
@@ -342,7 +418,8 @@ export default function GuestbookDisplayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, currentEntry]);
 
-  const presentation = currentEntry ? presentationForMessage(currentEntry.message) : DEFAULT_PRESENTATION;
+  const entryPhoto = currentEntry?.photo && failedPhotoId !== currentEntry.id ? currentEntry.photo : null;
+  const presentation = currentEntry ? presentationForMessage(currentEntry.message, Boolean(entryPhoto)) : DEFAULT_PRESENTATION;
 
   // Avant la peinture, pour qu'on ne voie jamais le message à une taille provisoire. Refait
   // quand la fenêtre change de taille et une fois les polices chargées (leurs métriques
@@ -360,7 +437,7 @@ export default function GuestbookDisplayPage() {
       cancelled = true;
       window.removeEventListener('resize', run);
     };
-  }, [phase, currentEntry?.id, currentEntry?.message, presentation.showPhoto, presentation.showQuote]);
+  }, [phase, currentEntry?.id, currentEntry?.message, entryPhoto?.url, presentation.showPhoto, presentation.showQuote, presentation.photoScale]);
 
   if (notFound) {
     return (
@@ -419,17 +496,37 @@ export default function GuestbookDisplayPage() {
 
       {phase === 'loop' && (
         <div className="gb-loop" ref={loopRef}>
-          <div className="gb-group" ref={groupRef}>
+          <div className={`gb-group${entryPhoto ? ' gb-group-photo' : ''}`} ref={groupRef}>
             {data.coverUrl && presentation.showPhoto && <img src={data.coverUrl} className="gb-couple-photo" alt="" />}
             <p className="gb-eyebrow">Livre d'or — {data.namesLine || data.title}</p>
 
             {!currentEntry ? (
               <p className="gb-waiting gb-fade-rise">{shownRef.current.size > 0 ? "D'autres mots arrivent bientôt..." : 'Les premiers mots arrivent bientôt...'}</p>
             ) : (
-              <div key={currentEntry.id} className={`gb-card ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}>
-                {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
-                <p className="gb-message" ref={messageRef}>{currentEntry.message}</p>
-                <p className="gb-name">— {currentEntry.guestName}</p>
+              <div
+                key={currentEntry.id}
+                className={`gb-card${entryPhoto ? ' gb-card-photo' : ''} ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}
+              >
+                {entryPhoto && (
+                  <figure
+                    className={`gb-photo-frame gb-photo-${photoOrientation(entryPhoto)}`}
+                    style={{ '--gb-photo-scale': presentation.photoScale }}
+                  >
+                    <img
+                      src={entryPhoto.url}
+                      width={entryPhoto.width || undefined}
+                      height={entryPhoto.height || undefined}
+                      alt={`Photo de ${currentEntry.guestName}`}
+                      decoding="async"
+                      onError={() => setFailedPhotoId(currentEntry.id)}
+                    />
+                  </figure>
+                )}
+                <div className="gb-text">
+                  {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
+                  <p className="gb-message" ref={messageRef}>{currentEntry.message}</p>
+                  <p className="gb-name">— {currentEntry.guestName}</p>
+                </div>
               </div>
             )}
           </div>

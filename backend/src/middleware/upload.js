@@ -54,4 +54,23 @@ const uploadSpreadsheet = multer({
   ),
 });
 
-module.exports = { upload, uploadAudio, uploadSpreadsheet, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES };
+// Photo facultative jointe à un message du livre d'or (invités anonymes, sans compte). Ce
+// filtre ne vérifie que le type DÉCLARÉ par le navigateur (premier tri rapide) : le vrai format
+// est contrôlé sur le contenu du fichier par processGuestbookPhoto (image.service.js), qui est
+// la seule barrière fiable — un fichier renommé en .jpg passe ici mais pas là-bas. multer ne
+// traite que les requêtes multipart : un envoi JSON classique (sans photo) traverse ce
+// middleware sans effet, donc les routes existantes gardent leur contrat d'origine.
+// SVG volontairement absent : il peut embarquer du script.
+const ALLOWED_GUESTBOOK_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+const MAX_GUESTBOOK_PHOTO_SIZE = 10 * 1024 * 1024; // 10 Mo avant traitement
+
+const uploadGuestbookPhoto = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_GUESTBOOK_PHOTO_SIZE, files: 1, fields: 20, parts: 25 },
+  fileFilter: fileFilterFor(
+    ALLOWED_GUESTBOOK_PHOTO_TYPES,
+    'Format de photo non supporté (JPEG, PNG ou WebP uniquement)'
+  ),
+}).single('photo');
+
+module.exports = { upload, uploadAudio, uploadSpreadsheet, uploadGuestbookPhoto, MAX_GUESTBOOK_PHOTO_SIZE, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES };

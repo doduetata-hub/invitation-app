@@ -151,6 +151,15 @@ model Media {
   order        Int        @default(0)
   createdAt    DateTime   @default(now()) @map("created_at")
 
+  // Renseignés uniquement pour les photos du livre d'or (type "guestbook") : miniature pour
+  // l'admin, dimensions pour que le mode écran choisisse sa composition sans attendre le
+  // chargement de l'image. Toujours null pour la couverture/la galerie.
+  thumbUrl String? @map("thumb_url")
+  width    Int?
+  height   Int?
+
+  guestbookEntry GuestbookEntry? @relation("GuestbookEntryPhoto")
+
   @@map("media")
 }
 
@@ -238,6 +247,13 @@ model GuestbookEntry {
   // l'invitation, seul le porteur de cet editToken précis le peut.
   submissionKey String? @unique @map("submission_key")
   editToken     String? @unique @map("edit_token")
+
+  // Photo facultative jointe au message : une ligne Media de type "guestbook", jamais un fichier
+  // ou une URL saisie librement. SetNull côté entrée -> supprimer la ligne Media ne supprime
+  // jamais le message ; l'inverse (supprimer le message) nettoie la photo explicitement dans
+  // guestbook.controller.js, fichiers de stockage compris (la base seule ne peut pas le faire).
+  photoId String? @unique @map("photo_id")
+  photo   Media?  @relation("GuestbookEntryPhoto", fields: [photoId], references: [id], onDelete: SetNull)
 
   status     GuestbookStatus @default(PENDING)
   approvedAt DateTime?       @map("approved_at")

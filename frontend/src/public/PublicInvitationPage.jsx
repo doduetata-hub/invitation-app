@@ -54,8 +54,19 @@ export default function PublicInvitationPage() {
 
   usePageMeta(invitation);
 
-  const handleRsvpSubmit = async (form) => {
-    const result = await api.post(`/public/invitations/${slug}/rsvp`, { ...form, guestCode });
+  const handleRsvpSubmit = async (form, { photo = null, removePhoto = false } = {}) => {
+    let result;
+    if (photo || removePhoto) {
+      // Avec photo (ou retrait de la photo déjà jointe) : envoi multipart. Sans photo, le JSON
+      // d'origine ci-dessous reste STRICTEMENT identique à avant l'ajout des photos.
+      const body = new FormData();
+      Object.entries({ ...form, guestCode }).forEach(([key, value]) => body.append(key, value ?? ''));
+      if (removePhoto) body.append('removePhoto', 'true');
+      if (photo) body.append('photo', photo, photo.name || 'photo.jpg');
+      result = await api.upload(`/public/invitations/${slug}/rsvp`, body);
+    } else {
+      result = await api.post(`/public/invitations/${slug}/rsvp`, { ...form, guestCode });
+    }
     // Se souvient (même appareil uniquement) du mot laissé ici, pour que l'invité soit
     // reconnu s'il scanne aussi un QR papier du livre d'or — voir guestbookMemory.js et
     // GuestbookQrPage.jsx. Un message vidé (RSVP resoumis sans mot) efface ce souvenir : rien

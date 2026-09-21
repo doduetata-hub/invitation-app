@@ -67,6 +67,16 @@ export default function GuestbookPage() {
       await loadEntries();
     });
 
+  // Retire UNIQUEMENT la photo : route dédiée (DELETE .../photo), jamais la suppression du
+  // message — la confirmation le dit explicitement pour éviter toute confusion entre les deux.
+  const removeEntryPhoto = (entryId) =>
+    withBusy(entryId, async () => {
+      if (!window.confirm('Retirer uniquement la photo ? Le message est conservé.')) return;
+      await api.delete(`/guestbook-entries/${entryId}/photo`);
+      setMessageView((view) => (view?.entryId === entryId ? { ...view, photoUrl: null } : view));
+      await loadEntries();
+    });
+
   const removeEntry = (entryId) =>
     withBusy(entryId, async () => {
       if (!window.confirm('Supprimer définitivement ce message du livre d\'or ?')) return;
@@ -212,6 +222,7 @@ export default function GuestbookPage() {
         <StatCard label="Rejetés" value={stats.rejected} />
         <StatCard label="Via invitation numérique" value={stats.bySource.DIGITAL || 0} />
         <StatCard label="Via QR code" value={stats.bySource.QR || 0} />
+        <StatCard label="Avec photo" value={entries.filter((e) => e.photo).length} />
       </div>
 
       <div className="editor-section">
@@ -388,10 +399,21 @@ export default function GuestbookPage() {
                         <button
                           type="button"
                           className="cell-message-btn"
-                          onClick={() => setMessageView({ name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt })}
+                          onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo?.url || null })}
                         >
                           <span className="cell-message-btn-text">{entry.message}</span>
                         </button>
+                        {entry.photo && (
+                          <button
+                            type="button"
+                            className="cell-photo-btn"
+                            title="Voir la photo jointe"
+                            onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo.url })}
+                          >
+                            <img src={entry.photo.thumbUrl || entry.photo.url} alt="" loading="lazy" decoding="async" />
+                            <span>📷 Photo jointe</span>
+                          </button>
+                        )}
                       </td>
                       <td>{SOURCE_LABELS[entry.source]}</td>
                       <td>{entry.tableNumber || '—'}</td>
@@ -433,7 +455,13 @@ export default function GuestbookPage() {
         />
       )}
 
-      {messageView && <GuestMessageModal {...messageView} onClose={() => setMessageView(null)} />}
+      {messageView && (
+        <GuestMessageModal
+          {...messageView}
+          onRemovePhoto={messageView.photoUrl ? () => removeEntryPhoto(messageView.entryId) : undefined}
+          onClose={() => setMessageView(null)}
+        />
+      )}
     </div>
   );
 }

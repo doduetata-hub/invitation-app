@@ -3,6 +3,7 @@ const prisma = require('../db/prismaClient');
 const env = require('../config/env');
 const { generateUniqueGuestbookToken } = require('../services/guestbookToken.service');
 const { broadcast } = require('../services/guestbookRealtime.service');
+const { deleteGuestbookPhoto } = require('../services/guestbookPhoto.service');
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
 
@@ -28,9 +29,11 @@ async function listForInvitation(req, res) {
   const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
   if (!invitation) return res.status(404).json({ error: 'Invitation introuvable' });
 
+  // photo : url + miniature + dimensions pour la modération (page admin authentifiée).
   const entries = await prisma.guestbookEntry.findMany({
     where: { invitationId: req.params.id },
     orderBy: { createdAt: 'desc' },
+    include: { photo: { select: { id: true, url: true, thumbUrl: true, width: true, height: true } } },
   });
 
   res.json({ entries, stats: computeStats(entries) });
@@ -51,7 +54,8 @@ async function updateStatus(req, res) {
 
   let entry;
   try {
-    entry = await prisma.guestbookEntry.update({ where: { id: req.params.id }, data });
+    // include photo : la diffusion temps réel (broadcast) émet l'URL de la photo avec le message.
+    entry = await prisma.guestbookEntry.update({ where: { id: req.params.id }, data, include: { photo: true } });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Message introuvable' });
     throw err;
@@ -70,7 +74,7 @@ async function bulkApprove(req, res) {
     return res.status(400).json({ error: 'Aucune sélection' });
   }
 
-  const entries = await prisma.guestbookEntry.findMany({ where: { id: { in: ids } } });
+  const entries = await prisma.guestbookEntry.findMany({ where: { id: { in: ids } }, include: { photo: true } });
   await prisma.guestbookEntry.updateMany({
     where: { id: { in: ids } },
     data: { status: 'APPROVED', approvedAt: new Date() },
@@ -83,14 +87,36 @@ async function bulkApprove(req, res) {
   res.json({ updated: entries.length });
 }
 
+// Supprimer un message supprime AUSSI sa photo (ligne Media + fichiers de stockage) : la base ne
+// peut pas le faire seule (la clé étrangère est en SetNull, voir schema.prisma, précisément pour
+// que retirer une photo ne supprime jamais le message). Le message est supprimé en premier : si
+// le nettoyage de la photo échouait ensuite, on aurait au pire un fichier orphelin, jamais un
+// message public qui pointe vers une photo disparue.
 async function remove(req, res) {
+  const existing = await prisma.guestbookEntry.findUnique({ where: { id: req.params.id }, include: { photo: true } });
+  if (!existing) return res.status(404).json({ error: 'Message introuvable' });
+
   try {
     await prisma.guestbookEntry.delete({ where: { id: req.params.id } });
-    res.status(204).send();
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Message introuvable' });
     throw err;
   }
+  await deleteGuestbookPhoto(existing.photo);
+  res.status(204).send();
+}
+
+// Retire UNIQUEMENT la photo d'un message (le message, son statut et sa place au diaporama ne
+// bougent pas). Route distincte de la suppression du message, volontairement : "retirer la
+// photo" ne peut jamais être confondu avec "supprimer le message".
+async function removePhoto(req, res) {
+  const existing = await prisma.guestbookEntry.findUnique({ where: { id: req.params.id }, include: { photo: true } });
+  if (!existing) return res.status(404).json({ error: 'Message introuvable' });
+  if (!existing.photo) return res.status(204).send();
+
+  await prisma.guestbookEntry.update({ where: { id: existing.id }, data: { photoId: null } });
+  await deleteGuestbookPhoto(existing.photo);
+  res.status(204).send();
 }
 
 async function updateSettings(req, res) {
@@ -182,6 +208,7 @@ module.exports = {
   updateStatus,
   bulkApprove,
   remove,
+  removePhoto,
   updateSettings,
   listQrTokens,
   createQrToken,

@@ -5,6 +5,7 @@ const { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken } = re
 // index.js de dossier n'est pas toujours tracée correctement par l'empaquetage des
 // fonctions serverless Vercel, qui a fini par exclure ce module du bundle déployé.
 const storage = require('../services/storage/index.js');
+const { PUBLIC_MEDIA_TYPES } = require('../services/guestbookPhoto.service');
 
 const STATUSES = ['DRAFT', 'IN_PROGRESS', 'READY', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'];
 const PAYMENT_STATUSES = ['PENDING', 'PARTIAL', 'PAID'];
@@ -133,7 +134,9 @@ async function getById(req, res) {
       client: true,
       template: true,
       events: { orderBy: { order: 'asc' } },
-      media: { orderBy: { order: 'asc' } },
+      // Couverture/galerie seulement : les photos du livre d'or (type "guestbook") se gèrent depuis
+      // la page Livre d'or, pas depuis l'éditeur de médias de l'invitation.
+      media: { where: { type: { in: PUBLIC_MEDIA_TYPES } }, orderBy: { order: 'asc' } },
       _count: { select: { guests: true } },
     },
   });
@@ -244,7 +247,8 @@ async function remove(req, res) {
   try {
     const media = await prisma.media.findMany({ where: { invitationId: req.params.id } });
     await prisma.invitation.delete({ where: { id: req.params.id } });
-    await Promise.all(media.map((m) => storage.remove(m.url)));
+    // thumbUrl : miniature des photos du livre d'or (null pour couverture/galerie).
+    await Promise.all(media.flatMap((m) => [storage.remove(m.url), m.thumbUrl ? storage.remove(m.thumbUrl) : null]));
     res.status(204).send();
   } catch (err) {
     if (err.code === 'P2025') {
