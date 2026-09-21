@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { injectStylesOnce } from './utils/injectStyles';
 
@@ -40,12 +40,16 @@ injectStylesOnce(
   .gb-eyebrow { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.3em; font-size: clamp(0.75rem, 0.83vw, 2rem); color: #B88A32; margin: 0 0 5vh; }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
-  .gb-card { max-width: 62vw; transition: opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease; }
+  /* Le groupe (photo + intitulé + message) garde sa hauteur naturelle : c'est lui qu'on mesure
+     pour caler la taille du message (voir fitMessageFont), et .gb-loop le centre à l'écran. */
+  .gb-group { display: flex; flex-direction: column; align-items: center; max-width: 80vw; }
+  .gb-card { transition: opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease; }
   .gb-card-hidden { opacity: 0; transform: translateY(18px); }
   .gb-card-visible { opacity: 1; transform: translateY(0); }
   .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 4.17vw, 10rem); color: #B88A32; margin: 0 0 -2vh; opacity: 0.6; }
-  .gb-message { font-size: clamp(1.8rem, 3.4vw, 3.2rem); line-height: 1.45; color: #FFFDF8; margin: 0 0 3vh; font-weight: 500; }
-  .gb-name { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(0.95rem, 1.08vw, 2.6rem); color: #D6B56D; margin: 0; }
+  /* font-size posée en JS (fitMessageFont) ; la valeur ci-dessous ne sert que de repli avant la mesure. */
+  .gb-message { font-size: clamp(1.8rem, 3vw, 6rem); line-height: 1.35; color: #FFFDF8; margin: 0 0 3vh; font-weight: 600; text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+  .gb-name { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(1.05rem, 1.35vw, 3.2rem); font-weight: 500; color: #E3C57F; margin: 0; }
 
   .gb-fade-rise { animation: gbFadeRise 900ms ease both; }
   @keyframes gbFadeRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -78,24 +82,44 @@ injectStylesOnce(
   `
 );
 
-// Un message va de quelques mots à 1000 caractères (limite du formulaire) : une taille de
-// police fixe déborde du plein écran pour les plus longs (overflow: hidden sur .gb-display les
-// coupait purement et simplement, illisibles). Plus le message est long, plus on réduit la
-// police ET on retire les éléments décoratifs (photo, guillemet) pour rendre la place
-// verticale au texte — jamais l'inverse (jamais de police agrandie au point de dépasser).
-// Chaque plafond est calé pour reproduire le rendu 1080p déjà validé (le vw du milieu atteint
-// le plafond pile à 1920px) puis continue de grossir linéairement jusqu'en 4K — sinon le texte
-// reste bloqué à sa taille 1080p en pixels et paraît deux fois plus petit sur un écran 3840px.
+// Un message va de quelques mots à 1000 caractères (limite du formulaire). La taille de police
+// n'est plus choisie par paliers de longueur (les paliers rétrécissaient le texte bien avant que
+// la place ne manque : un message de ~190 caractères s'affichait en petit avec l'écran quasi
+// vide autour) : fitMessageFont mesure le rendu réel et prend la plus grande taille qui tient à
+// l'écran, quelle que soit sa résolution (1080p comme 4K). Seuls les éléments décoratifs restent
+// conditionnés à la longueur, pour rendre la place verticale au texte quand il est long.
 function presentationForMessage(message) {
   const len = message.length;
-  if (len <= 70) return { fontSize: 'clamp(2rem, 2.83vw, 6.8rem)', lineHeight: 1.4, maxWidth: '58vw', showPhoto: true, showQuote: true, showEyebrow: true };
-  if (len <= 160) return { fontSize: 'clamp(1.55rem, 2.08vw, 5rem)', lineHeight: 1.4, maxWidth: '64vw', showPhoto: true, showQuote: true, showEyebrow: true };
-  if (len <= 320) return { fontSize: 'clamp(1.2rem, 1.54vw, 3.7rem)', lineHeight: 1.35, maxWidth: '70vw', showPhoto: false, showQuote: true, showEyebrow: true };
-  if (len <= 560) return { fontSize: 'clamp(1.02rem, 1.21vw, 2.9rem)', lineHeight: 1.3, maxWidth: '76vw', showPhoto: false, showQuote: false, showEyebrow: true };
-  return { fontSize: 'clamp(0.88rem, 0.98vw, 2.36rem)', lineHeight: 1.25, maxWidth: '82vw', showPhoto: false, showQuote: false, showEyebrow: false };
+  return { showPhoto: len <= 120, showQuote: len <= 400 };
 }
 
 const DEFAULT_PRESENTATION = presentationForMessage('');
+
+// Plafond : au-delà, un message très court (« Félicitations ! ») devient ridiculement énorme et
+// la lecture se fait plus difficile, pas plus facile. Plancher : ne jamais descendre sous une
+// taille lisible à distance, même si un message de 1000 caractères devait alors déborder.
+const MESSAGE_FONT_MAX_VW = 4.2;
+const MESSAGE_FONT_MIN_VW = 0.75;
+
+function fitMessageFont(loopEl, groupEl, messageEl) {
+  if (!loopEl || !groupEl || !messageEl) return;
+  const style = window.getComputedStyle(loopEl);
+  const available = loopEl.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  const fits = (px) => {
+    messageEl.style.fontSize = `${px}px`;
+    return groupEl.offsetHeight <= available;
+  };
+
+  let hi = (window.innerWidth * MESSAGE_FONT_MAX_VW) / 100;
+  let lo = Math.max(12, (window.innerWidth * MESSAGE_FONT_MIN_VW) / 100);
+  if (fits(hi)) return;
+  while (hi - lo > 0.5) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  messageEl.style.fontSize = `${lo}px`;
+}
 
 function Particles() {
   const specs = useRef(
@@ -127,6 +151,9 @@ export default function GuestbookDisplayPage() {
   const [visible, setVisible] = useState(true);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const audioRef = useRef(null);
+  const loopRef = useRef(null);
+  const groupRef = useRef(null);
+  const messageRef = useRef(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/guestbook/display/${slug}`)
@@ -235,6 +262,27 @@ export default function GuestbookDisplayPage() {
     return () => clearTimeout(t);
   }, [phase, entries, activeIndex]);
 
+  const currentEntry = entries[activeIndex] || null;
+  const presentation = currentEntry ? presentationForMessage(currentEntry.message) : DEFAULT_PRESENTATION;
+
+  // Avant la peinture, pour qu'on ne voie jamais le message à une taille provisoire. Refait
+  // quand la fenêtre change de taille et une fois les polices chargées (leurs métriques
+  // changent la hauteur du texte, donc la taille qui tient).
+  useLayoutEffect(() => {
+    if (phase !== 'loop' || !currentEntry) return undefined;
+    const run = () => fitMessageFont(loopRef.current, groupRef.current, messageRef.current);
+    run();
+    window.addEventListener('resize', run);
+    let cancelled = false;
+    document.fonts?.ready.then(() => {
+      if (!cancelled) run();
+    });
+    return () => {
+      cancelled = true;
+      window.removeEventListener('resize', run);
+    };
+  }, [phase, currentEntry?.id, currentEntry?.message, presentation.showPhoto, presentation.showQuote]);
+
   if (notFound) {
     return (
       <div className="gb-display">
@@ -249,9 +297,6 @@ export default function GuestbookDisplayPage() {
       </div>
     );
   }
-
-  const currentEntry = entries[activeIndex] || null;
-  const presentation = currentEntry ? presentationForMessage(currentEntry.message) : DEFAULT_PRESENTATION;
 
   return (
     <div className="gb-display">
@@ -294,25 +339,21 @@ export default function GuestbookDisplayPage() {
       )}
 
       {phase === 'loop' && (
-        <div className="gb-loop">
-          {data.coverUrl && presentation.showPhoto && <img src={data.coverUrl} className="gb-couple-photo" alt="" />}
-          {presentation.showEyebrow && <p className="gb-eyebrow">Livre d'or — {data.namesLine || data.title}</p>}
+        <div className="gb-loop" ref={loopRef}>
+          <div className="gb-group" ref={groupRef}>
+            {data.coverUrl && presentation.showPhoto && <img src={data.coverUrl} className="gb-couple-photo" alt="" />}
+            <p className="gb-eyebrow">Livre d'or — {data.namesLine || data.title}</p>
 
-          {!currentEntry ? (
-            <p className="gb-waiting gb-fade-rise">Les premiers mots arrivent bientôt...</p>
-          ) : (
-            <div
-              key={currentEntry.id}
-              className={`gb-card ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}
-              style={{ maxWidth: presentation.maxWidth }}
-            >
-              {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
-              <p className="gb-message" style={{ fontSize: presentation.fontSize, lineHeight: presentation.lineHeight }}>
-                {currentEntry.message}
-              </p>
-              <p className="gb-name">— {currentEntry.guestName}</p>
-            </div>
-          )}
+            {!currentEntry ? (
+              <p className="gb-waiting gb-fade-rise">Les premiers mots arrivent bientôt...</p>
+            ) : (
+              <div key={currentEntry.id} className={`gb-card ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}>
+                {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
+                <p className="gb-message" ref={messageRef}>{currentEntry.message}</p>
+                <p className="gb-name">— {currentEntry.guestName}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
