@@ -9,13 +9,18 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(env.adminPassword, 12);
 
+  // Sur Vercel ce script tourne à CHAQUE déploiement : réécrire le mot de passe ici annulait
+  // tout changement fait depuis l'application. On ne le crée donc qu'une fois ; pour forcer
+  // volontairement le mot de passe de ADMIN_PASSWORD (oubli, verrouillage), définir
+  // RESET_ADMIN_PASSWORD=true pour UN déploiement, puis retirer la variable.
+  const resetPassword = process.env.RESET_ADMIN_PASSWORD === 'true';
   const admin = await prisma.admin.upsert({
     where: { email: env.adminEmail },
-    update: { passwordHash },
+    update: resetPassword ? { passwordHash } : {},
     create: { email: env.adminEmail, passwordHash },
   });
 
-  console.log(`Compte admin prêt : ${admin.email}`);
+  console.log(`Compte admin prêt : ${admin.email}${resetPassword ? ' (mot de passe réinitialisé)' : ''}`);
 
   const templates = [
     { key: 'mariage-elegant', name: 'Mariage Élégant', category: 'mariage' },
