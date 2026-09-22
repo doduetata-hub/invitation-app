@@ -869,10 +869,21 @@ textarea.input {
 /* Colonne "Message" dans .table : le reste du tableau reste en nowrap (comparaison rapide
    ligne par ligne), mais un message tronqué sur une seule ligne est illisible et pousse le
    lecteur à scroller horizontalement caractère par caractère — on clamp sur 2 lignes ici et
-   on renvoie vers GuestMessageModal pour le texte complet. */
+   on renvoie vers GuestMessageModal pour le texte complet. Flex row (plutôt qu'empiler la
+   photo sous le texte) : la miniature (voir .cell-photo-thumb) reste à côté du texte, pour que
+   la ligne du tableau garde la même hauteur qu'une entrée sans photo — une bonne présentation
+   sur une liste qui peut compter des dizaines de messages, avec ou sans photo mêlés. */
 .cell-message {
   white-space: normal;
-  max-width: 220px;
+  max-width: 260px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.cell-message-body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Le clamp vit sur un <span> interne, pas sur le <button> lui-même : un <button> a son propre
@@ -905,13 +916,65 @@ textarea.input {
   line-height: 1.4;
 }
 
-/* Photo jointe à un message du livre d'or : miniature cliquable sous le texte, dans la colonne
-   Message — l'admin voit d'un coup d'œil quelles entrées en ont une. */
-.cell-photo-btn {
+/* Photo jointe à un message du livre d'or : miniature seule (pas de texte à côté, pour rester
+   compacte), cliquable pour l'agrandir dans GuestMessageModal — le survol/focus révèle une
+   icône d'agrandissement, discrète tant qu'on ne cherche pas à cliquer. Taille calée sur la
+   hauteur d'un message clampé à 2 lignes : la photo ne fait jamais grandir la ligne du tableau. */
+.cell-photo-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.cell-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cell-photo-thumb::after {
+  content: '⤢';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.cell-photo-thumb:hover::after,
+.cell-photo-thumb:focus-visible::after {
+  opacity: 1;
+}
+
+/* Photo proposée en remplacement d'un message déjà approuvé : elle attend une décision de
+   l'admin (Valider/Rejeter), donc contrairement à .cell-photo-thumb elle garde son propre
+   espace sous le message — un cas rare qui mérite d'être visible, pas juste une miniature. */
+.cell-pending-photo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.cell-pending-photo-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.35rem;
   padding: 0;
   background: none;
   border: none;
@@ -921,15 +984,16 @@ textarea.input {
   cursor: pointer;
 }
 
-.cell-photo-btn img {
-  width: 44px;
-  height: 44px;
+.cell-pending-photo-btn img {
+  width: 32px;
+  height: 32px;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
 }
 
-.cell-photo-btn:hover span {
+.cell-pending-photo-btn:hover span {
   text-decoration: underline;
 }
 

@@ -406,49 +406,51 @@ export default function GuestbookPage() {
                         )}
                       </td>
                       <td className="cell-message">
-                        <button
-                          type="button"
-                          className="cell-message-btn"
-                          onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo?.url || null })}
-                        >
-                          <span className="cell-message-btn-text">{entry.message}</span>
-                        </button>
+                        {/* Miniature à côté du texte (pas en dessous) : une entrée avec photo garde la
+                            même hauteur de ligne qu'une entrée sans photo — cliquer l'agrandit dans
+                            GuestMessageModal, qui reste l'endroit où voir la photo en plein format. */}
                         {entry.photo && (
                           <button
                             type="button"
-                            className="cell-photo-btn"
-                            title="Voir la photo jointe"
+                            className="cell-photo-thumb"
+                            title="Agrandir la photo jointe"
                             onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo.url })}
                           >
                             <img src={entry.photo.thumbUrl || entry.photo.url} alt="" loading="lazy" decoding="async" />
-                            <span>📷 Photo jointe</span>
                           </button>
                         )}
-                        {(entry.pendingPhotoId || entry.pendingPhotoRemoved) && (
-                          <div style={{ marginTop: '0.4rem' }}>
-                            {entry.pendingPhoto ? (
-                              <button
-                                type="button"
-                                className="cell-photo-btn"
-                                title="Voir la nouvelle photo proposée"
-                                onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.pendingPhoto.url })}
-                              >
-                                <img src={entry.pendingPhoto.thumbUrl || entry.pendingPhoto.url} alt="" loading="lazy" decoding="async" />
-                                <span>🕒 Nouvelle photo en attente</span>
-                              </button>
-                            ) : (
-                              <span className="badge">🕒 Retrait de photo demandé</span>
-                            )}
-                            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem' }}>
+                        <div className="cell-message-body">
+                          <button
+                            type="button"
+                            className="cell-message-btn"
+                            onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo?.url || null })}
+                          >
+                            <span className="cell-message-btn-text">{entry.message}</span>
+                          </button>
+                          {(entry.pendingPhotoId || entry.pendingPhotoRemoved) && (
+                            <div className="cell-pending-photo">
+                              {entry.pendingPhoto ? (
+                                <button
+                                  type="button"
+                                  className="cell-pending-photo-btn"
+                                  title="Voir la nouvelle photo proposée"
+                                  onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.pendingPhoto.url })}
+                                >
+                                  <img src={entry.pendingPhoto.thumbUrl || entry.pendingPhoto.url} alt="" loading="lazy" decoding="async" />
+                                  <span>🕒 Nouvelle photo en attente</span>
+                                </button>
+                              ) : (
+                                <span className="badge">🕒 Retrait de photo demandé</span>
+                              )}
                               <button type="button" disabled={isBusy} onClick={() => resolvePendingPhoto(entry.id, true)} className="btn btn-outline btn-sm">
-                                ✓ Valider la photo
+                                ✓ Valider
                               </button>
                               <button type="button" disabled={isBusy} onClick={() => resolvePendingPhoto(entry.id, false)} className="btn btn-outline btn-sm">
-                                ✕ Rejeter la photo
+                                ✕ Rejeter
                               </button>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </td>
                       <td>{SOURCE_LABELS[entry.source]}</td>
                       <td>{entry.tableNumber || '—'}</td>
