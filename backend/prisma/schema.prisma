@@ -158,7 +158,8 @@ model Media {
   width    Int?
   height   Int?
 
-  guestbookEntry GuestbookEntry? @relation("GuestbookEntryPhoto")
+  guestbookEntry        GuestbookEntry? @relation("GuestbookEntryPhoto")
+  guestbookEntryPending GuestbookEntry? @relation("GuestbookEntryPendingPhoto")
 
   @@map("media")
 }
@@ -254,6 +255,17 @@ model GuestbookEntry {
   // guestbook.controller.js, fichiers de stockage compris (la base seule ne peut pas le faire).
   photoId String? @unique @map("photo_id")
   photo   Media?  @relation("GuestbookEntryPhoto", fields: [photoId], references: [id], onDelete: SetNull)
+
+  // Changement de photo demandé par l'invité APRÈS que le message ait déjà été approuvé (donc
+  // déjà diffusé) : le texte et le statut du message restent figés (voir syncGuestbookEntry côté
+  // public.controller.js), mais la photo, elle, peut encore bouger — sous réserve de repasser par
+  // la modération admin avant d'apparaître, pour ne jamais diffuser une photo non vérifiée.
+  // pendingPhotoId = nouvelle photo en attente de validation (remplace photoId une fois acceptée) ;
+  // pendingPhotoRemoved = l'invité a demandé le retrait de sa photo déjà approuvée. Les deux sont
+  // mutuellement exclusifs en pratique (une nouvelle soumission efface l'autre).
+  pendingPhotoId      String?  @unique @map("pending_photo_id")
+  pendingPhoto        Media?   @relation("GuestbookEntryPendingPhoto", fields: [pendingPhotoId], references: [id], onDelete: SetNull)
+  pendingPhotoRemoved Boolean  @default(false) @map("pending_photo_removed")
 
   status     GuestbookStatus @default(PENDING)
   approvedAt DateTime?       @map("approved_at")

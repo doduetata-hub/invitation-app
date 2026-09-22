@@ -53,10 +53,12 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
 
-  // Photo déjà enregistrée pour CET invité (lien personnalisé) et son statut : une fois le mot
-  // approuvé, il est figé côté serveur (voir syncGuestbookEntry) — on ne propose donc plus de
-  // changer la photo, pour ne pas laisser croire qu'elle serait prise en compte.
-  const guestbookLocked = guestInfo?.guestbook?.status === 'APPROVED';
+  // Photo déjà enregistrée pour CET invité (lien personnalisé). Le message, lui, reste figé une
+  // fois approuvé (voir syncGuestbookEntry côté serveur) — mais la photo peut toujours être
+  // ajoutée/remplacée/retirée, y compris après approbation : ce changement repasse alors par la
+  // modération admin avant de remplacer ce qui est diffusé (voir syncApprovedEntryPhoto), pour
+  // que les invités ayant répondu avant l'arrivée de cette fonctionnalité en profitent aussi.
+  const photoPending = Boolean(guestInfo?.guestbook?.photoPending);
   const existingPhotoUrl = photoRemoved ? null : guestInfo?.guestbook?.photoUrl || null;
 
   useEffect(() => {
@@ -114,10 +116,13 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
   if (guestInfo?.alreadyAnswered && !submitted && !editing) {
     return (
       <section style={styles.section}>
-        <h2 style={styles.title}>Merci {guestInfo.name || guestInfo.rsvp?.name || ''} !</h2>
+        <h2 style={styles.title}>
+          Merci <span style={styles.guestName}>{guestInfo.name || guestInfo.rsvp?.name || ''}</span> !
+        </h2>
         <p style={styles.confirmation}>
           Vous avez déjà confirmé : {guestInfo.rsvp?.answer === 'YES' ? 'présent(e)' : 'absent(e)'}.
         </p>
+        {photoPending && <p style={styles.hint}>Votre photo est en cours de validation.</p>}
         {invitation?.rsvpEditLocked ? (
           <ContactHint invitation={invitation}>
             Les modifications ne sont plus possibles depuis ce lien.
@@ -209,25 +214,28 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
           <span style={styles.hint}>Votre mot sera conservé dans leur livre d'or.</span>
         </label>
 
-        {!guestbookLocked && (
-          <GuestbookPhotoPicker
-            photo={photo}
-            existingUrl={existingPhotoUrl}
-            onChange={(prepared) => {
-              setPhoto(prepared);
-              setRemoveExistingPhoto(false);
-            }}
-            onRemove={() => {
-              // Retirer la photo choisie ; s'il n'y en a plus, retirer celle déjà enregistrée.
-              if (photo) setPhoto(null);
-              else {
-                setPhotoRemoved(true);
-                setRemoveExistingPhoto(true);
-              }
-            }}
-            onBusyChange={setPhotoBusy}
-            disabled={submitting}
-          />
+        <GuestbookPhotoPicker
+          photo={photo}
+          existingUrl={existingPhotoUrl}
+          onChange={(prepared) => {
+            setPhoto(prepared);
+            setRemoveExistingPhoto(false);
+          }}
+          onRemove={() => {
+            // Retirer la photo choisie ; s'il n'y en a plus, retirer celle déjà enregistrée.
+            if (photo) setPhoto(null);
+            else {
+              setPhotoRemoved(true);
+              setRemoveExistingPhoto(true);
+            }
+          }}
+          onBusyChange={setPhotoBusy}
+          disabled={submitting}
+        />
+        {photoPending && !photo && !removeExistingPhoto && (
+          <span style={styles.hint}>
+            Une photo est déjà en cours de validation ; en choisir une nouvelle (ou la retirer) remplacera cette demande.
+          </span>
         )}
 
         {error && <p style={styles.error}>{error}</p>}
@@ -248,6 +256,7 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
 const styles = {
   section: { padding: '1.5rem 1.5rem 3rem', maxWidth: '420px', margin: '0 auto', textAlign: 'center' },
   title: { fontFamily: 'var(--font-heading)', color: 'var(--color-text)', fontSize: '1.6rem', marginBottom: '1rem' },
+  guestName: { color: 'var(--color-secondary)', fontWeight: 700 },
   confirmation: { fontFamily: 'var(--font-body)', color: 'var(--color-text)' },
   qrCard: {
     display: 'flex',

@@ -77,6 +77,15 @@ export default function GuestbookPage() {
       await loadEntries();
     });
 
+  // Tranche un changement de photo demandé par l'invité APRÈS approbation de son message (voir
+  // resolvePendingPhoto côté backend) : le message et son statut ne bougent pas, seule la photo
+  // diffusée change (ou pas, si rejetée).
+  const resolvePendingPhoto = (entryId, accept) =>
+    withBusy(entryId, async () => {
+      await api.patch(`/guestbook-entries/${entryId}/pending-photo`, { accept });
+      await loadEntries();
+    });
+
   const removeEntry = (entryId) =>
     withBusy(entryId, async () => {
       if (!window.confirm('Supprimer définitivement ce message du livre d\'or ?')) return;
@@ -223,6 +232,7 @@ export default function GuestbookPage() {
         <StatCard label="Via invitation numérique" value={stats.bySource.DIGITAL || 0} />
         <StatCard label="Via QR code" value={stats.bySource.QR || 0} />
         <StatCard label="Avec photo" value={entries.filter((e) => e.photo).length} />
+        <StatCard label="Photos en attente" value={entries.filter((e) => e.pendingPhotoId || e.pendingPhotoRemoved).length} />
       </div>
 
       <div className="editor-section">
@@ -413,6 +423,31 @@ export default function GuestbookPage() {
                             <img src={entry.photo.thumbUrl || entry.photo.url} alt="" loading="lazy" decoding="async" />
                             <span>📷 Photo jointe</span>
                           </button>
+                        )}
+                        {(entry.pendingPhotoId || entry.pendingPhotoRemoved) && (
+                          <div style={{ marginTop: '0.4rem' }}>
+                            {entry.pendingPhoto ? (
+                              <button
+                                type="button"
+                                className="cell-photo-btn"
+                                title="Voir la nouvelle photo proposée"
+                                onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.pendingPhoto.url })}
+                              >
+                                <img src={entry.pendingPhoto.thumbUrl || entry.pendingPhoto.url} alt="" loading="lazy" decoding="async" />
+                                <span>🕒 Nouvelle photo en attente</span>
+                              </button>
+                            ) : (
+                              <span className="badge">🕒 Retrait de photo demandé</span>
+                            )}
+                            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem' }}>
+                              <button type="button" disabled={isBusy} onClick={() => resolvePendingPhoto(entry.id, true)} className="btn btn-outline btn-sm">
+                                ✓ Valider la photo
+                              </button>
+                              <button type="button" disabled={isBusy} onClick={() => resolvePendingPhoto(entry.id, false)} className="btn btn-outline btn-sm">
+                                ✕ Rejeter la photo
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </td>
                       <td>{SOURCE_LABELS[entry.source]}</td>

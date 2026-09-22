@@ -43,7 +43,7 @@ const pick = (obj, select) => {
   const out = {};
   for (const [key, value] of Object.entries(select)) {
     if (!value) continue;
-    if (key === 'photo') continue; // géré par l'appelant
+    if (key === 'photo' || key === 'pendingPhoto') continue; // gérés par l'appelant
     out[key] = obj[key];
   }
   return out;
@@ -72,15 +72,21 @@ function createFakeDb() {
   const withPhoto = (entry, opts = {}) => {
     if (!entry) return null;
     const photo = entry.photoId ? state.media.get(entry.photoId) || null : null;
+    const pendingPhoto = entry.pendingPhotoId ? state.media.get(entry.pendingPhotoId) || null : null;
     if (opts.select) {
       const out = pick(entry, opts.select);
       if (opts.select.photo) {
         out.photo = photo ? pick(photo, opts.select.photo.select || opts.select.photo) : null;
       }
+      if (opts.select.pendingPhoto) {
+        out.pendingPhoto = pendingPhoto ? pick(pendingPhoto, opts.select.pendingPhoto.select || opts.select.pendingPhoto) : null;
+      }
       return out;
     }
-    if (opts.include?.photo) return { ...entry, photo: photo ? { ...photo } : null };
-    return { ...entry };
+    const out = { ...entry };
+    if (opts.include?.photo) out.photo = photo ? { ...photo } : null;
+    if (opts.include?.pendingPhoto) out.pendingPhoto = pendingPhoto ? { ...pendingPhoto } : null;
+    return out;
   };
 
   const findEntryBy = (where) => {
@@ -152,8 +158,11 @@ function createFakeDb() {
       delete: async ({ where }) => {
         if (!state.media.has(where.id)) throw notFound();
         state.media.delete(where.id);
-        // ON DELETE SET NULL sur guestbook_entries.photo_id
-        for (const e of state.entries.values()) if (e.photoId === where.id) e.photoId = null;
+        // ON DELETE SET NULL sur guestbook_entries.photo_id / pending_photo_id
+        for (const e of state.entries.values()) {
+          if (e.photoId === where.id) e.photoId = null;
+          if (e.pendingPhotoId === where.id) e.pendingPhotoId = null;
+        }
         return {};
       },
       findMany: async ({ where }) => [...state.media.values()].filter((m) => mediaMatches(m, where)),
@@ -172,7 +181,7 @@ function createFakeDb() {
         takeFailure('guestbookEntry.create');
         if (data.submissionKey && findEntryBy({ submissionKey: data.submissionKey })) throw uniqueViolation('submission_key');
         if (data.editToken && findEntryBy({ editToken: data.editToken })) throw uniqueViolation('edit_token');
-        const row = { id: nextId('entry'), createdAt: new Date(), updatedAt: new Date(), tableNumber: null, qrTokenId: null, rsvpId: null, photoId: null, approvedAt: null, submissionKey: null, editToken: null, ...data };
+        const row = { id: nextId('entry'), createdAt: new Date(), updatedAt: new Date(), tableNumber: null, qrTokenId: null, rsvpId: null, photoId: null, pendingPhotoId: null, pendingPhotoRemoved: false, approvedAt: null, submissionKey: null, editToken: null, ...data };
         state.entries.set(row.id, row);
         return withPhoto(row, { include });
       },
@@ -193,7 +202,7 @@ function createFakeDb() {
           Object.assign(existing, update);
           return withPhoto(existing, { include });
         }
-        const row = { id: nextId('entry'), createdAt: new Date(), updatedAt: new Date(), tableNumber: null, qrTokenId: null, photoId: null, approvedAt: null, submissionKey: null, editToken: null, ...create };
+        const row = { id: nextId('entry'), createdAt: new Date(), updatedAt: new Date(), tableNumber: null, qrTokenId: null, photoId: null, pendingPhotoId: null, pendingPhotoRemoved: false, approvedAt: null, submissionKey: null, editToken: null, ...create };
         state.entries.set(row.id, row);
         return withPhoto(row, { include });
       },
@@ -664,15 +673,79 @@ test('invitation numerique : message vide -> l\'entree disparait avec sa photo',
   assert.equal(storage.files.size, 0);
 });
 
-test('invitation numerique : une fois approuve, la nouvelle photo est ecartee et supprimee (pas d\'orphelin)', async () => {
+test('invitation numerique : une fois approuve, le texte reste fige mais une nouvelle photo part en attente de moderation', async () => {
   const first = await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields(), await jpeg(800, 600)) });
   await http('PATCH', `/api/guestbook-entries/${first.body.guestbookEntryId}`, { json: { status: 'APPROVED' }, admin: true });
   const before = storedNames().sort();
 
   const again = await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields({ message: 'Autre texte' }), await jpeg(500, 500)) });
   assert.equal(again.status, 201);
-  assert.deepEqual(storedNames().sort(), before, 'ni nouvelle photo conservée, ni ancienne perdue');
-  assert.equal(db.state.entries.get(first.body.guestbookEntryId).message, 'Tous nos voeux !', 'entrée figée');
+  assert.equal(again.body.guestbookHasPhoto, true, 'l\'ancienne photo reste affichée tant que la nouvelle n\'est pas validée');
+  assert.equal(again.body.guestbookPhotoPending, true);
+  assert.ok(storedNames().length > before.length, 'la nouvelle photo est bien stockée, en attente');
+
+  const entry = db.state.entries.get(first.body.guestbookEntryId);
+  assert.equal(entry.message, 'Tous nos voeux !', 'le message reste figé');
+  assert.equal(entry.status, 'APPROVED');
+  assert.ok(entry.pendingPhotoId, 'une photo en attente est enregistrée');
+  assert.notEqual(entry.pendingPhotoId, entry.photoId);
+
+  const info = await http('GET', '/api/public/invitations/kade-sephora?guest=ABC123');
+  assert.equal(info.body.guest.guestbook.photoPending, true);
+  assert.match(info.body.guest.guestbook.photoUrl, /-thumb\.jpg$/, 'la miniature exposée reste celle déjà approuvée');
+});
+
+test('invitation numerique : admin accepte la photo en attente -> elle remplace l\'ancienne (pas d\'orphelin)', async () => {
+  const first = await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields(), await jpeg(800, 600)) });
+  await http('PATCH', `/api/guestbook-entries/${first.body.guestbookEntryId}`, { json: { status: 'APPROVED' }, admin: true });
+  await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields({ message: 'Autre texte' }), await jpeg(500, 500)) });
+  const entryId = first.body.guestbookEntryId;
+  const pendingId = db.state.entries.get(entryId).pendingPhotoId;
+
+  const res = await http('PATCH', `/api/guestbook-entries/${entryId}/pending-photo`, { json: { accept: true }, admin: true });
+  assert.equal(res.status, 200, res.raw);
+
+  const entry = db.state.entries.get(entryId);
+  assert.equal(entry.photoId, pendingId);
+  assert.equal(entry.pendingPhotoId, null);
+  assert.equal(entry.status, 'APPROVED', 'le statut du message ne bouge pas');
+  assert.equal(mediaOfType('guestbook').length, 1, 'l\'ancienne photo remplacée est nettoyée');
+});
+
+test('invitation numerique : admin rejette la photo en attente -> l\'ancienne reste, la proposition est supprimee', async () => {
+  const first = await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields(), await jpeg(800, 600)) });
+  await http('PATCH', `/api/guestbook-entries/${first.body.guestbookEntryId}`, { json: { status: 'APPROVED' }, admin: true });
+  const originalPhotoId = db.state.entries.get(first.body.guestbookEntryId).photoId;
+  await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields({ message: 'Autre texte' }), await jpeg(500, 500)) });
+
+  const entryId = first.body.guestbookEntryId;
+  const res = await http('PATCH', `/api/guestbook-entries/${entryId}/pending-photo`, { json: { accept: false }, admin: true });
+  assert.equal(res.status, 200, res.raw);
+
+  const entry = db.state.entries.get(entryId);
+  assert.equal(entry.photoId, originalPhotoId, 'la photo diffusée ne change pas');
+  assert.equal(entry.pendingPhotoId, null);
+  assert.equal(mediaOfType('guestbook').length, 1, 'la photo rejetée est supprimée, aucun orphelin');
+});
+
+test('invitation numerique : retrait d\'une photo deja approuvee part aussi en attente, accepte -> photo retiree', async () => {
+  const first = await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields(), await jpeg(800, 600)) });
+  await http('PATCH', `/api/guestbook-entries/${first.body.guestbookEntryId}`, { json: { status: 'APPROVED' }, admin: true });
+
+  const removal = await http('POST', '/api/public/invitations/kade-sephora/rsvp', { form: photoForm(rsvpFields({ removePhoto: 'true' }), null) });
+  assert.equal(removal.status, 201, removal.raw);
+  assert.equal(removal.body.guestbookHasPhoto, true, 'toujours affichée tant que la demande n\'est pas tranchée');
+  assert.equal(removal.body.guestbookPhotoPending, true);
+
+  const entryId = first.body.guestbookEntryId;
+  assert.equal(db.state.entries.get(entryId).pendingPhotoRemoved, true);
+
+  const res = await http('PATCH', `/api/guestbook-entries/${entryId}/pending-photo`, { json: { accept: true }, admin: true });
+  assert.equal(res.status, 200, res.raw);
+  const entry = db.state.entries.get(entryId);
+  assert.equal(entry.photoId, null);
+  assert.equal(entry.pendingPhotoRemoved, false);
+  assert.equal(mediaOfType('guestbook').length, 0, 'le fichier retiré est bien nettoyé');
 });
 
 test('le lien personnel de l\'invite expose le statut et la miniature de SA photo (pas les autres)', async () => {

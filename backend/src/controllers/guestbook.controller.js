@@ -30,10 +30,13 @@ async function listForInvitation(req, res) {
   if (!invitation) return res.status(404).json({ error: 'Invitation introuvable' });
 
   // photo : url + miniature + dimensions pour la modération (page admin authentifiée).
+  // pendingPhoto : changement de photo demandé après approbation du message, à trancher à part
+  // (voir resolvePendingPhoto) — jamais mêlé au statut/à la photo déjà diffusée ci-dessus.
+  const mediaSelect = { id: true, url: true, thumbUrl: true, width: true, height: true };
   const entries = await prisma.guestbookEntry.findMany({
     where: { invitationId: req.params.id },
     orderBy: { createdAt: 'desc' },
-    include: { photo: { select: { id: true, url: true, thumbUrl: true, width: true, height: true } } },
+    include: { photo: { select: mediaSelect }, pendingPhoto: { select: mediaSelect } },
   });
 
   res.json({ entries, stats: computeStats(entries) });
@@ -117,6 +120,46 @@ async function removePhoto(req, res) {
   await prisma.guestbookEntry.update({ where: { id: existing.id }, data: { photoId: null } });
   await deleteGuestbookPhoto(existing.photo);
   res.status(204).send();
+}
+
+// Tranche un changement de photo demandé par l'invité APRÈS l'approbation de son message (voir
+// syncApprovedEntryPhoto côté public.controller.js) : le message et son statut restent tels
+// quels, seule la photo diffusée change. `accept: true` fait passer la nouvelle photo en place
+// (ou retire l'ancienne, si l'invité en avait demandé le retrait) et diffuse la mise à jour au
+// mode écran ; `accept: false` rejette la demande et n'y touche pas. Jamais de fichier orphelin :
+// la photo écartée (ancienne remplacée, ou nouvelle rejetée) est supprimée du stockage.
+async function resolvePendingPhoto(req, res) {
+  const { accept } = req.body || {};
+  if (typeof accept !== 'boolean') {
+    return res.status(400).json({ error: 'Paramètre "accept" invalide' });
+  }
+
+  const existing = await prisma.guestbookEntry.findUnique({
+    where: { id: req.params.id },
+    include: { photo: true, pendingPhoto: true },
+  });
+  if (!existing) return res.status(404).json({ error: 'Message introuvable' });
+  if (!existing.pendingPhotoId && !existing.pendingPhotoRemoved) {
+    return res.status(404).json({ error: 'Aucune photo en attente' });
+  }
+
+  const clearPending = { pendingPhotoId: null, pendingPhotoRemoved: false };
+
+  if (!accept) {
+    await deleteGuestbookPhoto(existing.pendingPhoto);
+    const entry = await prisma.guestbookEntry.update({ where: { id: existing.id }, data: clearPending, include: { photo: true } });
+    return res.json(entry);
+  }
+
+  const photoId = existing.pendingPhotoId ?? null;
+  const entry = await prisma.guestbookEntry.update({
+    where: { id: existing.id },
+    data: { ...clearPending, photoId },
+    include: { photo: true },
+  });
+  if (existing.photo && existing.photoId !== entry.photoId) await deleteGuestbookPhoto(existing.photo);
+  broadcast(entry.invitationId, 'entry', entry);
+  res.json(entry);
 }
 
 async function updateSettings(req, res) {
@@ -209,6 +252,7 @@ module.exports = {
   bulkApprove,
   remove,
   removePhoto,
+  resolvePendingPhoto,
   updateSettings,
   listQrTokens,
   createQrToken,

@@ -35,11 +35,13 @@ function badRequest(message) {
 // (entrée figée, message vidé, écriture en base échouée) — jamais de fichier laissé orphelin.
 async function syncGuestbookEntry(rsvp, autoApprove, { newPhoto = null, removePhoto = false } = {}) {
   const message = rsvp.message?.trim();
-  const existing = await prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id }, include: { photo: true } });
+  const existing = await prisma.guestbookEntry.findUnique({
+    where: { rsvpId: rsvp.id },
+    include: { photo: true, pendingPhoto: true },
+  });
 
   if (existing?.status === 'APPROVED') {
-    await deleteGuestbookPhoto(newPhoto);
-    return existing;
+    return syncApprovedEntryPhoto(existing, { newPhoto, removePhoto });
   }
 
   if (!message) {
@@ -90,6 +92,35 @@ async function syncGuestbookEntry(rsvp, autoApprove, { newPhoto = null, removePh
   return entry;
 }
 
+// Le message est déjà approuvé (déjà diffusé) : son texte et son statut ne bougent plus, mais
+// l'invité peut encore ajouter, remplacer ou retirer sa photo — ce changement repasse par la
+// modération admin (voir resolvePendingPhoto côté guestbook.controller.js) avant de remplacer ce
+// qui est diffusé. Une nouvelle demande efface la précédente qui n'a pas encore été tranchée,
+// jamais de fichier en attente laissé orphelin.
+async function syncApprovedEntryPhoto(existing, { newPhoto, removePhoto }) {
+  if (!newPhoto && !(removePhoto && existing.photo)) {
+    await deleteGuestbookPhoto(newPhoto);
+    return existing;
+  }
+
+  await deleteGuestbookPhoto(existing.pendingPhoto);
+
+  const data = newPhoto
+    ? { pendingPhotoId: newPhoto.id, pendingPhotoRemoved: false }
+    : { pendingPhotoId: null, pendingPhotoRemoved: true };
+
+  try {
+    return await prisma.guestbookEntry.update({
+      where: { id: existing.id },
+      data,
+      include: { photo: true, pendingPhoto: true },
+    });
+  } catch (err) {
+    await deleteGuestbookPhoto(newPhoto).catch(() => {});
+    throw err;
+  }
+}
+
 async function getInvitationBySlug(req, res) {
   const invitation = await prisma.invitation.findUnique({
     where: { slug: req.params.slug },
@@ -133,7 +164,16 @@ async function getInvitationBySlug(req, res) {
       tableNumber: guest.tableNumber,
       alreadyAnswered: Boolean(guest.rsvp),
       rsvp: guest.rsvp,
-      guestbook: guestbookEntry ? { status: guestbookEntry.status, photoUrl: guestbookEntry.photo?.thumbUrl ?? null } : null,
+      guestbook: guestbookEntry
+        ? {
+            status: guestbookEntry.status,
+            photoUrl: guestbookEntry.photo?.thumbUrl ?? null,
+            // Un changement de photo demandé après approbation du message est en cours de
+            // modération (voir syncApprovedEntryPhoto) : la photo affichée ci-dessus reste
+            // l'ancienne (déjà diffusée) tant que l'admin n'a pas tranché.
+            photoPending: Boolean(guestbookEntry.pendingPhotoId || guestbookEntry.pendingPhotoRemoved),
+          }
+        : null,
     };
   }
 
@@ -232,7 +272,12 @@ async function submitRsvp(req, res) {
       throw err;
     }
     const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove, { newPhoto, removePhoto });
-    return res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null, guestbookHasPhoto: Boolean(guestbookEntry?.photoId) });
+    return res.status(201).json({
+      ...rsvp,
+      guestbookEntryId: guestbookEntry?.id ?? null,
+      guestbookHasPhoto: Boolean(guestbookEntry?.photoId),
+      guestbookPhotoPending: Boolean(guestbookEntry?.pendingPhotoId || guestbookEntry?.pendingPhotoRemoved),
+    });
   }
 
   const newPhoto = req.file ? await storeGuestbookPhoto(req.file, invitation.id) : null;
@@ -246,7 +291,12 @@ async function submitRsvp(req, res) {
     throw err;
   }
   const guestbookEntry = await syncGuestbookEntry(rsvp, invitation.guestbookAutoApprove, { newPhoto, removePhoto });
-  res.status(201).json({ ...rsvp, guestbookEntryId: guestbookEntry?.id ?? null, guestbookHasPhoto: Boolean(guestbookEntry?.photoId) });
+  res.status(201).json({
+    ...rsvp,
+    guestbookEntryId: guestbookEntry?.id ?? null,
+    guestbookHasPhoto: Boolean(guestbookEntry?.photoId),
+    guestbookPhotoPending: Boolean(guestbookEntry?.pendingPhotoId || guestbookEntry?.pendingPhotoRemoved),
+  });
 }
 
 // QR code du lien personnalisé de l'invité, servi depuis sa propre page d'invitation
