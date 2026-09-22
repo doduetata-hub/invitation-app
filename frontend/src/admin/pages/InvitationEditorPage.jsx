@@ -8,6 +8,7 @@ import SectionsToggle from '../components/SectionsToggle';
 import MediaUploader from '../components/MediaUploader';
 import MusicUploader from '../components/MusicUploader';
 import PaymentsSection from '../components/PaymentsSection';
+import InvitationTabs from '../components/InvitationTabs';
 import InvitationPage from '../../public/InvitationPage';
 import { getTemplate } from '../../public/templates/registry';
 
@@ -270,6 +271,8 @@ export default function InvitationEditorPage() {
             </select>
           )}
         </div>
+
+        {isEdit && <InvitationTabs id={id} />}
 
         {isEdit && invitation?.status === 'PUBLISHED' && (
           <div className="public-link-box">

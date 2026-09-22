@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import QrCodeModal from '../../shared/components/QrCodeModal';
 import GuestMessageModal from '../../shared/components/GuestMessageModal';
+import InvitationTabs from '../components/InvitationTabs';
 import { buildWhatsappShareUrl } from '../../shared/utils/whatsapp';
 import { buildGuestDeleteWarning } from '../../shared/utils/guestWarnings';
 
@@ -146,13 +147,10 @@ export default function GuestsPage() {
     <div>
       <div className="page-header">
         <div>
-          <Link to={`/admin/invitations/${id}/edit`} className="admin-eyebrow" style={{ textDecoration: 'none' }}>← {invitation.title}</Link>
+          <span className="admin-eyebrow">{invitation.title}</span>
           <h1 style={{ margin: '0.3rem 0 0' }}>Invités</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Link to={`/admin/invitations/${id}/checkin`} className="btn btn-accent">
-            Check-in Jour J →
-          </Link>
           <a href={`/api/invitations/${id}/guests/export`} className="btn btn-outline">
             Exporter CSV
           </a>
@@ -161,6 +159,7 @@ export default function GuestsPage() {
           </a>
         </div>
       </div>
+      <InvitationTabs id={id} />
 
       {error && <p className="error-text">{error}</p>}
 

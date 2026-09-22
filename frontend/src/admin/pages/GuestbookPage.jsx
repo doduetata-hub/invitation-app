@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import QrCodeModal from '../../shared/components/QrCodeModal';
 import GuestMessageModal from '../../shared/components/GuestMessageModal';
+import InvitationTabs from '../components/InvitationTabs';
 
 const SOURCE_LABELS = { DIGITAL: 'Invitation numérique', QR: 'QR code' };
 const STATUS_BADGE = {
@@ -194,9 +195,7 @@ export default function GuestbookPage() {
     <div>
       <div className="page-header">
         <div>
-          <Link to={`/admin/invitations/${id}/edit`} className="admin-eyebrow" style={{ textDecoration: 'none' }}>
-            ← {invitation.title}
-          </Link>
+          <span className="admin-eyebrow">{invitation.title}</span>
           <h1 style={{ margin: '0.3rem 0 0' }}>Livre d'or</h1>
         </div>
         {invitation.status === 'PUBLISHED' && (
@@ -221,6 +220,7 @@ export default function GuestbookPage() {
           </div>
         )}
       </div>
+      <InvitationTabs id={id} />
 
       {error && <p className="error-text">{error}</p>}
 
