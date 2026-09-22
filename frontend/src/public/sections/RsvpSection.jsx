@@ -250,10 +250,11 @@ const styles = {
   title: { fontFamily: 'var(--font-heading)', color: 'var(--color-text)', fontSize: '1.6rem', marginBottom: '1rem' },
   confirmation: { fontFamily: 'var(--font-body)', color: 'var(--color-text)' },
   qrCard: {
-    display: 'inline-flex',
+    display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: '0.5rem',
+    width: 'fit-content',
     margin: '1rem auto 1.5rem',
     padding: '1rem',
     background: 'var(--color-surface, #fff)',
