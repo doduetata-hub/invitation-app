@@ -4,6 +4,7 @@ const env = require('../config/env');
 const { generateUniqueGuestbookToken } = require('../services/guestbookToken.service');
 const { broadcast } = require('../services/guestbookRealtime.service');
 const { deleteGuestbookPhoto } = require('../services/guestbookPhoto.service');
+const { buildGuestbookCsv, buildGuestbookXlsx, buildGuestbookPdf } = require('../services/guestbookExport.service');
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
 
@@ -40,6 +41,61 @@ async function listForInvitation(req, res) {
   });
 
   res.json({ entries, stats: computeStats(entries) });
+}
+
+// Réservé aux exports (voir plus bas) : un vrai souvenir de mariage (CSV/Excel/PDF) ne reprend
+// par défaut que les témoignages APPROUVÉS — ceux réellement retenus par les mariés — jamais les
+// messages encore en attente ou rejetés. `?status=all` reste disponible pour l'admin qui aurait
+// besoin d'une extraction complète à des fins de vérification, hors du cadre "souvenir".
+async function fetchEntriesForExport(invitationId, statusFilter) {
+  const invitation = await prisma.invitation.findUnique({ where: { id: invitationId } });
+  if (!invitation) return null;
+
+  const where = { invitationId };
+  if (statusFilter !== 'all') where.status = 'APPROVED';
+
+  const entries = await prisma.guestbookEntry.findMany({
+    where,
+    orderBy: [{ approvedAt: 'asc' }, { createdAt: 'asc' }],
+    include: { photo: { select: { url: true, width: true, height: true } } },
+  });
+
+  return { invitation, entries };
+}
+
+async function exportGuestbookCsv(req, res) {
+  const data = await fetchEntriesForExport(req.params.id, req.query.status);
+  if (!data) return res.status(404).json({ error: 'Invitation introuvable' });
+
+  const csv = buildGuestbookCsv(data.entries);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="livre-or-${data.invitation.slug}.csv"`);
+  res.send(csv);
+}
+
+async function exportGuestbookXlsx(req, res) {
+  const data = await fetchEntriesForExport(req.params.id, req.query.status);
+  if (!data) return res.status(404).json({ error: 'Invitation introuvable' });
+
+  const buffer = await buildGuestbookXlsx(data.entries);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="livre-or-${data.invitation.slug}.xlsx"`);
+  res.send(buffer);
+}
+
+// "Livre d'or de mariage" imprimable — voir guestbookExport.service.js pour le thème Smoking &
+// Doré et les limites assumées (emojis/écritures non latines retirés de cette seule version
+// imprimée, jamais de la donnée). Peut prendre plusieurs secondes si de nombreuses photos sont
+// à récupérer depuis le stockage : pas de limite de débit dédiée, réservé à l'admin authentifié,
+// à l'usage occasionnel (souvenir de fin d'événement), comme les autres exports du back-office.
+async function exportGuestbookPdf(req, res) {
+  const data = await fetchEntriesForExport(req.params.id, req.query.status);
+  if (!data) return res.status(404).json({ error: 'Invitation introuvable' });
+
+  const buffer = await buildGuestbookPdf(data.invitation, data.entries);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="livre-or-${data.invitation.slug}.pdf"`);
+  res.send(buffer);
 }
 
 // Une entrée numérique change de statut à chaque nouvelle soumission de RSVP avec message
@@ -248,6 +304,9 @@ async function getQrTokenPng(req, res) {
 
 module.exports = {
   listForInvitation,
+  exportGuestbookCsv,
+  exportGuestbookXlsx,
+  exportGuestbookPdf,
   updateStatus,
   bulkApprove,
   remove,

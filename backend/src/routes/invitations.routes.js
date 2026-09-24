@@ -37,7 +37,15 @@ const {
   create: createPayment,
 } = require('../controllers/payments.controller');
 const { lookupByCode } = require('../controllers/checkin.controller');
-const { listForInvitation: listGuestbook, updateSettings: updateGuestbookSettings, listQrTokens, createQrToken } = require('../controllers/guestbook.controller');
+const {
+  listForInvitation: listGuestbook,
+  exportGuestbookCsv,
+  exportGuestbookXlsx,
+  exportGuestbookPdf,
+  updateSettings: updateGuestbookSettings,
+  listQrTokens,
+  createQrToken,
+} = require('../controllers/guestbook.controller');
 const { upload, uploadAudio, uploadSpreadsheet } = require('../middleware/upload');
 
 const router = express.Router();
@@ -88,6 +96,12 @@ router.post('/:id/payments', createPayment);
 router.get('/:id/checkin/lookup', lookupByCode);
 
 router.get('/:id/guestbook', listGuestbook);
+// Placées AVANT ':id/guestbook/settings' etc. sans conflit (segments différents), mais groupées
+// ici pour rester visibles à côté du listing qu'elles exportent. Souvenir imprimable réservé à
+// l'admin authentifié (même périmètre que les exports invités ci-dessus) : pas de limiteur dédié.
+router.get('/:id/guestbook/export', exportGuestbookCsv);
+router.get('/:id/guestbook/export.xlsx', exportGuestbookXlsx);
+router.get('/:id/guestbook/export.pdf', exportGuestbookPdf);
 router.patch('/:id/guestbook/settings', updateGuestbookSettings);
 router.get('/:id/guestbook/qr-tokens', listQrTokens);
 router.post('/:id/guestbook/qr-tokens', createQrToken);

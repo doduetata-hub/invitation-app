@@ -5,7 +5,11 @@ import { buildWhatsappShareUrl } from '../utils/whatsapp';
 // y est illisible aussi bien sur mobile que sur PC. Cette modale montre le texte complet,
 // avec un retour à la ligne normal, et permet de répondre directement par WhatsApp quand un
 // numéro est disponible (jamais le cas pour une réponse via le lien général, sans invité lié).
-export default function GuestMessageModal({ name, answer, numberOfPersons, maxPersons, tableNumber, drink, message, respondedAt, phone, photoUrl, onRemovePhoto, onClose }) {
+// `preview` (optionnel) : un aperçu déjà stylé de ce que le public verra (voir
+// GuestbookLivePreview, utilisé par la page admin du livre d'or) — remplace alors le simple
+// texte brut + la photo isolée ci-dessous, sans rien changer pour les autres appelants
+// (réponses RSVP côté GuestsPage/ClientAccessPage), qui ne passent jamais cette prop.
+export default function GuestMessageModal({ name, answer, numberOfPersons, maxPersons, tableNumber, drink, message, respondedAt, phone, photoUrl, onRemovePhoto, preview, onClose }) {
   const greeting = `Bonjour${name ? ' ' + name : ''}, merci beaucoup pour votre message !`;
   const whatsappUrl = phone ? buildWhatsappShareUrl(phone, greeting) : null;
 
@@ -28,21 +32,34 @@ export default function GuestMessageModal({ name, answer, numberOfPersons, maxPe
           {drink && <span className="badge">🥂 {drink}</span>}
         </div>
 
-        {message ? (
-          <p className="message-full-text">{message}</p>
-        ) : (
-          <p className="admin-muted" style={{ textAlign: 'left' }}>Aucun message laissé.</p>
-        )}
-
-        {photoUrl && (
-          <div className="message-modal-photo">
-            <img src={photoUrl} alt={`Photo jointe par ${name || 'l\'invité'}`} />
-            {onRemovePhoto && (
+        {preview ? (
+          <>
+            {preview}
+            {photoUrl && onRemovePhoto && (
               <button type="button" onClick={onRemovePhoto} className="btn btn-danger-outline btn-sm">
                 Retirer la photo (le message est conservé)
               </button>
             )}
-          </div>
+          </>
+        ) : (
+          <>
+            {message ? (
+              <p className="message-full-text">{message}</p>
+            ) : (
+              <p className="admin-muted" style={{ textAlign: 'left' }}>Aucun message laissé.</p>
+            )}
+
+            {photoUrl && (
+              <div className="message-modal-photo">
+                <img src={photoUrl} alt={`Photo jointe par ${name || 'l\'invité'}`} />
+                {onRemovePhoto && (
+                  <button type="button" onClick={onRemovePhoto} className="btn btn-danger-outline btn-sm">
+                    Retirer la photo (le message est conservé)
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {respondedAt && (

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import QrCodeModal from '../../shared/components/QrCodeModal';
 import GuestMessageModal from '../../shared/components/GuestMessageModal';
+import GuestbookLivePreview from '../../shared/components/GuestbookLivePreview';
 import InvitationTabs from '../components/InvitationTabs';
 
 const SOURCE_LABELS = { DIGITAL: 'Invitation numérique', QR: 'QR code' };
@@ -74,7 +75,7 @@ export default function GuestbookPage() {
     withBusy(entryId, async () => {
       if (!window.confirm('Retirer uniquement la photo ? Le message est conservé.')) return;
       await api.delete(`/guestbook-entries/${entryId}/photo`);
-      setMessageView((view) => (view?.entryId === entryId ? { ...view, photoUrl: null } : view));
+      setMessageView((view) => (view?.entryId === entryId ? { ...view, photoUrl: null, photo: null } : view));
       await loadEntries();
     });
 
@@ -233,6 +234,25 @@ export default function GuestbookPage() {
         <StatCard label="Via QR code" value={stats.bySource.QR || 0} />
         <StatCard label="Avec photo" value={entries.filter((e) => e.photo).length} />
         <StatCard label="Photos en attente" value={entries.filter((e) => e.pendingPhotoId || e.pendingPhotoRemoved).length} />
+      </div>
+
+      <div className="editor-section">
+        <h2>Souvenir du mariage</h2>
+        <p className="admin-muted" style={{ marginTop: 0 }}>
+          Conserve les témoignages approuvés — pas les messages en attente ou rejetés, écartés de
+          ces exports par défaut.
+        </p>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <a href={`/api/invitations/${id}/guestbook/export.pdf`} className="btn btn-accent">
+            📖 Livre d'or en PDF
+          </a>
+          <a href={`/api/invitations/${id}/guestbook/export.xlsx`} className="btn btn-outline">
+            Exporter Excel
+          </a>
+          <a href={`/api/invitations/${id}/guestbook/export`} className="btn btn-outline">
+            Exporter CSV
+          </a>
+        </div>
       </div>
 
       <div className="editor-section">
@@ -414,7 +434,7 @@ export default function GuestbookPage() {
                             type="button"
                             className="cell-photo-thumb"
                             title="Agrandir la photo jointe"
-                            onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo.url })}
+                            onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo.url, photo: entry.photo })}
                           >
                             <img src={entry.photo.thumbUrl || entry.photo.url} alt="" loading="lazy" decoding="async" />
                           </button>
@@ -423,7 +443,7 @@ export default function GuestbookPage() {
                           <button
                             type="button"
                             className="cell-message-btn"
-                            onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo?.url || null })}
+                            onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.photo?.url || null, photo: entry.photo || null })}
                           >
                             <span className="cell-message-btn-text">{entry.message}</span>
                           </button>
@@ -434,7 +454,7 @@ export default function GuestbookPage() {
                                   type="button"
                                   className="cell-pending-photo-btn"
                                   title="Voir la nouvelle photo proposée"
-                                  onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.pendingPhoto.url })}
+                                  onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.pendingPhoto.url, photo: entry.pendingPhoto })}
                                 >
                                   <img src={entry.pendingPhoto.thumbUrl || entry.pendingPhoto.url} alt="" loading="lazy" decoding="async" />
                                   <span>🕒 Nouvelle photo en attente</span>
@@ -495,6 +515,7 @@ export default function GuestbookPage() {
       {messageView && (
         <GuestMessageModal
           {...messageView}
+          preview={<GuestbookLivePreview guestName={messageView.name} message={messageView.message} photo={messageView.photo} tableNumber={messageView.tableNumber} />}
           onRemovePhoto={messageView.photoUrl ? () => removeEntryPhoto(messageView.entryId) : undefined}
           onClose={() => setMessageView(null)}
         />

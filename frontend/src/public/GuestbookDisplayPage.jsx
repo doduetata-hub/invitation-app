@@ -7,9 +7,19 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const COUNTDOWN_START = 5;
 const COUNTDOWN_STEP_MS = 1000;
 const INTRO_STEP_MS = 2600;
-const LOOP_STEP_MS = 8000;
 const FADE_MS = 700;
 const POLL_INTERVAL_MS = 2000;
+
+// Durée d'affichage adaptée à la longueur du texte RÉELLEMENT montré (la page courante, pas tout
+// le message si celui-ci est scindé en deux temps — voir splitMessageForDisplay) : un mot très
+// court ne mérite pas les mêmes 8 secondes qu'un paragraphe entier, et un message dense doit
+// rester assez longtemps pour se laisser lire confortablement à voix basse par la salle.
+function durationForText(text) {
+  const len = (text || '').length;
+  if (len <= 80) return 7500; // court : ~7-9 s
+  if (len <= 280) return 11000; // moyen : ~10-14 s
+  return 14000; // long/scindé : chaque écran garde le temps d'une lecture posée
+}
 
 injectStylesOnce(
   'guestbook-display',
@@ -58,22 +68,52 @@ injectStylesOnce(
   .gb-text { max-width: 80vw; }
 
   /* Message + photo : composition en deux colonnes sur un écran large (photo encadrée à gauche,
-     message à droite), en pile sur un écran en portrait. Toutes les tailles sont en vw/vh : la
-     composition est identique en 1366x768, 1080p et 4K. --gb-photo-scale réduit la photo quand
-     le message est long, pour que le message reste TOUJOURS l'élément principal. La photo garde
-     son ratio d'origine (largeur/hauteur auto + object-fit: contain) : jamais déformée ni
-     recadrée, jamais agrandie au-delà de sa définition (pas de pixellisation inutile). */
-  .gb-card-photo { flex-direction: row; justify-content: center; gap: clamp(28px, 4.2vw, 160px); }
-  .gb-card-photo .gb-text { flex: 0 1 auto; min-width: 0; max-width: 44vw; }
-  .gb-photo-frame { --gb-photo-scale: 1; margin: 0; flex: none; line-height: 0; padding: clamp(6px, 0.65vw, 24px); border: 1px solid rgba(214,181,109,0.65); background: linear-gradient(145deg, rgba(38,30,17,0.92), rgba(10,9,8,0.92)); box-shadow: 0 0 0 clamp(3px, 0.3vw, 12px) rgba(10,9,8,0.55), 0 0 5vw rgba(216,181,109,0.16), 0 2.4vh 6vh rgba(0,0,0,0.6); }
-  .gb-photo-frame img { display: block; width: auto; height: auto; object-fit: contain; }
-  .gb-photo-landscape img { max-width: calc(40vw * var(--gb-photo-scale)); max-height: calc(50vh * var(--gb-photo-scale)); }
-  .gb-photo-square img { max-width: calc(32vw * var(--gb-photo-scale)); max-height: calc(54vh * var(--gb-photo-scale)); }
-  .gb-photo-portrait img { max-width: calc(26vw * var(--gb-photo-scale)); max-height: calc(62vh * var(--gb-photo-scale)); }
+     message à droite — environ 30% photo / 70% message, cf. 26vw photo + 4vw d'air + 58vw de
+     texte = 88vw, la largeur disponible une fois les 6vw de marge de .gb-loop déduits de chaque
+     côté), en pile sur un écran en portrait. Toutes les tailles sont en vw/vh : la composition
+     est identique en 1366x768, 1080p et 4K. --gb-photo-scale réduit la photo quand le message
+     est long, pour qu'elle ne rivalise jamais avec le texte, qui reste TOUJOURS l'élément
+     principal. La largeur du cadre est fixe (par orientation) et l'image le remplit en
+     object-fit: cover — un vrai médaillon photographique, jamais une vignette flottante dans une
+     boîte à moitié vide. Le ratio d'origine n'est pas déformé (cover recadre, ne compresse pas) ;
+     voir plus bas l'heuristique de cadrage qui protège les visages sans dépendre d'une IA. */
+  .gb-card-photo { flex-direction: row; justify-content: center; align-items: center; gap: clamp(24px, 4vw, 150px); }
+  .gb-card-photo .gb-text { flex: 0 1 auto; min-width: 0; max-width: 58vw; }
+  .gb-photo-frame {
+    --gb-photo-scale: 1;
+    margin: 0; flex: none; line-height: 0; overflow: hidden;
+    /* Pas de plafond en pixels ici (contrairement au plancher) : un plafond bas (essayé à 340px)
+       neutralisait complètement le vw dès 1366px et laissait la photo minuscule en 4K, cassant
+       le ratio ~30/70 recherché — exactement le piège que le commentaire ci-dessus prévenait déjà
+       pour le texte. La largeur suit le vw sans limite haute, comme le message. */
+    width: calc(26vw * var(--gb-photo-scale)); min-width: 130px;
+    padding: clamp(6px, 0.65vw, 22px);
+    border: 1px solid rgba(214,181,109,0.65);
+    background: linear-gradient(145deg, rgba(38,30,17,0.92), rgba(10,9,8,0.92));
+    box-shadow: 0 0 0 clamp(3px, 0.3vw, 12px) rgba(10,9,8,0.55), 0 0 5vw rgba(216,181,109,0.16), 0 2.4vh 6vh rgba(0,0,0,0.6);
+  }
+  /* Cadre intérieur : c'est LUI qui porte l'aspect-ratio (le <figure> a déjà son padding-cadre
+     doré), pour que la bordure garde une épaisseur régulière quelle que soit l'orientation. */
+  .gb-photo-inner { overflow: hidden; border-radius: 2px; }
+  .gb-photo-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* Ratio du cadre + point de cadrage par défaut selon l'orientation d'origine :
+     - paysage/carrée : cadre proche du 4:3, recadrage centré (les sujets sont rarement collés
+       en haut d'une photo large) ;
+     - portrait : cadre plus haut (3:4) pour ne PAS couper brutalement une silhouette entière au
+       niveau du visage, point de cadrage légèrement remonté (les visages sont statistiquement
+       dans le tiers supérieur d'un portrait de smartphone tenu verticalement).
+     Sans détection de visage (hors de portée sans IA) : la meilleure approximation fiable reste
+     ce point fixe, déjà utilisé ailleurs dans l'appli pour la photo de couverture. */
+  .gb-photo-landscape .gb-photo-inner { aspect-ratio: 4 / 3; }
+  .gb-photo-landscape img { object-position: 50% 38%; }
+  .gb-photo-square .gb-photo-inner { aspect-ratio: 1 / 1; }
+  .gb-photo-square img { object-position: 50% 32%; }
+  .gb-photo-portrait .gb-photo-inner { aspect-ratio: 3 / 4; }
+  .gb-photo-portrait img { object-position: 50% 22%; }
   @media (max-aspect-ratio: 1/1) {
     .gb-card-photo { flex-direction: column; gap: 3vh; }
     .gb-card-photo .gb-text { max-width: 84vw; }
-    .gb-photo-landscape img, .gb-photo-square img, .gb-photo-portrait img { max-width: calc(78vw * var(--gb-photo-scale)); max-height: calc(34vh * var(--gb-photo-scale)); }
+    .gb-photo-frame { width: min(58vw * var(--gb-photo-scale), 380px); }
   }
 
   .gb-card-hidden { opacity: 0; transform: translateY(18px); }
@@ -95,8 +135,12 @@ injectStylesOnce(
      ne vient plus mordre sur la 1re ligne du message sur un écran vertical. Discret : présent sans
      jamais rivaliser avec le message, qui reste le seul élément fort de la composition. */
   .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(2.3rem, 3.2vw, 7.7rem); color: #B88A32; margin: 0 0 -1vw; opacity: 0.42; }
-  /* font-size posée en JS (fitMessageFont) ; la valeur ci-dessous ne sert que de repli avant la mesure. */
-  .gb-message { font-size: clamp(1.6rem, 2.5vw, 5rem); line-height: 1.35; color: #FFFDF8; margin: 0 0 3vh; font-weight: 600; text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+  /* font-size posée en JS (fitMessageFont) ; la valeur ci-dessous ne sert que de repli avant la mesure.
+     white-space: pre-line : un message en plusieurs paragraphes (l'invité a tapé Entrée deux fois)
+     doit garder ses sauts de ligne à l'écran — par défaut le HTML les aurait tous fondus en un seul
+     bloc compact. Les espaces/tabulations répétés restent, eux, réduits à un seul (texte centré :
+     inutile de préserver une indentation). */
+  .gb-message { font-size: clamp(1.6rem, 2.5vw, 5rem); line-height: 1.35; color: #FFFDF8; margin: 0 0 3vh; font-weight: 600; text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,0.55); white-space: pre-line; }
   /* Emojis conservés dans la donnée (jamais modifiés), juste neutralisés visuellement à l'écran :
      moins "confettis", plus proche d'une gravure sobre — cohérent avec l'ambiance Smoking & Doré.
      Désaturation marquée + légère réduction de taille : au premier coup d'œil sur grand écran,
@@ -527,14 +571,15 @@ export default function GuestbookDisplayPage() {
   }, [phase, entries, currentEntry]);
 
   // Rythme d'affichage : chaque page (un message tient dans une seule, sauf s'il est scindé en
-  // deux, voir splitMessageForDisplay) reste LOOP_STEP_MS à l'écran, puis fondu sortant, puis la
-  // page suivante du même message OU le message suivant non présenté, OU l'écran d'attente s'il
-  // n'y en a plus. `entries` volontairement hors dépendances : une nouvelle approbation ne doit
-  // pas relancer le minuteur de la page en cours d'affichage.
+  // deux, voir splitMessageForDisplay) reste à l'écran une durée adaptée à SA longueur (voir
+  // durationForText), puis fondu sortant, puis la page suivante du même message OU le message
+  // suivant non présenté, OU l'écran d'attente s'il n'y en a plus. `entries` volontairement hors
+  // dépendances : une nouvelle approbation ne doit pas relancer le minuteur de la page en cours.
   useEffect(() => {
     if (phase !== 'loop' || !currentEntry) return undefined;
     const pages = splitMessageForDisplay(currentEntry.message);
     const isLastPage = pageIndex >= pages.length - 1;
+    const duration = durationForText(pages[pageIndex]);
 
     // Précharge la photo du PROCHAIN message seulement (jamais toute la liste), et seulement
     // quand on s'apprête réellement à en changer (pas entre deux pages du même message).
@@ -558,7 +603,7 @@ export default function GuestbookDisplayPage() {
         if (next) present(next);
         else setCurrentEntry(null);
       }, FADE_MS);
-    }, LOOP_STEP_MS);
+    }, duration);
     return () => {
       clearTimeout(t);
       clearTimeout(fadeTimer);
@@ -667,19 +712,23 @@ export default function GuestbookDisplayPage() {
                     className={`gb-photo-frame gb-photo-${photoOrientation(entryPhoto)}`}
                     style={{ '--gb-photo-scale': presentation.photoScale }}
                   >
-                    <img
-                      src={entryPhoto.url}
-                      width={entryPhoto.width || undefined}
-                      height={entryPhoto.height || undefined}
-                      alt={`Photo de ${currentEntry.guestName}`}
-                      decoding="async"
-                      onError={() => setFailedPhotoId(currentEntry.id)}
-                    />
+                    {/* .gb-photo-inner porte l'aspect-ratio (voir CSS) : le <figure> garde son
+                        cadre doré à épaisseur constante, quelle que soit l'orientation. */}
+                    <div className="gb-photo-inner">
+                      <img
+                        src={entryPhoto.url}
+                        alt={`Photo de ${currentEntry.guestName}`}
+                        decoding="async"
+                        onError={() => setFailedPhotoId(currentEntry.id)}
+                      />
+                    </div>
                   </figure>
                 )}
                 <div className="gb-text">
                   {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
-                  <p className="gb-message" ref={messageRef}>{renderMessageWithSoberEmoji(pageText)}</p>
+                  {/* dir="auto" : un message en arabe (ou toute écriture RTL) se lit alors dans le
+                      bon sens, sans dépendre du sens par défaut (LTR) de la page. */}
+                  <p className="gb-message" ref={messageRef} dir="auto">{renderMessageWithSoberEmoji(pageText)}</p>
                   <p className="gb-name">— {currentEntry.guestName}</p>
                   {isMultiPage && <p className="gb-page-indicator">{pageIndex + 1} / {pages.length}</p>}
                 </div>

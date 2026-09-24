@@ -58,7 +58,7 @@ export default function GuestbookPhotoPicker({ photo, existingUrl, onChange, onR
       {!hasPhoto ? (
         <button type="button" onClick={() => inputRef.current?.click()} disabled={disabled || busy} style={styles.addButton}>
           <span style={styles.addIcon} aria-hidden="true">📷</span>
-          {busy ? 'Préparation de la photo...' : 'Ajouter une photo'}
+          {busy ? 'Préparation de la photo...' : 'Ajouter ma photo'}
         </button>
       ) : (
         <div style={styles.previewBox}>
@@ -78,7 +78,7 @@ export default function GuestbookPhotoPicker({ photo, existingUrl, onChange, onR
             ✕
           </button>
           <button type="button" onClick={() => inputRef.current?.click()} disabled={disabled || busy} style={styles.replaceLink}>
-            {busy ? 'Préparation...' : '📷 Remplacer'}
+            {busy ? 'Préparation...' : '📷 Remplacer ma photo'}
           </button>
         </div>
       )}
