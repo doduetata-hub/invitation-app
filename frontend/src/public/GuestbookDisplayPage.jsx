@@ -16,9 +16,19 @@ injectStylesOnce(
   `
   .gb-display { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(circle at 50% 20%, #201a10 0%, #111111 55%, #0a0908 100%); font-family: 'Cormorant Garamond', Georgia, serif; }
   /* 50% 22% : même cadrage que LuxuryGoldCoverSection pour cette photo (remonte le point de
-     recadrage, sinon "cover" + position centrée coupe le haut des visages sur un plan large). */
-  .gb-photo-bg { position: absolute; inset: 0; background-size: cover; background-position: 50% 22%; opacity: 0.22; filter: saturate(0.7) brightness(0.75); }
+     recadrage, sinon "cover" + position centrée coupe le haut des visages sur un plan large).
+     La photo du couple reste volontairement très sombre (opacity/brightness bas) : un simple
+     décor discret derrière le message, jamais un élément qu'on éclaircit pour le mettre en avant. */
+  .gb-photo-bg { position: absolute; inset: 0; background-size: cover; background-position: 50% 22%; opacity: 0.22; filter: saturate(0.7) brightness(0.75); animation: gbBgDrift 48s ease-in-out infinite alternate; }
+  /* Dérive de cadrage extrêmement lente (imperceptible seconde par seconde, sensible sur la durée
+     d'une soirée) : un très léger mouvement, jamais un zoom, pour que l'arrière-plan ne soit
+     jamais totalement figé sans pour autant attirer l'œil. */
+  @keyframes gbBgDrift { from { transform: scale(1.02) translate(0, 0); } to { transform: scale(1.06) translate(-0.6%, -0.4%); } }
   .gb-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,9,8,0.55) 0%, rgba(10,9,8,0.75) 60%, rgba(10,9,8,0.92) 100%); }
+  /* Halo doré diffus, très en dessous de l'overlay sombre : une lumière ambiante à peine
+     perceptible plutôt qu'un vrai projecteur — la photo du couple doit rester sombre et discrète. */
+  .gb-mist { position: absolute; inset: -10%; background: radial-gradient(ellipse at 50% 38%, rgba(216,181,109,0.10) 0%, rgba(216,181,109,0.04) 38%, transparent 72%); animation: gbMistBreathe 22s ease-in-out infinite; pointer-events: none; }
+  @keyframes gbMistBreathe { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
   .gb-glow { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
   .gb-glow-a { width: 46vw; height: 46vw; top: -14vw; left: 50%; transform: translateX(-50%); background: radial-gradient(circle, rgba(216,181,109,0.28), transparent 70%); animation: gbPulse 9s ease-in-out infinite; }
   .gb-glow-b { width: 32vw; height: 32vw; bottom: -10vw; right: -6vw; background: radial-gradient(circle, rgba(184,138,50,0.22), transparent 70%); animation: gbPulse 11s ease-in-out infinite reverse; }
@@ -68,12 +78,35 @@ injectStylesOnce(
 
   .gb-card-hidden { opacity: 0; transform: translateY(18px); }
   .gb-card-visible { opacity: 1; transform: translateY(0); }
+
+  /* Révélation cinématographique : le fondu du bloc entier (ci-dessus, sur .gb-card) est le
+     mouvement de base ; ces animations, elles, jouent UNIQUEMENT sur les enfants et UNIQUEMENT
+     à l'entrée (le sélecteur ne matche plus dès que la carte repasse en "hidden", donc la sortie
+     reste un simple fondu d'ensemble, sans re-décomposer). Photo d'abord, message ensuite,
+     signature enfin — jamais de zoom ni de rotation, juste un temps d'avance différent. */
+  .gb-card-visible .gb-photo-frame { animation: gbEnterRise 1000ms ease both; }
+  .gb-card-visible .gb-text > .gb-quote { animation: gbEnterRise 900ms ease both 120ms; }
+  .gb-card-visible .gb-text > .gb-message { animation: gbEnterRise 900ms ease both 260ms; }
+  .gb-card-visible .gb-text > .gb-name { animation: gbEnterRise 900ms ease both 480ms; }
+  .gb-card-visible .gb-page-indicator { animation: gbEnterRise 900ms ease both 620ms; }
+  @keyframes gbEnterRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
   /* Marge en vw (comme la taille du guillemet) et non en vh : identique en 16:9 (-2vh = -1.125vw), mais
-     ne vient plus mordre sur la 1re ligne du message sur un écran vertical. */
-  .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 4.17vw, 10rem); color: #B88A32; margin: 0 0 -1.125vw; opacity: 0.6; }
+     ne vient plus mordre sur la 1re ligne du message sur un écran vertical. Discret : présent sans
+     jamais rivaliser avec le message, qui reste le seul élément fort de la composition. */
+  .gb-quote { font-family: 'Playfair Display', serif; font-size: clamp(2.3rem, 3.2vw, 7.7rem); color: #B88A32; margin: 0 0 -1vw; opacity: 0.42; }
   /* font-size posée en JS (fitMessageFont) ; la valeur ci-dessous ne sert que de repli avant la mesure. */
-  .gb-message { font-size: clamp(1.8rem, 3vw, 6rem); line-height: 1.35; color: #FFFDF8; margin: 0 0 3vh; font-weight: 600; text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+  .gb-message { font-size: clamp(1.6rem, 2.5vw, 5rem); line-height: 1.35; color: #FFFDF8; margin: 0 0 3vh; font-weight: 600; text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+  /* Emojis conservés dans la donnée (jamais modifiés), juste neutralisés visuellement à l'écran :
+     moins "confettis", plus proche d'une gravure sobre — cohérent avec l'ambiance Smoking & Doré.
+     Désaturation marquée + légère réduction de taille : au premier coup d'œil sur grand écran,
+     un simple opacity(0.75) restait presque aussi coloré qu'à l'origine. */
+  .gb-emoji { filter: grayscale(0.85) opacity(0.6) brightness(0.9); font-size: 0.9em; }
   .gb-name { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(1.05rem, 1.35vw, 3.2rem); font-weight: 500; color: #E3C57F; margin: 0; }
+  /* Repère discret "1 / 2" pour un message présenté en deux temps (voir splitMessageForDisplay) :
+     jamais assez visible pour concurrencer le nom, juste de quoi comprendre qu'une suite arrive.
+     Marge généreuse : au ras du nom, il se lisait comme un indice de bas de page collé au texte. */
+  .gb-page-indicator { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: clamp(0.6rem, 0.62vw, 1.4rem); color: #B88A32; opacity: 0.55; margin: 1.8vh 0 0; }
 
   .gb-fade-rise { animation: gbFadeRise 900ms ease both; }
   @keyframes gbFadeRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -96,11 +129,16 @@ injectStylesOnce(
   .gb-music-btn:hover { background: rgba(17,17,17,0.8); }
 
   @media (prefers-reduced-motion: reduce) {
-    .gb-glow, .gb-particle { animation: none !important; }
+    .gb-glow, .gb-particle, .gb-photo-bg, .gb-mist { animation: none !important; }
     .gb-fade-rise { animation: gbFadeOnly 500ms ease both; }
     .gb-countdown-pop { animation: gbFadeOnly 400ms ease both; }
     .gb-card { transition: opacity 500ms ease; }
     .gb-card-hidden, .gb-card-visible { transform: none; }
+    .gb-card-visible .gb-photo-frame,
+    .gb-card-visible .gb-text > .gb-quote,
+    .gb-card-visible .gb-text > .gb-message,
+    .gb-card-visible .gb-text > .gb-name,
+    .gb-card-visible .gb-page-indicator { animation: none !important; opacity: 1 !important; transform: none !important; }
   }
   @keyframes gbFadeOnly { from { opacity: 0; } to { opacity: 1; } }
   `
@@ -122,6 +160,75 @@ function presentationForMessage(message, hasPhoto = false) {
     // Plus le message est long, plus la photo se fait discrète (le texte est le cœur du souvenir).
     photoScale: len <= 160 ? 1 : len <= 400 ? 0.8 : 0.6,
   };
+}
+
+// Au-delà de ce seuil, réduire encore la police finit par nuire à la lisibilité plus qu'elle ne
+// rend service : mieux vaut deux écrans élégants, pleinement lisibles, qu'un seul écran écrasé
+// (voir splitMessageForDisplay). En dessous, un message tient toujours sur un seul écran, quitte
+// à s'approcher du plancher de fitMessageFont.
+const LONG_MESSAGE_SPLIT_THRESHOLD = 460;
+
+// Coupe un message très long en EXACTEMENT deux temps (jamais plus) : recherche la frontière de
+// phrase (point/exclamation/interrogation suivi d'une espace) la plus proche du milieu dans une
+// fenêtre de recherche, sinon la première espace la plus proche du milieu, jamais en plein mot.
+function splitMessageForDisplay(message) {
+  if (!message || message.length <= LONG_MESSAGE_SPLIT_THRESHOLD) return [message || ''];
+
+  const mid = Math.floor(message.length / 2);
+  const window = 140;
+  const searchStart = Math.max(0, mid - window);
+  const searchEnd = Math.min(message.length, mid + window);
+
+  let cut = -1;
+  let bestDistance = Infinity;
+  const sentenceEnd = /[.!?]\s/g;
+  sentenceEnd.lastIndex = searchStart;
+  let match = sentenceEnd.exec(message);
+  while (match && match.index < searchEnd) {
+    const pos = match.index + 2;
+    const distance = Math.abs(pos - mid);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      cut = pos;
+    }
+    match = sentenceEnd.exec(message);
+  }
+
+  if (cut === -1) {
+    for (let offset = 0; offset <= window; offset += 1) {
+      if (message[mid + offset] === ' ') {
+        cut = mid + offset + 1;
+        break;
+      }
+      if (mid - offset >= 0 && message[mid - offset] === ' ') {
+        cut = mid - offset + 1;
+        break;
+      }
+    }
+  }
+
+  if (cut === -1) cut = mid;
+
+  const first = message.slice(0, cut).trim();
+  const second = message.slice(cut).trim();
+  return first && second ? [first, second] : [message];
+}
+
+// Points de code "Extended_Pictographic" (emoji) éventuellement suivis d'un sélecteur de
+// variation ou enchaînés par un joli caractère de liaison (ZWJ) — couvre la grande majorité des
+// emojis simples et composés (❤️ 🥂 🎉 👩‍❤️‍👨...) sans bibliothèque de segmentation dédiée.
+const EMOJI_SPLIT = /(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)/gu;
+const EMOJI_TEST = /^\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*$/u;
+
+// Neutralise visuellement les emojis dans le mode écran (voir .gb-emoji : légère désaturation,
+// jamais retirés) — le message d'origine, lui, n'est JAMAIS modifié, ni ici ni en base ; c'est
+// une lecture d'affichage. Rendu en éléments React (jamais dangerouslySetInnerHTML) : le texte
+// de l'invité, aussi inattendu soit-il, ne peut jamais devenir du HTML interprété.
+function renderMessageWithSoberEmoji(text) {
+  return text
+    .split(EMOJI_SPLIT)
+    .filter(Boolean)
+    .map((part, i) => (EMOJI_TEST.test(part) ? <span key={i} className="gb-emoji">{part}</span> : part));
 }
 
 function photoOrientation(photo) {
@@ -191,11 +298,15 @@ function hashText(text) {
   return h.toString(36);
 }
 
-// Plafond : au-delà, un message très court (« Félicitations ! ») devient ridiculement énorme et
-// la lecture se fait plus difficile, pas plus facile. Plancher : ne jamais descendre sous une
-// taille lisible à distance, même si un message de 1000 caractères devait alors déborder.
-const MESSAGE_FONT_MAX_VW = 4.2;
-const MESSAGE_FONT_MIN_VW = 0.75;
+// Plafond réduit d'environ 17 % par rapport à la version précédente (4.2vw) : un message court
+// respire davantage sans dominer l'écran. Ce plafond ne joue que pour les messages qui tiennent
+// large — un message moyen ou long est déjà réduit en dessous par fitMessageFont, une simple
+// baisse uniforme de TOUTES les tailles n'aurait rien changé pour eux. Plancher légèrement
+// remonté : au-delà de LONG_MESSAGE_SPLIT_THRESHOLD un message est désormais scindé en deux
+// écrans (voir splitMessageForDisplay) plutôt que réduit jusqu'à l'illisible, donc chaque écran
+// a moins de texte à faire tenir qu'avant.
+const MESSAGE_FONT_MAX_VW = 3.5;
+const MESSAGE_FONT_MIN_VW = 1;
 
 function fitMessageFont(loopEl, groupEl, messageEl) {
   if (!loopEl || !groupEl || !messageEl) return;
@@ -244,6 +355,9 @@ export default function GuestbookDisplayPage() {
   const [countdownValue, setCountdownValue] = useState(COUNTDOWN_START);
   const [introStep, setIntroStep] = useState(0);
   const [currentEntry, setCurrentEntry] = useState(null);
+  // Page courante d'un message présenté en deux temps (voir splitMessageForDisplay) — toujours 0
+  // pour un message qui tient sur un seul écran.
+  const [pageIndex, setPageIndex] = useState(0);
   const [visible, setVisible] = useState(true);
   // Photo qui n'a pas pu s'afficher (fichier supprimé entre-temps...) : on retombe sur le
   // message seul plutôt que d'afficher un cadre cassé.
@@ -372,16 +486,36 @@ export default function GuestbookDisplayPage() {
   // Le message est marqué "présenté" tout de suite, AVANT d'attendre sa photo : ainsi ni un
   // nouveau cycle de l'effet ci-dessous ni une actualisation de la liste ne peut le présenter
   // deux fois pendant le chargement (presentingRef bloque aussi toute présentation concurrente).
+  // La carte est montée cachée (visible=false) : un changement de `key` remonte le nœud DOM, et
+  // une transition CSS ne peut jamais s'interpoler dès le tout premier rendu d'un nœud — sans ce
+  // détour, la nouvelle entrée apparaissait instantanément (fondu de sortie seulement, jamais
+  // d'entrée). Le useEffect ci-dessous bascule ensuite sur "visible" au frame suivant.
   const present = async (entry) => {
     presentingRef.current = true;
     shownRef.current.add(entryKey(entry));
     saveShown(slug, shownRef.current);
     if (entry.photo?.url) await preloadImage(entry.photo.url);
     setFailedPhotoId(null);
+    setPageIndex(0);
     setCurrentEntry(entry);
-    setVisible(true);
+    setVisible(false);
     presentingRef.current = false;
   };
+
+  // Révèle la carte tout juste montée (voir le commentaire de present() ci-dessus) — double
+  // rAF pour garantir qu'un premier rendu "caché" a bien été peint avant de basculer, sinon le
+  // navigateur peut fusionner les deux changements et sauter la transition.
+  useEffect(() => {
+    if (phase !== 'loop' || !currentEntry) return undefined;
+    let raf2;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setVisible(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [phase, currentEntry?.id]);
 
   // Écran d'attente -> premier message non présenté dès qu'il y en a un (fin de l'intro, ou
   // nouvelle approbation arrivée pendant l'attente).
@@ -392,20 +526,34 @@ export default function GuestbookDisplayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, entries, currentEntry]);
 
-  // Message affiché : fondu sortant après LOOP_STEP_MS, puis le suivant non présenté, ou
-  // l'écran d'attente s'il n'y en a plus. `entries` volontairement hors dépendances : une
-  // nouvelle approbation ne doit pas relancer le minuteur du message en cours d'affichage.
+  // Rythme d'affichage : chaque page (un message tient dans une seule, sauf s'il est scindé en
+  // deux, voir splitMessageForDisplay) reste LOOP_STEP_MS à l'écran, puis fondu sortant, puis la
+  // page suivante du même message OU le message suivant non présenté, OU l'écran d'attente s'il
+  // n'y en a plus. `entries` volontairement hors dépendances : une nouvelle approbation ne doit
+  // pas relancer le minuteur de la page en cours d'affichage.
   useEffect(() => {
     if (phase !== 'loop' || !currentEntry) return undefined;
-    // Précharge la photo du PROCHAIN message seulement (jamais toute la liste) : elle est déjà
-    // en cache quand vient son tour, sans télécharger des dizaines d'images d'avance.
-    const upcoming = nextUnseen();
-    if (upcoming?.photo?.url) preloadImage(upcoming.photo.url);
+    const pages = splitMessageForDisplay(currentEntry.message);
+    const isLastPage = pageIndex >= pages.length - 1;
+
+    // Précharge la photo du PROCHAIN message seulement (jamais toute la liste), et seulement
+    // quand on s'apprête réellement à en changer (pas entre deux pages du même message).
+    if (isLastPage) {
+      const upcoming = nextUnseen();
+      if (upcoming?.photo?.url) preloadImage(upcoming.photo.url);
+    }
 
     let fadeTimer;
     const t = setTimeout(() => {
       setVisible(false);
       fadeTimer = setTimeout(() => {
+        if (!isLastPage) {
+          // Page suivante du MÊME message : le nœud DOM ne change pas (clé inchangée), le
+          // passage hidden -> visible s'anime donc normalement, sans détour par present().
+          setPageIndex((p) => p + 1);
+          setVisible(true);
+          return;
+        }
         const next = nextUnseen();
         if (next) present(next);
         else setCurrentEntry(null);
@@ -416,10 +564,16 @@ export default function GuestbookDisplayPage() {
       clearTimeout(fadeTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, currentEntry]);
+  }, [phase, currentEntry, pageIndex]);
 
-  const entryPhoto = currentEntry?.photo && failedPhotoId !== currentEntry.id ? currentEntry.photo : null;
-  const presentation = currentEntry ? presentationForMessage(currentEntry.message, Boolean(entryPhoto)) : DEFAULT_PRESENTATION;
+  const pages = currentEntry ? splitMessageForDisplay(currentEntry.message) : [''];
+  const pageText = pages[pageIndex] ?? currentEntry?.message ?? '';
+  const isMultiPage = pages.length > 1;
+  // La photo n'illustre que la première page d'un message scindé : la seconde page profite de
+  // toute la largeur pour la suite du texte, plutôt que de répéter la photo à côté d'un
+  // deuxième bloc de texte déjà dense.
+  const entryPhoto = currentEntry?.photo && failedPhotoId !== currentEntry.id && pageIndex === 0 ? currentEntry.photo : null;
+  const presentation = currentEntry ? presentationForMessage(pageText, Boolean(entryPhoto)) : DEFAULT_PRESENTATION;
 
   // Avant la peinture, pour qu'on ne voie jamais le message à une taille provisoire. Refait
   // quand la fenêtre change de taille et une fois les polices chargées (leurs métriques
@@ -437,7 +591,7 @@ export default function GuestbookDisplayPage() {
       cancelled = true;
       window.removeEventListener('resize', run);
     };
-  }, [phase, currentEntry?.id, currentEntry?.message, entryPhoto?.url, presentation.showPhoto, presentation.showQuote, presentation.photoScale]);
+  }, [phase, currentEntry?.id, pageText, entryPhoto?.url, presentation.showPhoto, presentation.showQuote, presentation.photoScale]);
 
   if (notFound) {
     return (
@@ -458,6 +612,7 @@ export default function GuestbookDisplayPage() {
     <div className="gb-display">
       {data.coverUrl && <div className="gb-photo-bg" style={{ backgroundImage: `url(${data.coverUrl})` }} />}
       <div className="gb-overlay" />
+      <div className="gb-mist" />
       <div className="gb-glow gb-glow-a" />
       <div className="gb-glow gb-glow-b" />
       <Particles />
@@ -524,8 +679,9 @@ export default function GuestbookDisplayPage() {
                 )}
                 <div className="gb-text">
                   {presentation.showQuote && <p className="gb-quote" aria-hidden="true">"</p>}
-                  <p className="gb-message" ref={messageRef}>{currentEntry.message}</p>
+                  <p className="gb-message" ref={messageRef}>{renderMessageWithSoberEmoji(pageText)}</p>
                   <p className="gb-name">— {currentEntry.guestName}</p>
+                  {isMultiPage && <p className="gb-page-indicator">{pageIndex + 1} / {pages.length}</p>}
                 </div>
               </div>
             )}

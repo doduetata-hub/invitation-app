@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { PHOTO_ACCEPT, prepareGuestbookPhoto } from '../utils/guestbookPhoto';
 
 // Sélecteur de photo facultative pour le livre d'or, partagé par l'invitation numérique
@@ -6,6 +6,9 @@ import { PHOTO_ACCEPT, prepareGuestbookPhoto } from '../utils/guestbookPhoto';
 // attribut `capture` : sur smartphone, le navigateur propose lui-même « Prendre une photo »,
 // « Photothèque » ou « Fichiers » ; sur ordinateur, l'explorateur de fichiers. Aucune caméra
 // maison à maintenir. Thème : uniquement les variables CSS de l'invitation (--color-*, --font-*).
+// Le ✕ de suppression est un médaillon posé SUR l'aperçu (coin supérieur droit), comme une photo
+// qu'on retire d'un album — pas un lien administratif sous l'image : ce composant doit se sentir
+// comme une fonctionnalité native du livre d'or, jamais comme un formulaire d'upload back-office.
 //
 // Contrôlé par le parent : `photo` = { file, previewUrl } de la photo choisie, `existingUrl` =
 // miniature d'une photo déjà enregistrée (mode modification). `onChange(photo)` reçoit la
@@ -52,28 +55,33 @@ export default function GuestbookPhotoPicker({ photo, existingUrl, onChange, onR
 
   return (
     <div style={styles.wrap} data-testid="guestbook-photo-picker">
-      <span style={styles.label}>Photo (facultatif)</span>
-
-      {hasPhoto && (
+      {!hasPhoto ? (
+        <button type="button" onClick={() => inputRef.current?.click()} disabled={disabled || busy} style={styles.addButton}>
+          <span style={styles.addIcon} aria-hidden="true">📷</span>
+          {busy ? 'Préparation de la photo...' : 'Ajouter une photo'}
+        </button>
+      ) : (
         <div style={styles.previewBox}>
           {previewUrl ? (
             <img src={previewUrl} alt="Aperçu de votre photo" style={styles.preview} data-testid="guestbook-photo-preview" />
           ) : (
             <p style={styles.noPreview}>📷 Photo sélectionnée (aperçu indisponible sur ce navigateur)</p>
           )}
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={disabled}
+            style={styles.removeBadge}
+            aria-label="Retirer la photo"
+            title="Retirer la photo"
+          >
+            ✕
+          </button>
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={disabled || busy} style={styles.replaceLink}>
+            {busy ? 'Préparation...' : '📷 Remplacer'}
+          </button>
         </div>
       )}
-
-      <div style={styles.actions}>
-        <button type="button" onClick={() => inputRef.current?.click()} disabled={disabled || busy} style={styles.addButton}>
-          {busy ? 'Préparation de la photo...' : hasPhoto ? '📷 Remplacer la photo' : '📷 Ajouter une photo'}
-        </button>
-        {hasPhoto && !busy && (
-          <button type="button" onClick={handleRemove} disabled={disabled} style={styles.removeButton}>
-            ✕ Retirer
-          </button>
-        )}
-      </div>
 
       <input
         ref={inputRef}
@@ -92,36 +100,65 @@ export default function GuestbookPhotoPicker({ photo, existingUrl, onChange, onR
 
 const styles = {
   wrap: { display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' },
-  label: { fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)' },
-  previewBox: {
-    padding: '0.35rem',
-    border: '1px solid var(--color-secondary)',
-    borderRadius: 'var(--radius)',
-    background: 'var(--color-surface, #fff)',
-    lineHeight: 0,
-    maxWidth: '100%',
-  },
-  preview: { display: 'block', maxWidth: '100%', maxHeight: '220px', objectFit: 'contain', borderRadius: 'calc(var(--radius) / 2)' },
-  noPreview: { margin: 0, padding: '0.5rem', lineHeight: 1.4, fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text)' },
-  actions: { display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' },
+  // Discret, jamais plus visible que le champ message : bordure fine, fond transparent, aucun
+  // aplat de couleur pleine qui attirerait l'œil avant le texte.
   addButton: {
-    padding: '0.6rem 0.95rem',
-    border: '1px solid var(--color-secondary)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.55rem',
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: '1px dashed var(--color-secondary)',
     borderRadius: 'var(--radius)',
     background: 'transparent',
-    color: 'var(--color-secondary)',
+    color: 'var(--color-text)',
     fontFamily: 'var(--font-body)',
     fontSize: '0.95rem',
     fontWeight: 600,
     cursor: 'pointer',
+    justifyContent: 'center',
   },
-  removeButton: {
+  addIcon: { fontSize: '1.05em' },
+  previewBox: {
+    position: 'relative',
+    width: '100%',
+    padding: '0.35rem',
+    border: '1px solid var(--color-secondary)',
+    borderRadius: 'var(--radius)',
+    background: 'var(--color-surface, #fff)',
+  },
+  preview: { display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: 'calc(var(--radius) / 2)' },
+  noPreview: { margin: 0, padding: '0.5rem', lineHeight: 1.4, fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text)' },
+  // Médaillon posé sur le coin de la photo, comme on retirerait un tirage d'un album — jamais un
+  // simple lien texte en dessous, qui ferait plus "formulaire" que "souvenir".
+  removeBadge: {
+    position: 'absolute',
+    top: '0.5rem',
+    right: '0.5rem',
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    border: 'none',
+    background: 'rgba(20, 16, 12, 0.72)',
+    color: '#fff',
+    fontSize: '0.85rem',
+    lineHeight: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    backdropFilter: 'blur(2px)',
+  },
+  replaceLink: {
+    display: 'block',
+    margin: '0.5rem auto 0.15rem',
     padding: 0,
     border: 'none',
     background: 'none',
-    color: 'var(--color-text)',
+    color: 'var(--color-secondary)',
     fontFamily: 'var(--font-body)',
-    fontSize: '0.9rem',
+    fontSize: '0.85rem',
+    fontWeight: 600,
     textDecoration: 'underline',
     cursor: 'pointer',
   },
