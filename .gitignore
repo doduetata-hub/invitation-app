@@ -8,3 +8,10 @@ backend/uploads/
 dist/
 *.log
 deploy/backups/
+
+# Jamais committé (comme frontend/package-lock.json) : un lockfile généré sur cette machine ou
+# dans le conteneur Docker (Alpine/musl) fige les binaires natifs optionnels de "sharp" pour CE
+# libc précis, absents pour le glibc que Vercel utilise réellement au runtime — sharp plante
+# alors au chargement (module natif introuvable) sur TOUTES les routes, même sans rapport avec
+# les images. Laisser npm install résoudre la bonne variante à chaque build.
+backend/package-lock.json
