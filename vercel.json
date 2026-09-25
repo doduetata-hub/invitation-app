@@ -1,7 +1,7 @@
 {
   "buildCommand": "cd backend && DATABASE_URL=\"$DIRECT_DATABASE_URL\" npx prisma migrate deploy && DATABASE_URL=\"$DIRECT_DATABASE_URL\" node prisma/seed.js && cd ../frontend && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd backend && npm install && cd ../frontend && npm install",
+  "installCommand": "cd backend && npm install && npm install --no-save --os=linux --cpu=x64 --libc=glibc sharp && cd ../frontend && npm install",
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
