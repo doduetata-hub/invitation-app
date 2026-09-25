@@ -293,6 +293,30 @@ textarea.input {
   font-size: 0.88rem;
 }
 
+.table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.table-sort-btn:hover {
+  color: var(--color-accent-dark);
+}
+
+.table-sort-icon {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
 .table th {
   text-align: left;
   padding: 0.6rem 0.7rem;

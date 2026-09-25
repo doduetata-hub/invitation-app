@@ -32,6 +32,11 @@ export default function GuestsPage() {
   const [importMessage, setImportMessage] = useState('');
   const [search, setSearch] = useState('');
   const [savingLock, setSavingLock] = useState(false);
+  const [sortDir, setSortDir] = useState(null); // null = ordre d'ajout, 'asc' | 'desc' = tri par table
+
+  const toggleSortByTable = () => {
+    setSortDir((d) => (d === 'asc' ? 'desc' : d === 'desc' ? null : 'asc'));
+  };
 
   const load = () => {
     api.get(`/invitations/${id}/guests`).then(setData).catch((err) => setError(err.message));
@@ -142,6 +147,17 @@ export default function GuestsPage() {
           .some((field) => field.toLowerCase().includes(q))
       )
     : guests;
+  // Tri par table optionnel (ordre naturel : "Table 2" avant "Table 10") ; les invités
+  // sans table assignée restent en fin de liste quel que soit le sens du tri.
+  const sortedGuests = sortDir
+    ? [...filteredGuests].sort((a, b) => {
+        if (!a.tableNumber && !b.tableNumber) return 0;
+        if (!a.tableNumber) return 1;
+        if (!b.tableNumber) return -1;
+        const cmp = a.tableNumber.localeCompare(b.tableNumber, 'fr', { numeric: true, sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      })
+    : filteredGuests;
 
   return (
     <div>
@@ -265,7 +281,12 @@ export default function GuestsPage() {
                 <th>Nom</th>
                 <th>Téléphone</th>
                 <th>Max</th>
-                <th>Table</th>
+                <th>
+                  <button type="button" className="table-sort-btn" onClick={toggleSortByTable}>
+                    Table
+                    <span className="table-sort-icon">{sortDir === 'asc' ? '↑' : sortDir === 'desc' ? '↓' : '⇅'}</span>
+                  </button>
+                </th>
                 <th>Statut</th>
                 <th>Personnes</th>
                 <th>Boisson</th>
@@ -276,7 +297,7 @@ export default function GuestsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredGuests.map((g) => {
+              {sortedGuests.map((g) => {
                 const isEditing = editingId === g.id;
                 return (
                   <tr key={g.id}>

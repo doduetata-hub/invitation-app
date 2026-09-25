@@ -15,3 +15,4 @@ deploy/backups/
 # alors au chargement (module natif introuvable) sur TOUTES les routes, même sans rapport avec
 # les images. Laisser npm install résoudre la bonne variante à chaque build.
 backend/package-lock.json
+frontend/package-lock.json
