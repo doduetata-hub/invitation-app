@@ -5,7 +5,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "backend/src/**"
+      "includeFiles": "backend/{src,node_modules/pdfkit/js/data}/**"
     }
   },
   "rewrites": [
