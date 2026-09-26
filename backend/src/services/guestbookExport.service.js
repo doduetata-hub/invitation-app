@@ -80,29 +80,135 @@ async function fetchMediaBytes(url) {
 
 // "Livre d'or de mariage" imprimable : thème Smoking & Doré (fond noir profond, accents
 // dorés, typographie serif éditoriale) — un souvenir à conserver, pas un export administratif.
-// Une page par témoignage : photo (si disponible) en médaillon encadré d'un filet doré, message
-// en grand, nom en signature dorée. Les polices intégrées de pdfkit (Times) suffisent à l'effet
-// éditorial recherché, sans avoir à embarquer une police tierce dans le dépôt.
-const PAGE = { width: 595.28, height: 841.89 }; // A4 portrait, en points
+// Format écran 16:9 façon diaporama (proportions PowerPoint modernes), pas une feuille A4 : une
+// page par témoignage, photo (si disponible) en médaillon à gauche et texte à droite — une pile
+// verticale centrée ne laisserait que du vide de chaque côté sur un format aussi large. Les
+// polices intégrées de pdfkit (Times) suffisent à l'effet éditorial recherché, sans avoir à
+// embarquer une police tierce dans le dépôt.
+const PAGE = { width: 960, height: 540 }; // 13,33 x 7,5 po à 72 pt/po (16:9)
 const GOLD = '#B8873F';
 const GOLD_LIGHT = '#D6B56D';
 const IVORY = '#F7F1E5';
 const INK = '#0A0908';
 
-function drawGoldRule(doc, y, width = 140) {
-  const x = (PAGE.width - width) / 2;
+// Toujours appelé avec une largeur explicite (jamais celle, implicite, déduite de la position
+// x courante du curseur pdfkit) : c'est justement l'absence de largeur explicite qui décentrait
+// le titre de la page de couverture dans une version antérieure de ce fichier.
+function drawGoldRule(doc, x, y, width) {
   doc.save().strokeColor(GOLD).lineWidth(0.75).moveTo(x, y).lineTo(x + width, y).stroke().restore();
 }
 
 function drawCoverPage(doc, invitation) {
   doc.rect(0, 0, PAGE.width, PAGE.height).fill(INK);
-  doc.fillColor(GOLD).font('Times-Italic').fontSize(13).text('SOUVENIRS DE MARIAGE', 0, 260, { align: 'center', characterSpacing: 4 });
-  doc.fillColor(IVORY).font('Times-Bold').fontSize(38).text(invitation.namesLine || invitation.title, 60, 300, { align: 'center' });
-  drawGoldRule(doc, 372);
-  doc.fillColor(GOLD_LIGHT).font('Times-Italic').fontSize(15).text("Livre d'or", 0, 392, { align: 'center' });
-  if (invitation.eventDate) {
-    const date = new Date(invitation.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    doc.fillColor(IVORY).opacity(0.75).font('Times-Roman').fontSize(11).text(date, 0, 430, { align: 'center' });
+
+  const outerMargin = 90;
+  const fullWidth = PAGE.width;
+  const titleWidth = PAGE.width - outerMargin * 2; // les noms des mariés peuvent être longs
+  const title = invitation.namesLine || invitation.title;
+  const hasDate = Boolean(invitation.eventDate);
+  const dateText = hasDate
+    ? new Date(invitation.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+
+  // Mesure d'abord (heightOfString), dessine ensuite : seul moyen de centrer verticalement tout
+  // le bloc sur une page courte, quelle que soit la longueur des noms/de la date.
+  doc.font('Times-Italic').fontSize(13);
+  const eyebrowH = doc.heightOfString('SOUVENIRS DE MARIAGE', { width: fullWidth, align: 'center', characterSpacing: 4 });
+  doc.font('Times-Bold').fontSize(38);
+  const titleH = doc.heightOfString(title, { width: titleWidth, align: 'center' });
+  doc.font('Times-Italic').fontSize(15);
+  const subtitleH = doc.heightOfString("Livre d'or", { width: fullWidth, align: 'center' });
+  let dateH = 0;
+  if (hasDate) {
+    doc.font('Times-Roman').fontSize(11);
+    dateH = doc.heightOfString(dateText, { width: fullWidth, align: 'center' });
+  }
+
+  const GAP_EYEBROW_TITLE = 22;
+  const GAP_TITLE_RULE = 24;
+  const GAP_RULE_SUBTITLE = 20;
+  const GAP_SUBTITLE_DATE = 22;
+
+  let totalHeight = eyebrowH + GAP_EYEBROW_TITLE + titleH + GAP_TITLE_RULE + GAP_RULE_SUBTITLE + subtitleH;
+  if (hasDate) totalHeight += GAP_SUBTITLE_DATE + dateH;
+
+  let y = (PAGE.height - totalHeight) / 2;
+
+  doc.fillColor(GOLD).font('Times-Italic').fontSize(13)
+    .text('SOUVENIRS DE MARIAGE', 0, y, { width: fullWidth, align: 'center', characterSpacing: 4 });
+  y += eyebrowH + GAP_EYEBROW_TITLE;
+
+  doc.fillColor(IVORY).font('Times-Bold').fontSize(38)
+    .text(title, outerMargin, y, { width: titleWidth, align: 'center' });
+  y += titleH + GAP_TITLE_RULE;
+
+  drawGoldRule(doc, (PAGE.width - 140) / 2, y, 140);
+  y += GAP_RULE_SUBTITLE;
+
+  doc.fillColor(GOLD_LIGHT).font('Times-Italic').fontSize(15)
+    .text("Livre d'or", 0, y, { width: fullWidth, align: 'center' });
+  y += subtitleH;
+
+  if (hasDate) {
+    y += GAP_SUBTITLE_DATE;
+    doc.fillColor(IVORY).opacity(0.75).font('Times-Roman').fontSize(11)
+      .text(dateText, 0, y, { width: fullWidth, align: 'center' });
+    doc.opacity(1);
+  }
+}
+
+// Empile message / filet doré / signature / table, centré verticalement sur la hauteur de la
+// page (mesuré via heightOfString avant de rien dessiner, pour s'adapter à un message court ou
+// long). Sans photo : bloc centré horizontalement aussi, précédé d'un guillemet décoratif. Avec
+// photo : bloc aligné à gauche dans sa colonne, à côté du médaillon plutôt qu'en dessous.
+function drawEntryText(doc, { message, guestLine, tableLine, x, width, quote }) {
+  const align = quote ? 'center' : 'left';
+
+  let quoteH = 0;
+  if (quote) {
+    doc.font('Times-Roman').fontSize(28);
+    quoteH = doc.heightOfString('"', { width, align });
+  }
+  doc.font('Times-Roman').fontSize(15);
+  const messageH = doc.heightOfString(message, { width, align, lineGap: 5 });
+  doc.font('Times-Bold').fontSize(12);
+  const guestH = doc.heightOfString(guestLine, { width, align, characterSpacing: 1 });
+  let tableH = 0;
+  if (tableLine) {
+    doc.font('Times-Italic').fontSize(9);
+    tableH = doc.heightOfString(tableLine, { width, align });
+  }
+
+  const GAP_QUOTE_MESSAGE = 18;
+  const GAP_MESSAGE_RULE = 28;
+  const GAP_RULE_GUEST = 16;
+  const GAP_GUEST_TABLE = 6;
+
+  let totalHeight = messageH + GAP_MESSAGE_RULE + GAP_RULE_GUEST + guestH;
+  if (quote) totalHeight += quoteH + GAP_QUOTE_MESSAGE;
+  if (tableLine) totalHeight += GAP_GUEST_TABLE + tableH;
+
+  let y = (PAGE.height - totalHeight) / 2;
+
+  if (quote) {
+    doc.fillColor(GOLD).font('Times-Roman').fontSize(28).text('"', x, y, { width, align });
+    y += quoteH + GAP_QUOTE_MESSAGE;
+  }
+
+  doc.fillColor(IVORY).font('Times-Roman').fontSize(15).text(message, x, y, { width, align, lineGap: 5 });
+  y += messageH + GAP_MESSAGE_RULE;
+
+  const ruleWidth = Math.min(60, width);
+  const ruleX = align === 'center' ? x + (width - ruleWidth) / 2 : x;
+  drawGoldRule(doc, ruleX, y, ruleWidth);
+  y += GAP_RULE_GUEST;
+
+  doc.fillColor(GOLD_LIGHT).font('Times-Bold').fontSize(12).text(guestLine, x, y, { width, align, characterSpacing: 1 });
+  y += guestH;
+
+  if (tableLine) {
+    y += GAP_GUEST_TABLE;
+    doc.fillColor(IVORY).opacity(0.6).font('Times-Italic').fontSize(9).text(tableLine, x, y, { width, align });
     doc.opacity(1);
   }
 }
@@ -112,53 +218,42 @@ function drawEntryPage(doc, entry, photoBytes) {
   doc.rect(0, 0, PAGE.width, PAGE.height).fill(INK);
 
   const margin = 64;
-  let cursorY = 90;
+  doc.fillColor(GOLD).font('Times-Italic').fontSize(9).text("LIVRE D'OR", margin, 36, { width: PAGE.width - margin * 2, characterSpacing: 3 });
 
-  doc.fillColor(GOLD).font('Times-Italic').fontSize(9).text("LIVRE D'OR", margin, 50, { characterSpacing: 3 });
+  const message = textForPrint(entry.message);
+  const guestLine = `— ${textForPrint(entry.guestName, 'Un invité')}`;
+  const tableLine = entry.tableNumber ? `Table ${entry.tableNumber}` : null;
 
   if (photoBytes) {
     // Médaillon photo : cadre doré fin, coins légèrement arrondis, contenu recadré (cover) sans
     // jamais déformer le ratio d'origine — même logique de recadrage que le mode écran.
-    const frameW = 220;
-    const frameH = 260;
-    const frameX = (PAGE.width - frameW) / 2;
+    const frameW = 260;
+    const frameH = 320;
+    const frameX = margin;
+    const frameY = (PAGE.height - frameH) / 2;
     doc.save();
-    doc.roundedRect(frameX - 4, cursorY - 4, frameW + 8, frameH + 8, 6).lineWidth(1.2).strokeColor(GOLD).stroke();
+    doc.roundedRect(frameX - 4, frameY - 4, frameW + 8, frameH + 8, 6).lineWidth(1.2).strokeColor(GOLD).stroke();
     doc.save();
-    doc.roundedRect(frameX, cursorY, frameW, frameH, 4).clip();
+    doc.roundedRect(frameX, frameY, frameW, frameH, 4).clip();
     try {
-      doc.image(photoBytes, frameX, cursorY, { cover: [frameW, frameH], align: 'center', valign: 'center' });
+      doc.image(photoBytes, frameX, frameY, { cover: [frameW, frameH], align: 'center', valign: 'center' });
     } catch {
       // Photo illisible par pdfkit (format inattendu) : le témoignage reste publié sans image
       // plutôt que de faire échouer tout l'export.
     }
     doc.restore();
     doc.restore();
-    cursorY += frameH + 40;
+
+    const textX = frameX + frameW + 56;
+    const textWidth = PAGE.width - margin - textX;
+    drawEntryText(doc, { message, guestLine, tableLine, x: textX, width: textWidth, quote: false });
   } else {
-    doc.fillColor(GOLD).font('Times-Roman').fontSize(28).text('"', margin, cursorY, { width: PAGE.width - margin * 2, align: 'center' });
-    cursorY += 46;
-  }
-
-  doc.fillColor(IVORY).font('Times-Roman').fontSize(15).text(textForPrint(entry.message), margin, cursorY, {
-    width: PAGE.width - margin * 2,
-    align: 'center',
-    lineGap: 5,
-  });
-  cursorY = doc.y + 28;
-
-  drawGoldRule(doc, cursorY, 60);
-  cursorY += 16;
-
-  doc.fillColor(GOLD_LIGHT).font('Times-Bold').fontSize(12).text(`— ${textForPrint(entry.guestName, 'Un invité')}`, margin, cursorY, { width: PAGE.width - margin * 2, align: 'center', characterSpacing: 1 });
-  if (entry.tableNumber) {
-    doc.fillColor(IVORY).opacity(0.6).font('Times-Italic').fontSize(9).text(`Table ${entry.tableNumber}`, margin, doc.y + 4, { width: PAGE.width - margin * 2, align: 'center' });
-    doc.opacity(1);
+    drawEntryText(doc, { message, guestLine, tableLine, x: margin, width: PAGE.width - margin * 2, quote: true });
   }
 }
 
 async function buildGuestbookPdf(invitation, entries) {
-  const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: false, info: { Title: `Livre d'or — ${invitation.namesLine || invitation.title}` } });
+  const doc = new PDFDocument({ size: [PAGE.width, PAGE.height], margin: 0, autoFirstPage: false, info: { Title: `Livre d'or — ${invitation.namesLine || invitation.title}` } });
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
   const done = new Promise((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
@@ -181,7 +276,7 @@ async function buildGuestbookPdf(invitation, entries) {
   if (entries.length === 0) {
     doc.addPage();
     doc.rect(0, 0, PAGE.width, PAGE.height).fill(INK);
-    doc.fillColor(IVORY).opacity(0.7).font('Times-Italic').fontSize(14).text('Aucun témoignage à ce jour.', 0, PAGE.height / 2 - 10, { align: 'center' });
+    doc.fillColor(IVORY).opacity(0.7).font('Times-Italic').fontSize(14).text('Aucun témoignage à ce jour.', 0, PAGE.height / 2 - 10, { width: PAGE.width, align: 'center' });
   }
 
   doc.end();
