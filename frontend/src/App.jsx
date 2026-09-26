@@ -23,6 +23,7 @@ const GuestsPage = lazy(() => import('./admin/pages/GuestsPage'));
 const CheckInPage = lazy(() => import('./admin/pages/CheckInPage'));
 const GuestbookPage = lazy(() => import('./admin/pages/GuestbookPage'));
 const GuestbookQrPrintPage = lazy(() => import('./admin/pages/GuestbookQrPrintPage'));
+const GuestbookQrPrintAllPage = lazy(() => import('./admin/pages/GuestbookQrPrintAllPage'));
 const ClientAccessPage = lazy(() => import('./public/ClientAccessPage'));
 const CheckinAccessPage = lazy(() => import('./public/CheckinAccessPage'));
 const GuestbookQrPage = lazy(() => import('./public/GuestbookQrPage'));
@@ -68,6 +69,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <GuestbookQrPrintPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/invitations/:id/guestbook/print-all"
+              element={
+                <ProtectedRoute>
+                  <GuestbookQrPrintAllPage />
                 </ProtectedRoute>
               }
             />

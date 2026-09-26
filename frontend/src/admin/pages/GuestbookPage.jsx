@@ -334,6 +334,17 @@ export default function GuestbookPage() {
         {tokens.length === 0 ? (
           <div className="empty-state">Aucun QR code pour le moment.</div>
         ) : (
+          <>
+          <div style={{ marginBottom: '0.9rem' }}>
+            <Link
+              to={`/admin/invitations/${id}/guestbook/print-all`}
+              target="_blank"
+              className="btn btn-outline btn-sm"
+              title="Regroupe tous les QR codes actifs dans un seul document, deux par feuille A4 (à découper en deux après impression)."
+            >
+              🖨 Imprimer tout
+            </Link>
+          </div>
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -414,6 +425,7 @@ export default function GuestbookPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
