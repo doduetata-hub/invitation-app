@@ -26,6 +26,9 @@ export default function GuestbookPage() {
   const [qrView, setQrView] = useState(null);
   const [tokenForm, setTokenForm] = useState({ label: '', tableNumber: '' });
   const [creatingToken, setCreatingToken] = useState(false);
+  const [editingTokenId, setEditingTokenId] = useState(null);
+  const [editTokenForm, setEditTokenForm] = useState({ label: '', tableNumber: '' });
+  const [savingToken, setSavingToken] = useState(false);
   const [busyIds, setBusyIds] = useState(new Set());
   const [savingAutoApprove, setSavingAutoApprove] = useState(false);
 
@@ -132,6 +135,29 @@ export default function GuestbookPage() {
       setError(err.message);
     } finally {
       setSavingAutoApprove(false);
+    }
+  };
+
+  const startEditToken = (token) => {
+    setEditingTokenId(token.id);
+    setEditTokenForm({ label: token.label || '', tableNumber: token.tableNumber || '' });
+  };
+
+  const cancelEditToken = () => {
+    setEditingTokenId(null);
+  };
+
+  const saveEditToken = async (token) => {
+    setSavingToken(true);
+    setError('');
+    try {
+      await api.patch(`/guestbook-qr-tokens/${token.id}`, editTokenForm);
+      setEditingTokenId(null);
+      await loadTokens();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingToken(false);
     }
   };
 
@@ -320,28 +346,71 @@ export default function GuestbookPage() {
                 </tr>
               </thead>
               <tbody>
-                {tokens.map((t) => (
+                {tokens.map((t) => {
+                  const isEditing = editingTokenId === t.id;
+                  return (
                   <tr key={t.id}>
-                    <td>{t.label || '—'}</td>
-                    <td>{t.tableNumber || '—'}</td>
+                    {isEditing ? (
+                      <>
+                        <td>
+                          <input
+                            autoFocus
+                            placeholder="Étiquette (ex. Accueil, Table 3)"
+                            value={editTokenForm.label}
+                            onChange={(e) => setEditTokenForm((f) => ({ ...f, label: e.target.value }))}
+                            className="input"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            placeholder="Numéro de table"
+                            value={editTokenForm.tableNumber}
+                            onChange={(e) => setEditTokenForm((f) => ({ ...f, tableNumber: e.target.value }))}
+                            className="input"
+                          />
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{t.label || '—'}</td>
+                        <td>{t.tableNumber || '—'}</td>
+                      </>
+                    )}
                     <td>{t._count.entries}</td>
                     <td>{t.active ? <span className="badge badge-success">Actif</span> : <span className="badge">Désactivé</span>}</td>
                     <td style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button type="button" onClick={() => setQrView(t)} className="btn btn-outline btn-sm">
-                        Voir le QR
-                      </button>
-                      <Link to={`/admin/invitations/${id}/guestbook/print/${t.id}`} target="_blank" className="btn btn-outline btn-sm">
-                        Imprimer
-                      </Link>
-                      <button type="button" onClick={() => toggleTokenActive(t)} className="btn btn-outline btn-sm">
-                        {t.active ? 'Désactiver' : 'Réactiver'}
-                      </button>
-                      <button type="button" onClick={() => removeToken(t)} className="btn btn-danger-outline btn-icon">
-                        ✕
-                      </button>
+                      {isEditing ? (
+                        <>
+                          <button type="button" disabled={savingToken} onClick={() => saveEditToken(t)} className="btn btn-primary btn-sm">
+                            Enregistrer
+                          </button>
+                          <button type="button" disabled={savingToken} onClick={cancelEditToken} className="btn btn-outline btn-sm">
+                            Annuler
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => setQrView(t)} className="btn btn-outline btn-sm">
+                            Voir le QR
+                          </button>
+                          <Link to={`/admin/invitations/${id}/guestbook/print/${t.id}`} target="_blank" className="btn btn-outline btn-sm">
+                            Imprimer
+                          </Link>
+                          <button type="button" onClick={() => startEditToken(t)} className="btn btn-outline btn-sm">
+                            Modifier
+                          </button>
+                          <button type="button" onClick={() => toggleTokenActive(t)} className="btn btn-outline btn-sm">
+                            {t.active ? 'Désactiver' : 'Réactiver'}
+                          </button>
+                          <button type="button" onClick={() => removeToken(t)} className="btn btn-danger-outline btn-icon">
+                            ✕
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -263,15 +263,22 @@ async function createQrToken(req, res) {
   res.status(201).json(created);
 }
 
-// Désactiver (plutôt que supprimer) garde l'historique des messages déjà déposés via ce QR —
-// utile si une table est renumérotée en cours de soirée : le QR imprimé cesse de fonctionner
-// sans perdre les messages déjà reçus depuis cette table.
-async function setQrTokenActive(req, res) {
-  const { active } = req.body || {};
+// Gère à la fois le bascule actif/désactivé (désactiver plutôt que supprimer garde l'historique
+// des messages déjà déposés via ce QR — utile si une table est renumérotée en cours de soirée :
+// le QR imprimé cesse de fonctionner sans perdre les messages déjà reçus depuis cette table) et
+// le renommage de l'étiquette/numéro de table après création, sans toucher au token lui-même
+// (donc sans invalider le lien déjà imprimé).
+async function updateQrToken(req, res) {
+  const { active, label, tableNumber } = req.body || {};
+  const data = {};
+  if (active !== undefined) data.active = Boolean(active);
+  if (label !== undefined) data.label = label?.trim() || null;
+  if (tableNumber !== undefined) data.tableNumber = tableNumber?.trim() || null;
+
   try {
     const token = await prisma.guestbookQrToken.update({
       where: { id: req.params.id },
-      data: { active: Boolean(active) },
+      data,
     });
     res.json(token);
   } catch (err) {
@@ -315,7 +322,7 @@ module.exports = {
   updateSettings,
   listQrTokens,
   createQrToken,
-  setQrTokenActive,
+  updateQrToken,
   removeQrToken,
   getQrTokenPng,
 };
