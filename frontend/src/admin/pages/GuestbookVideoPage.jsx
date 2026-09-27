@@ -86,6 +86,24 @@ export default function GuestbookVideoPage() {
   };
 
   const isRunning = phase !== 'idle' && phase !== 'done' && phase !== 'error';
+
+  // Certains navigateurs (Chrome notamment, via son "économiseur de mémoire") déchargent
+  // silencieusement un onglet d'arrière-plan gourmand en mémoire — au retour, la page est
+  // rechargée de zéro, sans erreur ni message : toute la progression disparaît d'un coup, comme
+  // si "ça avait planté". La génération étant gourmande (photos décodées, images de la vidéo),
+  // c'est exactement le genre d'onglet visé. On ne peut pas empêcher ce déchargement depuis la
+  // page elle-même, mais on peut au moins prévenir avant qu'il ne surprenne, et intercepter une
+  // fermeture/navigation volontaire pendant que ça tourne.
+  useEffect(() => {
+    if (!isRunning) return undefined;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isRunning]);
+
   const percent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
   const entryCount = display?.entries?.length ?? 0;
   const downloadName = invitation ? `livre-or-${invitation.slug}.mp4` : 'livre-or.mp4';
@@ -105,6 +123,21 @@ export default function GuestbookVideoPage() {
           </button>
         )}
       </div>
+
+      {display && phase === 'idle' && supported && (
+        <p className="admin-muted" style={{ maxWidth: '900px', textAlign: 'center' }}>
+          ⚠️ Une fois lancée, garde cet onglet ouvert et actif à l'écran jusqu'à la fin (ne
+          bascule pas sur un autre onglet ou une autre application) : certains navigateurs
+          déchargent en mémoire les onglets d'arrière-plan pendant un traitement long, ce qui
+          efface la progression sans prévenir.
+        </p>
+      )}
+      {isRunning && (
+        <p className="admin-muted" style={{ maxWidth: '900px', textAlign: 'center' }}>
+          ⚠️ Ne change pas d'onglet ni d'application avant la fin, sous peine de perdre la
+          progression.
+        </p>
+      )}
 
       {!supported && (
         <p className="error-text">
