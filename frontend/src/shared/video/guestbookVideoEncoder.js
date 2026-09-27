@@ -14,6 +14,23 @@ import { renderFrame } from './guestbookVideoRenderer';
 // Worker ne postait jamais de réponse, sans la moindre erreur visible).
 const FFMPEG_CORE_BASE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// Un signalement client a montré la vidéo générée SANS aucune photo ni musique, alors que le
+// livre d'or en avait — sans la moindre erreur, chaque échec de chargement étant traité comme
+// "média absent" (dégradation volontaire, voir loadImage). Cause réelle : lire les OCTETS d'un
+// média depuis JavaScript (canvas.getImageData après dessin, fetch pour la musique) exige des
+// en-têtes CORS de la part du stockage — contrairement à un simple <img>/<audio> qui n'en a
+// besoin d'aucun pour s'afficher/jouer. Le stockage S3/R2 utilisé en production n'en envoie pas
+// par défaut. On relaie donc ces médias via notre propre API (fetch serveur-à-serveur, jamais
+// soumis au CORS du navigateur), servis depuis NOTRE domaine : plus aucune restriction CORS à
+// appliquer, quels que soient les en-têtes du stockage d'origine. Une URL déjà relative
+// (stockage local, déjà même origine) n'a besoin d'aucun relais.
+function withCorsProxy(url) {
+  if (!url || !/^https?:\/\//i.test(url)) return url;
+  return `${API_BASE}/media-proxy?url=${encodeURIComponent(url)}`;
+}
+
 // 720p/24fps plutôt que 1080p/30fps : nettement plus léger à calculer et encoder en JS/WASM
 // mono-thread, pour un rendu qui reste net sur téléphone/réseaux sociaux (où cette vidéo sera
 // surtout regardée).
@@ -90,7 +107,9 @@ async function preloadImages(timeline, coverUrl) {
   const images = new Map();
   await Promise.all(
     [...urls].map(async (url) => {
-      const img = await loadImage(url);
+      // La map reste indexée par l'URL D'ORIGINE (c'est elle que guestbookVideoRenderer.js
+      // utilise pour retrouver l'image) : seul le chargement passe par le relais CORS.
+      const img = await loadImage(withCorsProxy(url));
       if (img) images.set(url, img);
     })
   );
@@ -243,7 +262,7 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
   let musicExt = null;
   if (musicUrl) {
     try {
-      const res = await fetch(musicUrl);
+      const res = await fetch(withCorsProxy(musicUrl));
       if (res.ok) {
         musicBytes = new Uint8Array(await res.arrayBuffer());
         musicExt = audioExtensionFor(musicUrl);

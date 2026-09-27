@@ -25,6 +25,7 @@ const rsvpsRoutes = require('./routes/rsvps.routes');
 const guestbookEntriesRoutes = require('./routes/guestbookEntries.routes');
 const guestbookQrTokensRoutes = require('./routes/guestbookQrTokens.routes');
 const guestbookAccessRoutes = require('./routes/guestbookAccess.routes');
+const mediaProxyRoutes = require('./routes/mediaProxy.routes');
 const env = require('./config/env');
 
 const app = express();
@@ -98,6 +99,10 @@ app.use('/api/rsvps', requireAuth, rsvpsRoutes);
 app.use('/api/guestbook-entries', requireAuth, guestbookEntriesRoutes);
 app.use('/api/guestbook-qr-tokens', requireAuth, guestbookQrTokensRoutes);
 app.use('/api/guestbook', guestbookAccessRoutes);
+// Non authentifié comme les médias qu'il relaie (déjà publics — voir mediaProxy.controller.js) :
+// réservé à la génération vidéo du livre d'or, qui a besoin de relire des octets depuis le
+// navigateur (canvas, fetch), contrairement à un simple <img>/<audio>.
+app.use('/api/media-proxy', mediaProxyRoutes);
 
 app.use(errorHandler);
 
