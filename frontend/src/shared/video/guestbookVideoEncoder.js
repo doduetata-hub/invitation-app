@@ -77,6 +77,30 @@ function loadImage(url, timeoutMs = 8000) {
   });
 }
 
+// Une vraie photo de téléphone dépasse largement ce qu'il faut pour un médaillon qui ne fait
+// jamais plus de ~300px de large à l'écran (voir guestbookVideoRenderer.js) — or chaque image de
+// CHAQUE segment redessine cette photo avec l'effet Ken Burns puis en relit les pixels
+// (getImageData) : avec une photo à sa taille d'origine (3000-4000px, plusieurs Mo une fois
+// décodée), ce travail répété peut suffire à ralentir tout l'onglet, y compris les échanges avec
+// le Worker ffmpeg — un signalement client a montré des encodages de segment mettant plus de 60s
+// à répondre, sans jamais échouer franchement, symptôme d'un système sous pression plutôt que
+// d'un vrai blocage. On réduit donc chaque photo UNE fois, ici, avant qu'elle ne serve à quoi que
+// ce soit — un canvas fonctionne aussi bien qu'une <img> comme source pour drawImage/getImageData
+// ailleurs dans le moteur de rendu (voir le repli `naturalWidth || width` déjà en place).
+const MAX_PHOTO_DIMENSION = 1000;
+
+function downscaleIfNeeded(img) {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  if (!w || !h || Math.max(w, h) <= MAX_PHOTO_DIMENSION) return img;
+  const scale = MAX_PHOTO_DIMENSION / Math.max(w, h);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 // Fait échouer PROPREMENT (avec un message clair) une opération ffmpeg qui ne répondrait jamais,
 // plutôt que de laisser la barre de progression bloquée pour toujours sans explication — ffmpeg
 // tourne dans un Worker séparé : une opération qui ne répond jamais ne fige pas la page (l'onglet
@@ -110,7 +134,7 @@ async function preloadImages(timeline, coverUrl) {
       // La map reste indexée par l'URL D'ORIGINE (c'est elle que guestbookVideoRenderer.js
       // utilise pour retrouver l'image) : seul le chargement passe par le relais CORS.
       const img = await loadImage(withCorsProxy(url));
-      if (img) images.set(url, img);
+      if (img) images.set(url, downscaleIfNeeded(img));
     })
   );
   return images;
@@ -215,6 +239,10 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
     // eslint-disable-next-line no-await-in-loop
     await withWatchdog(ffmpeg.writeFile('segment_raw.rgba', raw), 20000, `Écriture du segment ${s + 1}/${totalSegments}`);
     const segName = segmentFileName(s);
+    // 150s plutôt que les 60s initiaux : un signalement client a montré un encodage de segment
+    // dépassant 60s SANS jamais être réellement bloqué (juste un ordinateur/des photos plus
+    // lourds que dans nos tests) — voir MAX_PHOTO_DIMENSION ci-dessus pour la réduction des
+    // photos elle-même, et ce délai élargi comme marge de sécurité supplémentaire.
     // eslint-disable-next-line no-await-in-loop
     await withWatchdog(
       ffmpeg.exec([
@@ -222,7 +250,7 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
         '-framerate', String(VIDEO_FPS), '-i', 'segment_raw.rgba',
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '20', segName,
       ]),
-      60000,
+      150000,
       `Encodage du segment ${s + 1}/${totalSegments}`
     );
     // eslint-disable-next-line no-await-in-loop
@@ -290,7 +318,7 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
   }
   args.push('-movflags', '+faststart', 'output.mp4');
 
-  await withWatchdog(ffmpeg.exec(args), 60000, 'Assemblage final');
+  await withWatchdog(ffmpeg.exec(args), 120000, 'Assemblage final');
 
   const data = await withWatchdog(ffmpeg.readFile('output.mp4'), 20000, 'Lecture du fichier final');
   onProgress?.({ phase: 'mux', current: 1, total: 1 });

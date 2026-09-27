@@ -209,8 +209,14 @@ function drawBackground(ctx, { width, height, time, images, coverUrl, particles 
   ctx.fillStyle = mist;
   ctx.fillRect(0, 0, width, height);
 
-  drawGlow(ctx, width * 0.5, height * -0.05, width * 0.46, 'rgba(216,181,109,0.28)', time, 9, 1);
-  drawGlow(ctx, width * 1.02, height * 1.05, width * 0.32, 'rgba(184,138,50,0.22)', time, 11, -1);
+  // Dérive lente en plus du pouls rapide existant (périodes de quelques minutes plutôt que
+  // quelques secondes) : sur une vidéo longue (beaucoup de témoignages), le fond pulsait déjà
+  // mais restait, à grande échelle, toujours identique à lui-même — cette seconde couche, à
+  // peine perceptible d'un instant à l'autre, change réellement l'ambiance au fil du temps.
+  const slowA = Math.sin((time / 210) * Math.PI * 2);
+  const slowB = Math.cos((time / 260) * Math.PI * 2);
+  drawGlow(ctx, width * (0.5 + 0.08 * slowA), height * (-0.05 + 0.04 * slowA), width * (0.46 + 0.05 * slowB), 'rgba(216,181,109,0.28)', time, 9, 1);
+  drawGlow(ctx, width * (1.02 - 0.06 * slowB), height * (1.05 - 0.05 * slowB), width * (0.32 + 0.04 * slowA), 'rgba(184,138,50,0.22)', time, 11, -1);
 
   drawParticles(ctx, width, height, time, particles);
 }
@@ -220,6 +226,29 @@ function drawBackground(ctx, { width, height, time, images, coverUrl, particles 
 // exitFade, voir drawEntryScene) : ce fondu ne joue qu'à l'entrée.
 function enterProgress(localTime, delayS, durationS = 0.9) {
   return Math.max(0, Math.min(1, (localTime - delayS) / durationS));
+}
+
+// Fait varier l'animation d'ENTRÉE d'un témoignage à l'autre (en alternance, selon l'index de
+// l'entrée dans la timeline) : sur une vidéo qui peut compter des dizaines de témoignages, la
+// même transition répétée à l'identique à chaque fois devenait vite monotone. La sortie reste
+// volontairement un simple fondu dans tous les cas (voir exitFade plus bas) — varier l'entrée
+// suffit à casser la monotonie sans multiplier les combinaisons à vérifier visuellement.
+const ENTRY_TRANSITIONS = ['rise', 'slide-left', 'slide-right', 'zoom'];
+
+function applyEntryTransitionTransform(ctx, width, height, style, progress) {
+  const eased = 1 - (1 - progress) * (1 - progress); // ease-out : un peu plus vif qu'un simple linéaire
+  if (style === 'slide-left') {
+    ctx.translate((1 - eased) * -px(90, width), 0);
+  } else if (style === 'slide-right') {
+    ctx.translate((1 - eased) * px(90, width), 0);
+  } else if (style === 'zoom') {
+    const scale = 0.94 + 0.06 * eased;
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(scale, scale);
+    ctx.translate(-width / 2, -height / 2);
+  } else {
+    ctx.translate(0, (1 - eased) * px(26, width));
+  }
 }
 
 function drawIntroScene(ctx, { width, height }, scene, localTime) {
@@ -304,6 +333,11 @@ function drawEntryScene(ctx, { width, height, images }, scene, localTime) {
   scene._layout ||= computeEntryLayout(ctx, scene, width, height, hasPhoto);
   const layout = scene._layout;
 
+  const transitionStyle = ENTRY_TRANSITIONS[(scene.entryIndex ?? 0) % ENTRY_TRANSITIONS.length];
+  const overallProgress = enterProgress(localTime, 0, 0.9);
+  ctx.save();
+  applyEntryTransitionTransform(ctx, width, height, transitionStyle, overallProgress);
+
   if (hasPhoto) {
     const frameW = px(300, width);
     const frameH = px(360, width);
@@ -378,6 +412,8 @@ function drawEntryScene(ctx, { width, height, images }, scene, localTime) {
     ctx.fillText(layout.tableLine.toUpperCase(), centerX, cursorY);
     ctx.restore();
   }
+
+  ctx.restore();
 }
 
 // Point d'entrée du moteur de rendu : une fonction pure, sans effet de bord autre que dessiner

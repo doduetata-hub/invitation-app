@@ -13,9 +13,8 @@ const OUTRO_DURATION_S = 7;
 // UNE seule scène qui gère ses 4 temps forts en interne via le temps local, comme les entrées du
 // livre d'or gèrent leur propre entrée/sortie) avec leur fenêtre [start, end) en secondes, à
 // partir des mêmes données que celles affichées par le mode écran (voir
-// GET /api/guestbook/display/:slug). N'inclut ici QUE les témoignages déjà approuvés (l'appelant
-// passe `entries` déjà filtrées par cet endpoint) — jamais de sélection/troncature : décision
-// prise avec le client de tout inclure, sans limite.
+// GET /api/guestbook/display/:slug). `entries` est déjà le sous-ensemble choisi par l'admin
+// (voir GuestbookVideoPage) : cette fonction ne fait plus aucune sélection elle-même.
 export function buildGuestbookVideoTimeline({ namesLine, title, entries }) {
   const scenes = [];
   let cursor = 0;
@@ -27,10 +26,12 @@ export function buildGuestbookVideoTimeline({ namesLine, title, entries }) {
 
   pushScene({ type: 'intro', duration: INTRO_STEP_S * INTRO_STEPS, namesLine, title, introStepS: INTRO_STEP_S });
 
-  for (const entry of entries) {
+  entries.forEach((entry, entryIndex) => {
     const readingS = durationForText(entry.message) / 1000;
-    pushScene({ type: 'entry', duration: readingS + ENTRY_PADDING_S, entry });
-  }
+    // entryIndex sert uniquement à faire varier le style d'animation d'entrée d'un témoignage à
+    // l'autre (voir ENTRY_TRANSITIONS dans guestbookVideoRenderer.js) — pas à autre chose.
+    pushScene({ type: 'entry', duration: readingS + ENTRY_PADDING_S, entry, entryIndex });
+  });
 
   pushScene({ type: 'outro', duration: OUTRO_DURATION_S, namesLine, title });
 
