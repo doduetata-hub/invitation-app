@@ -272,6 +272,14 @@ export default function GuestbookPage() {
           <a href={`/api/invitations/${id}/guestbook/export.pdf`} className="btn btn-accent">
             📖 Livre d'or en PDF
           </a>
+          <Link
+            to={`/admin/invitations/${id}/guestbook/video`}
+            target="_blank"
+            className="btn btn-accent"
+            title="Génère, dans ton navigateur, un souvenir vidéo animé (MP4) avec musique — peut prendre plusieurs minutes."
+          >
+            🎬 Livre d'or en vidéo
+          </Link>
           <a href={`/api/invitations/${id}/guestbook/export.xlsx`} className="btn btn-outline">
             Exporter Excel
           </a>
