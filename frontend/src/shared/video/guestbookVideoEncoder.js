@@ -117,6 +117,31 @@ function segmentFileName(s) {
   return `segment_${String(s).padStart(4, '0')}.mp4`;
 }
 
+// Un signalement client a montré un blocage TOUJOURS au même segment (50/117) pendant l'encodage
+// — jamais une erreur, l'onglet restant réactif : la mémoire WASM interne de ffmpeg.wasm ne se
+// libère jamais complètement entre deux ffmpeg.exec() sur la MÊME instance, et grossit à chaque
+// segment encodé jusqu'à ce que l'agrandir devienne si lent que ça ressemble à un blocage complet
+// (comportement connu de ffmpeg.wasm sur un traitement par lots — voir sa documentation sur les
+// traitements répétés). On recrée donc l'instance ffmpeg toutes les RELOAD_EVERY_SEGMENTS
+// segments : chaque segment déjà encodé est conservé côté JavaScript (un petit fichier, quelques
+// dizaines de Ko) plutôt que dans le système de fichiers de ffmpeg, pour ne jamais dépendre d'un
+// état accumulé dans une instance qu'on abandonne. Pour une vidéo courte (peu de segments), ce
+// rechargement ne se produit jamais : aucun coût ajouté dans le cas courant.
+const RELOAD_EVERY_SEGMENTS = 25;
+
+async function createFfmpeg() {
+  const ffmpeg = new FFmpeg();
+  await withWatchdog(
+    ffmpeg.load({
+      coreURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+    }),
+    30000,
+    'Chargement du moteur vidéo'
+  );
+  return ffmpeg;
+}
+
 // Dessine et extrait (en pixels bruts, jamais via toBlob — voir plus haut) les images d'UN
 // segment, dans un unique buffer concaténé prêt à être écrit en une seule fois.
 function renderSegmentRaw(ctx, { startFrame, count, ...renderOpts }, onFrameRendered) {
@@ -155,18 +180,13 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
   const totalSegments = Math.ceil(totalFrames / SEGMENT_FRAMES);
 
   onProgress?.({ phase: 'load-ffmpeg', current: 0, total: 1 });
-  const ffmpeg = new FFmpeg();
-  await withWatchdog(
-    ffmpeg.load({
-      coreURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, 'application/wasm'),
-    }),
-    30000,
-    'Chargement du moteur vidéo'
-  );
+  let ffmpeg = await createFfmpeg();
 
   const renderOpts = { timeline, images, coverUrl, particles };
   const segmentFiles = [];
+  // Bytes des segments déjà encodés, gardés côté JS (voir RELOAD_EVERY_SEGMENTS ci-dessus) —
+  // jamais laissés dans le système de fichiers de ffmpeg au-delà de leur propre segment.
+  const segmentBuffers = new Map();
   for (let s = 0; s < totalSegments; s += 1) {
     const startFrame = s * SEGMENT_FRAMES;
     const count = Math.min(SEGMENT_FRAMES, totalFrames - startFrame);
@@ -187,14 +207,36 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
       `Encodage du segment ${s + 1}/${totalSegments}`
     );
     // eslint-disable-next-line no-await-in-loop
+    const segData = await withWatchdog(ffmpeg.readFile(segName), 15000, `Lecture du segment ${s + 1}/${totalSegments}`);
+    segmentBuffers.set(segName, segData);
+    // eslint-disable-next-line no-await-in-loop
     await withWatchdog(ffmpeg.deleteFile('segment_raw.rgba'), 10000, `Nettoyage du segment ${s + 1}/${totalSegments}`);
+    // eslint-disable-next-line no-await-in-loop
+    await withWatchdog(ffmpeg.deleteFile(segName), 10000, `Nettoyage du segment ${s + 1}/${totalSegments}`);
     segmentFiles.push(segName);
     onProgress?.({ phase: 'encode', current: s + 1, total: totalSegments });
+
+    const isLastSegment = s === totalSegments - 1;
+    if (!isLastSegment && (s + 1) % RELOAD_EVERY_SEGMENTS === 0) {
+      onProgress?.({ phase: 'reload-ffmpeg', current: s + 1, total: totalSegments });
+      ffmpeg.terminate();
+      // eslint-disable-next-line no-await-in-loop
+      ffmpeg = await createFfmpeg();
+    }
+
     // Cède la main au navigateur entre deux segments (aperçu repeint, UI réactive) : un
     // setTimeout plutôt qu'un requestAnimationFrame, ralenti dans les mêmes proportions que
     // toBlob quand l'onglet n'est pas au premier plan.
     // eslint-disable-next-line no-await-in-loop
     await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  // Les segments ont pu être encodés par PLUSIEURS instances ffmpeg successives (voir
+  // RELOAD_EVERY_SEGMENTS) : on les réécrit tous dans l'instance courante juste avant
+  // l'assemblage final, qui les lit depuis son propre système de fichiers.
+  for (const [segName, segData] of segmentBuffers) {
+    // eslint-disable-next-line no-await-in-loop
+    await withWatchdog(ffmpeg.writeFile(segName, segData), 15000, `Préparation de l'assemblage (${segName})`);
   }
 
   let musicBytes = null;

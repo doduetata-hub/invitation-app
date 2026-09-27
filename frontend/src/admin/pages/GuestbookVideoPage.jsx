@@ -9,6 +9,7 @@ const PHASE_LABELS = {
   'load-ffmpeg': 'Chargement du moteur vidéo...',
   render: 'Rendu des images...',
   encode: 'Encodage en MP4...',
+  'reload-ffmpeg': 'Redémarrage du moteur vidéo (libère la mémoire)...',
   mux: 'Assemblage final et ajout de la musique...',
 };
 
