@@ -33,18 +33,47 @@ export const VIDEO_FPS = 24;
 // limite (choix fait avec le client).
 const SEGMENT_FRAMES = 24;
 
-function loadImage(url) {
+// Un signalement client a montré la génération bloquée indéfiniment, sans la moindre erreur, sur
+// un livre d'or de 9 messages dont seulement 2 avec photo — l'onglet restant réactif entre-temps
+// (donc pas un blocage du fil principal, plutôt une étape asynchrone qui ne répond jamais). Deux
+// garde-fous ajoutés en réaction : un délai de sécurité ici (une image dont le chargement ne
+// déclenche NI succès NI erreur, ex. connexion qui reste ouverte sans jamais répondre, bloquerait
+// sinon tout le préchargement pour toujours) et withWatchdog plus bas (pour ffmpeg lui-même).
+function loadImage(url, timeoutMs = 8000) {
   return new Promise((resolve) => {
     const img = new Image();
+    let done = false;
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      resolve(result);
+    };
     // Nécessaire pour pouvoir relire les pixels du canvas (getImageData) une fois l'image
     // dessinée dessus : sans ça, une image d'un autre domaine (stockage S3/R2) "tainte" le canvas
     // et fait échouer l'export avec une SecurityError. Si le stockage ne renvoie pas les en-têtes
     // CORS nécessaires, l'image échoue proprement ici (onerror) plutôt que de planter plus loin.
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+    img.onload = () => finish(img);
+    img.onerror = () => finish(null);
+    setTimeout(() => finish(null), timeoutMs);
     img.src = url;
   });
+}
+
+// Fait échouer PROPREMENT (avec un message clair) une opération ffmpeg qui ne répondrait jamais,
+// plutôt que de laisser la barre de progression bloquée pour toujours sans explication — ffmpeg
+// tourne dans un Worker séparé : une opération qui ne répond jamais ne fige pas la page (l'onglet
+// reste réactif), ce qui la rend justement difficile à distinguer d'un simple calcul long sans
+// un délai de sécurité explicite comme celui-ci.
+function withWatchdog(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${label} : aucune réponse après ${Math.round(ms / 1000)}s — le moteur vidéo semble bloqué. Réessaie ; si ça persiste, signale à quel pourcentage ça bloque.`)),
+      ms
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 // Précharge toutes les images utilisées par la timeline (couverture + photos des témoignages)
@@ -127,10 +156,14 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
 
   onProgress?.({ phase: 'load-ffmpeg', current: 0, total: 1 });
   const ffmpeg = new FFmpeg();
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, 'application/wasm'),
-  });
+  await withWatchdog(
+    ffmpeg.load({
+      coreURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+    }),
+    30000,
+    'Chargement du moteur vidéo'
+  );
 
   const renderOpts = { timeline, images, coverUrl, particles };
   const segmentFiles = [];
@@ -141,16 +174,20 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
       onProgress?.({ phase: 'render', current: i + 1, total: totalFrames });
     });
     // eslint-disable-next-line no-await-in-loop
-    await ffmpeg.writeFile('segment_raw.rgba', raw);
+    await withWatchdog(ffmpeg.writeFile('segment_raw.rgba', raw), 20000, `Écriture du segment ${s + 1}/${totalSegments}`);
     const segName = segmentFileName(s);
     // eslint-disable-next-line no-await-in-loop
-    await ffmpeg.exec([
-      '-f', 'rawvideo', '-pix_fmt', 'rgba', '-video_size', `${VIDEO_WIDTH}x${VIDEO_HEIGHT}`,
-      '-framerate', String(VIDEO_FPS), '-i', 'segment_raw.rgba',
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '20', segName,
-    ]);
+    await withWatchdog(
+      ffmpeg.exec([
+        '-f', 'rawvideo', '-pix_fmt', 'rgba', '-video_size', `${VIDEO_WIDTH}x${VIDEO_HEIGHT}`,
+        '-framerate', String(VIDEO_FPS), '-i', 'segment_raw.rgba',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '20', segName,
+      ]),
+      60000,
+      `Encodage du segment ${s + 1}/${totalSegments}`
+    );
     // eslint-disable-next-line no-await-in-loop
-    await ffmpeg.deleteFile('segment_raw.rgba');
+    await withWatchdog(ffmpeg.deleteFile('segment_raw.rgba'), 10000, `Nettoyage du segment ${s + 1}/${totalSegments}`);
     segmentFiles.push(segName);
     onProgress?.({ phase: 'encode', current: s + 1, total: totalSegments });
     // Cède la main au navigateur entre deux segments (aperçu repeint, UI réactive) : un
@@ -176,11 +213,11 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
 
   onProgress?.({ phase: 'mux', current: 0, total: 1 });
   const concatList = segmentFiles.map((f) => `file '${f}'`).join('\n');
-  await ffmpeg.writeFile('concat.txt', new TextEncoder().encode(concatList));
+  await withWatchdog(ffmpeg.writeFile('concat.txt', new TextEncoder().encode(concatList)), 10000, 'Préparation de l’assemblage');
 
   const args = ['-f', 'concat', '-safe', '0', '-i', 'concat.txt'];
   if (musicBytes) {
-    await ffmpeg.writeFile(`audio.${musicExt}`, musicBytes);
+    await withWatchdog(ffmpeg.writeFile(`audio.${musicExt}`, musicBytes), 20000, 'Écriture de la musique');
     const fadeStart = Math.max(0, timeline.totalDuration - 2.5);
     args.push(
       '-stream_loop', '-1', '-i', `audio.${musicExt}`,
@@ -192,9 +229,9 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
   }
   args.push('-movflags', '+faststart', 'output.mp4');
 
-  await ffmpeg.exec(args);
+  await withWatchdog(ffmpeg.exec(args), 60000, 'Assemblage final');
 
-  const data = await ffmpeg.readFile('output.mp4');
+  const data = await withWatchdog(ffmpeg.readFile('output.mp4'), 20000, 'Lecture du fichier final');
   onProgress?.({ phase: 'mux', current: 1, total: 1 });
   return new Blob([data], { type: 'video/mp4' });
 }
