@@ -260,6 +260,7 @@ async function buildGuestbookPdf(invitation, entries) {
 
   doc.addPage();
   drawCoverPage(doc, invitation);
+  doc.outline.addItem(invitation.namesLine || invitation.title, { pageNumber: 0 });
 
   for (const entry of entries) {
     let photoBytes = null;
@@ -277,6 +278,25 @@ async function buildGuestbookPdf(invitation, entries) {
     doc.addPage();
     doc.rect(0, 0, PAGE.width, PAGE.height).fill(INK);
     doc.fillColor(IVORY).opacity(0.7).font('Times-Italic').fontSize(14).text('Aucun témoignage à ce jour.', 0, PAGE.height / 2 - 10, { width: PAGE.width, align: 'center' });
+  } else {
+    // Signets : un dossier "Invités (A → Z)" avec un signet par témoignage, triés par ordre
+    // alphabétique du nom — indépendant de l'ordre RÉEL des pages, resté chronologique (inchangé) :
+    // un signet n'est qu'un raccourci de navigation, rien n'oblige son ordre dans le panneau à
+    // suivre celui des pages, et l'alphabétique sert bien mieux une recherche ponctuelle par nom
+    // qu'une liste dans l'ordre d'arrivée des messages. Le titre reprend le nom TEL QUEL (pas la
+    // version nettoyée pour l'impression, voir textForPrint) : un signet est affiché par le
+    // lecteur PDF avec sa propre police système, jamais dessiné avec les polices Times embarquées
+    // — il échappe donc à la limite WinAnsi qui s'applique au texte imprimé, et peut afficher un
+    // nom complet même avec des caractères non latins.
+    const guestsFolder = doc.outline.addItem('Invités (A → Z)', { expanded: true });
+    const bySortedName = entries
+      .map((entry, i) => ({ entry, pageNumber: i + 1 }))
+      .sort((a, b) => (a.entry.guestName || '').localeCompare(b.entry.guestName || '', 'fr', { sensitivity: 'base' }));
+    for (const { entry, pageNumber } of bySortedName) {
+      const name = (entry.guestName || '').trim() || 'Un invité';
+      const label = entry.tableNumber ? `${name} (Table ${entry.tableNumber})` : name;
+      guestsFolder.addItem(label, { pageNumber });
+    }
   }
 
   doc.end();
