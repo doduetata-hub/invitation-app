@@ -169,8 +169,8 @@ function drawEntryText(doc, { message, guestLine, tableLine, x, width, quote }) 
     doc.font('Times-Roman').fontSize(28);
     quoteH = doc.heightOfString('"', { width, align });
   }
-  doc.font('Times-Roman').fontSize(15);
-  const messageH = doc.heightOfString(message, { width, align, lineGap: 5 });
+  doc.font('Times-Roman').fontSize(20);
+  const messageH = doc.heightOfString(message, { width, align, lineGap: 6 });
   doc.font('Times-Bold').fontSize(12);
   const guestH = doc.heightOfString(guestLine, { width, align, characterSpacing: 1 });
   let tableH = 0;
@@ -195,7 +195,7 @@ function drawEntryText(doc, { message, guestLine, tableLine, x, width, quote }) 
     y += quoteH + GAP_QUOTE_MESSAGE;
   }
 
-  doc.fillColor(IVORY).font('Times-Roman').fontSize(15).text(message, x, y, { width, align, lineGap: 5 });
+  doc.fillColor(IVORY).font('Times-Roman').fontSize(20).text(message, x, y, { width, align, lineGap: 6 });
   y += messageH + GAP_MESSAGE_RULE;
 
   const ruleWidth = Math.min(60, width);
@@ -227,8 +227,8 @@ function drawEntryPage(doc, entry, photoBytes) {
   if (photoBytes) {
     // Médaillon photo : cadre doré fin, coins légèrement arrondis, contenu recadré (cover) sans
     // jamais déformer le ratio d'origine — même logique de recadrage que le mode écran.
-    const frameW = 260;
-    const frameH = 320;
+    const frameW = 200;
+    const frameH = 240;
     const frameX = margin;
     const frameY = (PAGE.height - frameH) / 2;
     doc.save();
