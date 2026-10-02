@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { buildWhatsappShareUrl } from '../utils/whatsapp';
 
 // Vue plein écran d'une réponse RSVP : la table `.table` tronque tout sur une seule ligne
@@ -9,9 +10,26 @@ import { buildWhatsappShareUrl } from '../utils/whatsapp';
 // GuestbookLivePreview, utilisé par la page admin du livre d'or) — remplace alors le simple
 // texte brut + la photo isolée ci-dessous, sans rien changer pour les autres appelants
 // (réponses RSVP côté GuestsPage/ClientAccessPage), qui ne passent jamais cette prop.
-export default function GuestMessageModal({ name, answer, numberOfPersons, maxPersons, tableNumber, drink, message, respondedAt, phone, photoUrl, onRemovePhoto, preview, onClose }) {
+// `onApprove` (optionnel, livre d'or seulement) : affiche « Approuver » directement ici, pour ne
+// pas avoir à fermer la fenêtre après lecture et retrouver le bon bouton dans la liste. Fonction
+// asynchrone fournie par l'appelant : elle fait l'appel et ferme la fenêtre ; si elle échoue, le
+// message d'erreur s'affiche ici (la page derrière est masquée) et la fenêtre reste ouverte.
+export default function GuestMessageModal({ name, answer, numberOfPersons, maxPersons, tableNumber, drink, message, respondedAt, phone, photoUrl, onRemovePhoto, preview, onApprove, onClose }) {
   const greeting = `Bonjour${name ? ' ' + name : ''}, merci beaucoup pour votre message !`;
   const whatsappUrl = phone ? buildWhatsappShareUrl(phone, greeting) : null;
+  const [approving, setApproving] = useState(false);
+  const [approveError, setApproveError] = useState('');
+
+  const handleApprove = async () => {
+    setApproving(true);
+    setApproveError('');
+    try {
+      await onApprove();
+    } catch (err) {
+      setApproveError(err.message || "L'approbation a échoué");
+      setApproving(false);
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -66,7 +84,14 @@ export default function GuestMessageModal({ name, answer, numberOfPersons, maxPe
           <p className="message-modal-date">Répondu le {new Date(respondedAt).toLocaleString('fr-FR')}</p>
         )}
 
+        {approveError && <p className="error-text">{approveError}</p>}
+
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+          {onApprove && (
+            <button type="button" onClick={handleApprove} disabled={approving} className="btn btn-accent btn-sm">
+              {approving ? 'Approbation...' : '✓ Approuver'}
+            </button>
+          )}
           {whatsappUrl && (
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm">
               💬 Répondre via WhatsApp

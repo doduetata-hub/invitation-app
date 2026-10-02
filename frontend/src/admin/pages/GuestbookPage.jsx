@@ -629,6 +629,17 @@ export default function GuestbookPage() {
           {...messageView}
           preview={<GuestbookLivePreview guestName={messageView.name} message={messageView.message} photo={messageView.photo} tableNumber={messageView.tableNumber} />}
           onRemovePhoto={messageView.photoUrl ? () => removeEntryPhoto(messageView.entryId) : undefined}
+          onApprove={
+            // Seulement pour un message pas encore approuvé : un message déjà approuvé (ex. ouvert
+            // pour voir une nouvelle photo en attente) n'a rien à approuver ici.
+            entries.find((e) => e.id === messageView.entryId)?.status !== 'APPROVED'
+              ? async () => {
+                  await api.patch(`/guestbook-entries/${messageView.entryId}`, { status: 'APPROVED' });
+                  await loadEntries();
+                  setMessageView(null);
+                }
+              : undefined
+          }
           onClose={() => setMessageView(null)}
         />
       )}
