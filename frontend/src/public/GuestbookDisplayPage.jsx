@@ -466,6 +466,19 @@ export default function GuestbookDisplayPage() {
   }, [slug]);
 
   const startFromReady = () => {
+    // Plein écran : un navigateur ne l'accorde que suite à un geste de l'utilisateur, d'où ce
+    // clic (et pas l'ouverture de la page). Appelé en premier, de façon synchrone, pour rester
+    // dans le geste. Refus ou navigateur sans API (Safari ancien...) : on démarre quand même, la
+    // régie peut toujours passer en plein écran avec F11.
+    try {
+      const el = document.documentElement;
+      const request = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (request && !document.fullscreenElement) {
+        Promise.resolve(request.call(el)).catch(() => {});
+      }
+    } catch {
+      // ignoré : le plein écran est un confort, pas un prérequis
+    }
     shownRef.current = new Set();
     saveShown(slug, shownRef.current);
     presentedCountRef.current = 0;
