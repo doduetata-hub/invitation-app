@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { injectStylesOnce } from './utils/injectStyles';
 import { durationForText } from '../shared/utils/guestbookTiming';
@@ -95,10 +95,14 @@ injectStylesOnce(
   @keyframes gbFadeOut { from { opacity: 1; } to { opacity: 0; } }
 
   /* Photo de l'invité : ratio d'origine conservé (jamais recadré ni déformé), cadre fin doré. */
-  .gb-bphoto { margin: 0; flex: none; line-height: 0; padding: max(2px, calc(var(--u) * 0.35)); border: max(1px, calc(var(--u) * 0.07)) solid rgba(214,181,109,0.65); background: linear-gradient(145deg, rgba(38,30,17,0.92), rgba(10,9,8,0.92)); animation: gbPartIn 900ms ease both calc(var(--gb-delay, 0ms) + 250ms); }
-  .gb-bphoto img { display: block; width: auto; height: auto; max-width: calc(var(--u) * 12.5); max-height: calc(var(--u) * 13); object-fit: contain; }
+  /* Photo d'invité : cercle parfait (largeur = hauteur, border-radius 50 %, overflow hidden), contour
+     doré fin, halo à peine perceptible. L'image remplit le cercle (object-fit: cover, jamais déformée) ;
+     son point de cadrage (object-position) est posé en ligne par photo. Épaisseurs et rayon du halo en
+     unités --u : le cercle reste rond et proportionné en 1080p comme en 4K. */
+  .gb-bphoto { margin: 0; flex: none; align-self: flex-start; box-sizing: border-box; width: calc(var(--u) * 8); height: calc(var(--u) * 8); aspect-ratio: 1 / 1; border-radius: 50%; overflow: hidden; line-height: 0; background: #14110c; border: max(1px, calc(var(--u) * 0.09)) solid rgba(214,181,109,0.78); box-shadow: 0 0 calc(var(--u) * 1.5) rgba(216,181,109,0.18); animation: gbPartIn 900ms ease both calc(var(--gb-delay, 0ms) + 250ms); }
+  .gb-bphoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-  .gb-bbody { flex: 1 1 auto; min-width: 0; }
+  .gb-bbody { flex: 1 1 auto; min-width: 0; align-self: center; }
   .gb-bname { margin: 0 0 calc(var(--u) * 0.5); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: calc(var(--u) * 1.1); font-weight: 500; color: #E3C57F; animation: gbPartIn 800ms ease both calc(var(--gb-delay, 0ms) + 450ms); }
   /* white-space: pre-line : les paragraphes tapés par l'invité sont conservés. dir="auto" (posé
      dans le JSX) : un message en arabe ou autre écriture RTL se lit dans le bon sens. */
@@ -107,6 +111,15 @@ injectStylesOnce(
      une taille un peu plus grande (la police latine n'a pas ces glyphes, le repli est plus petit). */
   .gb-bname:dir(rtl) { letter-spacing: 0; text-transform: none; font-size: calc(var(--u) * 1.4); }
   .gb-featured .gb-btext { line-height: 1.42; }
+  /* Écriture progressive : chaque mot est présent dans la mise en page mais invisible, puis se révèle
+     (classe .gb-on posée par TypedText) avec un fondu court et une légère teinte champagne qui
+     s'éteint vers l'ivoire. Le curseur doré est positionné en absolu après le dernier mot révélé :
+     il ne change jamais la largeur de la ligne, donc jamais les retours à la ligne. */
+  .gb-w { opacity: 0; color: #E3C57F; transition: opacity 260ms ease, color 900ms ease; }
+  .gb-w.gb-on { opacity: 1; color: #FFFDF8; }
+  .gb-w-last { position: relative; }
+  .gb-w-last::after { content: ''; position: absolute; inset-inline-end: calc(var(--u) * -0.25); top: 14%; bottom: 8%; width: max(2px, calc(var(--u) * 0.11)); background: #D6B56D; box-shadow: 0 0 calc(var(--u) * 0.6) rgba(216,181,109,0.65); animation: gbCaretBlink 1050ms steps(1) infinite; }
+  @keyframes gbCaretBlink { 0%, 58% { opacity: 1; } 59%, 100% { opacity: 0; } }
   .gb-bpage { margin: calc(var(--u) * 0.9) 0 0; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: calc(var(--u) * 0.7); color: #B88A32; opacity: 0.6; }
   /* Emojis conservés dans la donnée (jamais modifiés), juste neutralisés visuellement. */
   .gb-emoji { filter: grayscale(0.85) opacity(0.6) brightness(0.9); font-size: 0.9em; }
@@ -263,17 +276,117 @@ const FEATURED_FRACTION = 0.42;
 // pages au plus ; au-delà de ce nombre la mise en page n'est de toute façon plus pertinente.
 const MAX_PAGES = 6;
 
+// ===== Écriture progressive (révélation mot après mot) =========================================
+// Pure mise en scène visuelle d'un témoignage DÉJÀ soumis et approuvé : le texte affiché à la fin
+// est strictement celui de la base, jamais modifié ; rien n'indique qu'un invité écrit en direct.
+// Vitesse initiale en mots par seconde ; `?wps=5` dans l'adresse de l'écran la remplace (1 à 12), pour
+// l'ajuster sur place sans redéployer.
+const TYPING_WORDS_PER_SECOND = 4;
+// Avant le premier mot : la bulle, le nom et la photo se révèlent d'abord (voir --gb-delay et les
+// animations .gb-bphoto / .gb-bname). Deuxième page d'un long message : reprise plus courte.
+const TYPING_LEAD_MS = 1300;
+const TYPING_LEAD_NEXT_PAGE_MS = 350;
+// Pauses naturelles, ajoutées APRÈS le mot concerné : fin de phrase, virgule, saut de ligne. Jamais
+// après chaque mot, jamais aléatoires : le rythme reste prévisible et ne ressemble pas à un blocage.
+const TYPING_PAUSE_STRONG_MS = 380;
+const TYPING_PAUSE_SOFT_MS = 140;
+const TYPING_PAUSE_PARAGRAPH_MS = 520;
+// Temps laissé au dernier mot pour finir de se révéler avant que le texte soit considéré comme terminé.
+const TYPING_SETTLE_MS = 300;
+// Une fois le texte entièrement écrit, il reste lisible au moins HOLD_MIN_MS, ou cette part de son
+// temps de lecture (voir readingTime) s'il est long, avant que la conversation évolue.
+const HOLD_MIN_MS = 3000;
+const HOLD_READING_SHARE = 0.4;
+
+function readTypingSpeed() {
+  const raw = Number(new URLSearchParams(window.location.search).get('wps'));
+  return Number.isFinite(raw) && raw >= 1 && raw <= 12 ? raw : TYPING_WORDS_PER_SECOND;
+}
+
+let wordSegmenter;
+function getWordSegmenter() {
+  if (wordSegmenter === undefined) {
+    wordSegmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
+  }
+  return wordSegmenter;
+}
+
+// Découpe un texte en "mots" à révéler : chaque unité = un mot suivi de ce qui le sépare du suivant
+// (espaces, ponctuation, emojis, sauts de ligne). Segmentation Unicode (Intl.Segmenter) : les emojis
+// composés, les caractères combinés, l'arabe et les autres écritures ne sont jamais coupés en plein
+// symbole. Navigateur sans Intl.Segmenter : repli sur les espaces. Garantie : la concaténation des
+// unités redonne EXACTEMENT le texte d'origine (sinon, une seule unité).
+function splitIntoUnits(text) {
+  if (!text) return [''];
+  let units = null;
+  const segmenter = getWordSegmenter();
+  if (segmenter) {
+    units = [];
+    let hasWord = false;
+    for (const part of segmenter.segment(text)) {
+      if (part.isWordLike && hasWord) {
+        units.push(part.segment);
+      } else {
+        if (!units.length) units.push('');
+        units[units.length - 1] += part.segment;
+        if (part.isWordLike) hasWord = true;
+      }
+    }
+  } else {
+    units = text.match(/\S+\s*|\s+/g);
+  }
+  return units && units.join('') === text ? units : [text];
+}
+
+const STRONG_END = /[.!?…؟。！？]["'»”’)\]]*(?:\s|\p{Extended_Pictographic}|️|‍)*$/u;
+const SOFT_END = /[,;:،؛，]["'»”’)\]]*\s*$/u;
+
+// Instant (ms depuis le début de l'écriture) où chaque unité apparaît. Durée de base = 1 / vitesse,
+// légèrement modulée par la longueur du mot et par une variation fixe (±10 %, périodique : le rythme
+// "respire" mais reste identique d'un passage à l'autre), plus les pauses de ponctuation.
+function buildTypingSchedule(text, wordsPerSecond) {
+  const units = splitIntoUnits(text);
+  const base = 1000 / wordsPerSecond;
+  const times = [];
+  let at = 0;
+  units.forEach((unit, i) => {
+    times.push(Math.round(at));
+    const trimmed = unit.trim();
+    const length = Math.min(trimmed.length, 12);
+    let delay = base * (0.8 + 0.03 * length) * (1 + (((i * 37) % 21) - 10) / 100);
+    if (STRONG_END.test(unit)) delay += TYPING_PAUSE_STRONG_MS;
+    else if (SOFT_END.test(unit)) delay += TYPING_PAUSE_SOFT_MS;
+    if (unit.includes('\n')) delay += TYPING_PAUSE_PARAGRAPH_MS;
+    at += delay;
+  });
+  return { units, times, total: times[times.length - 1] + TYPING_SETTLE_MS };
+}
+
+const typingCache = new Map();
+function getTyping(text, wordsPerSecond) {
+  const key = `${wordsPerSecond}|${text}`;
+  let typing = typingCache.get(key);
+  if (!typing) {
+    if (typingCache.size > 300) typingCache.clear();
+    typing = buildTypingSchedule(text, wordsPerSecond);
+    typingCache.set(key, typing);
+  }
+  return typing;
+}
+
 // Cherche, près de la position idéale, la frontière de phrase (ou de paragraphe) la plus proche,
 // sinon la plus proche espace — jamais en plein mot. Retourne la position où commence la page
 // suivante.
-// Taille de la photo d'un invité, proportionnelle à l'écran (unité --u) ET fidèle à son ratio
-// d'origine : elle tient dans un cadre de 12.5u x 13u sans jamais être déformée ni recadrée, et
-// grandit avec la résolution même si le fichier est petit (un simple max-width ne l'agrandirait pas).
-// Dimensions inconnues : on retombe sur les plafonds CSS (.gb-bphoto img).
-function photoSizeStyle(photo) {
-  if (!photo?.width || !photo?.height) return undefined;
-  const ratio = photo.width / photo.height;
-  return { width: `min(calc(var(--u) * 12.5), calc(var(--u) * 13 * ${ratio}))`, height: 'auto', aspectRatio: String(ratio) };
+// Cadrage de la photo d'un invité dans son cercle (object-fit: cover remplit le cercle sans jamais
+// déformer l'image). Les visages sont statistiquement dans la moitié haute d'un portrait : le point
+// de cadrage par défaut remonte donc un peu (22 % en portrait, 32 % sinon) pour ne pas couper le
+// haut de la tête. Si les données fournissent un point de cadrage (photo.focusX / photo.focusY, en
+// %), il est utilisé tel quel — le serveur n'en envoie pas aujourd'hui.
+function photoObjectPosition(photo) {
+  const portrait = photo?.width && photo?.height && photo.width / photo.height < 0.85;
+  const x = Number.isFinite(photo?.focusX) ? photo.focusX : 50;
+  const y = Number.isFinite(photo?.focusY) ? photo.focusY : portrait ? 22 : 32;
+  return `${x}% ${y}%`;
 }
 
 // Hauteur utile du fil : sans la marge interne basse (réservée au glissement d'entrée des bulles).
@@ -335,13 +448,9 @@ function measureBubble(threadEl, { guestName, text, photo, featured }) {
   const bubble = document.createElement('div');
   bubble.className = `gb-bubble gb-bubble-left gb-probe-bubble${featured ? ' gb-featured' : ''}`;
   if (photo?.url) {
+    // Cercle de taille fixe (en unités --u) : inutile d'y charger l'image pour mesurer la bulle.
     const figure = document.createElement('figure');
     figure.className = 'gb-bphoto';
-    const img = document.createElement('img');
-    img.src = photo.url;
-    img.alt = '';
-    Object.assign(img.style, photoSizeStyle(photo));
-    figure.appendChild(img);
     bubble.appendChild(figure);
   }
   const body = document.createElement('div');
@@ -388,6 +497,66 @@ function planBubble(threadEl, entry) {
   }
   return { featured: true, pages };
 }
+
+// Texte d'un témoignage révélé mot après mot. TOUT le texte est rendu dès le départ, invisible
+// (opacity 0, voir .gb-w) : la bulle a donc sa taille définitive dès son apparition et la mise en
+// page ne bouge jamais pendant l'écriture (pas de recalcul, les bulles plus anciennes ne sont pas
+// repoussées à chaque mot). Les mots sont ensuite révélés dans l'ordre d'origine en ajoutant une
+// classe directement sur les éléments : React ne refait aucun rendu à chaque mot.
+// startsRef (clé = bulle + page) mémorise l'instant de départ : si le composant est remonté en cours
+// d'écriture (remontage React, événement dupliqué), l'écriture reprend là où elle en était au lieu
+// de se relancer depuis le début. Le calendrier se lit sur l'horloge (performance.now) : chaque réveil
+// est calculé pour tomber à l'instant du mot suivant (aucune dérive qui s'accumule), un onglet
+// ralenti rattrape le temps écoulé en révélant les mots dus, et — contrairement à
+// requestAnimationFrame — rien ne se fige si la fenêtre est masquée ou recouverte, tout en réveillant
+// la page seulement 4 fois par seconde environ au lieu de 60.
+const TypedText = memo(function TypedText({ text, stampKey, startsRef, leadMs, wordsPerSecond }) {
+  const rootRef = useRef(null);
+  const typing = getTyping(text, wordsPerSecond);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const words = root.querySelectorAll('.gb-w');
+    let start = startsRef.current.get(stampKey);
+    if (start === undefined) {
+      start = performance.now() + leadMs;
+      startsRef.current.set(stampKey, start);
+    }
+
+    let timer = 0;
+    let revealed = -1;
+    const step = () => {
+      const elapsed = performance.now() - start;
+      let latest = revealed;
+      while (latest + 1 < words.length && typing.times[latest + 1] <= elapsed) latest += 1;
+      if (latest !== revealed) {
+        if (revealed >= 0) words[revealed].classList.remove('gb-w-last');
+        for (let i = revealed + 1; i <= latest; i += 1) words[i].classList.add('gb-on');
+        words[latest].classList.add('gb-w-last');
+        revealed = latest;
+      }
+      if (revealed < words.length - 1) {
+        // Prochain réveil exactement à l'instant du mot suivant (calculé sur l'horloge, pas additionné).
+        timer = setTimeout(step, Math.max(0, typing.times[revealed + 1] - (performance.now() - start)));
+      } else {
+        // Dernier mot révélé : le curseur doré disparaît une fois le mot posé.
+        timer = setTimeout(() => words[revealed]?.classList.remove('gb-w-last'), TYPING_SETTLE_MS);
+      }
+    };
+    timer = setTimeout(step, Math.max(0, start - performance.now()));
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, stampKey, wordsPerSecond]);
+
+  return (
+    <p ref={rootRef} className="gb-btext" dir="auto">
+      {typing.units.map((unit, i) => (
+        <span key={i} className="gb-w">{renderMessageWithSoberEmoji(unit)}</span>
+      ))}
+    </p>
+  );
+});
 
 function Particles() {
   const specs = useRef(
@@ -441,6 +610,9 @@ export default function GuestbookDisplayPage() {
   const threadStateRef = useRef([]);
   const rowRefs = useRef(new Map());
   const prevTopsRef = useRef(new Map());
+  // Instant de départ de l'écriture de chaque page (voir TypedText) et vitesse d'écriture (mots/s).
+  const typingStartsRef = useRef(new Map());
+  const [typingWps] = useState(readTypingSpeed);
   threadStateRef.current = thread;
 
   useEffect(() => {
@@ -483,6 +655,7 @@ export default function GuestbookDisplayPage() {
     lastDwellRef.current = 0;
     presentedCountRef.current = 0;
     prevTopsRef.current = new Map();
+    typingStartsRef.current = new Map();
     setThread([]);
     setIntroStep(0);
     setCountdownValue(COUNTDOWN_START);
@@ -586,15 +759,25 @@ export default function GuestbookDisplayPage() {
   const entryKey = (e) => `${e.id}:${hashText(e.message)}`;
   const nextUnseen = () => entriesRef.current.find((e) => !shownRef.current.has(entryKey(e))) || null;
 
+  // Délai avant le premier mot d'une page : une bulle qui arrive attend d'abord la fin du glissement
+  // des anciennes (MOVE_MS), puis la révélation de la bulle, du nom et de la photo (TYPING_LEAD_MS).
+  const typingLead = (item) =>
+    item.pageIndex === 0 ? (item.afterMove ? MOVE_MS : 0) + TYPING_LEAD_MS : TYPING_LEAD_NEXT_PAGE_MS;
+
   // Temps pendant lequel la dernière bulle (ou page) reste seule "en tête" avant que la suivante
-  // arrive : sa durée de lecture. Les bulles plus anciennes, elles, restent à l'écran tant que la
-  // place le permet — elles ont donc toujours eu au moins leur temps de lecture complet.
-  const dwellFor = (item) => {
-    const base =
-      readingTime(item.pages[item.pageIndex]) + (item.pageIndex === 0 && item.photo ? PHOTO_DWELL_BONUS_MS : 0);
-    const slowed = base >= LONG_DWELL_MS && lastDwellRef.current >= LONG_DWELL_MS ? Math.round(base * LONG_SLOWDOWN) : base;
-    lastDwellRef.current = base;
-    return slowed;
+  // arrive : délai d'entrée + durée d'écriture (proportionnelle à la longueur) + temps de lecture une
+  // fois le texte complet (au moins HOLD_MIN_MS, plus pour un texte long ou une photo). Les bulles
+  // plus anciennes restent à l'écran tant que la place le permet — elles ont donc toujours eu au
+  // moins ce temps complet. Deux messages ne s'écrivent jamais en même temps : le suivant n'est
+  // lancé qu'à la fin de ce délai.
+  const pageTimeline = (item) => {
+    const text = item.pages[item.pageIndex];
+    const reading = readingTime(text);
+    const hold =
+      Math.max(HOLD_MIN_MS, Math.round(HOLD_READING_SHARE * reading)) + (item.pageIndex === 0 && item.photo ? PHOTO_DWELL_BONUS_MS : 0);
+    const slowedHold = reading >= LONG_DWELL_MS && lastDwellRef.current >= LONG_DWELL_MS ? Math.round(hold * LONG_SLOWDOWN) : hold;
+    lastDwellRef.current = reading;
+    return typingLead(item) + getTyping(text, typingWps).total + slowedHold;
   };
 
   const startDwell = (item) => {
@@ -603,7 +786,7 @@ export default function GuestbookDisplayPage() {
     dwellTimerRef.current = setTimeout(() => {
       dwellingRef.current = false;
       setTick((t) => t + 1);
-    }, dwellFor(item));
+    }, pageTimeline(item));
   };
 
   // Le message est marqué "présenté" tout de suite, AVANT d'attendre sa photo : ainsi ni un
@@ -845,7 +1028,7 @@ export default function GuestbookDisplayPage() {
                       <figure className="gb-bphoto">
                         <img
                           src={item.photo.url}
-                          style={photoSizeStyle(item.photo)}
+                          style={{ objectPosition: photoObjectPosition(item.photo) }}
                           alt={`Photo de ${item.entry.guestName}`}
                           decoding="async"
                           onError={() =>
@@ -856,10 +1039,16 @@ export default function GuestbookDisplayPage() {
                     )}
                     <div className="gb-bbody">
                       <p className="gb-bname" dir="auto">{item.entry.guestName}</p>
-                      {/* key = page : le texte se révèle de nouveau à chaque nouvelle page. */}
-                      <p key={item.pageIndex} className="gb-btext" dir="auto">
-                        {renderMessageWithSoberEmoji(item.pages[item.pageIndex])}
-                      </p>
+                      {/* key = bulle + page : chaque page est écrite une seule fois, et un texte différent
+                          remonte toujours un composant neuf (jamais de mots déjà révélés d'un autre texte). */}
+                      <TypedText
+                        key={`${item.key}#${item.pageIndex}`}
+                        text={item.pages[item.pageIndex]}
+                        stampKey={`${item.key}#${item.pageIndex}`}
+                        startsRef={typingStartsRef}
+                        leadMs={typingLead(item)}
+                        wordsPerSecond={typingWps}
+                      />
                       {item.pages.length > 1 && (
                         <p className="gb-bpage">{item.pageIndex + 1} / {item.pages.length}</p>
                       )}
