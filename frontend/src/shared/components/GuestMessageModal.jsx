@@ -86,7 +86,7 @@ export default function GuestMessageModal({ name, answer, numberOfPersons, maxPe
 
         {approveError && <p className="error-text">{approveError}</p>}
 
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+        <div className="modal-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
           {onApprove && (
             <button type="button" onClick={handleApprove} disabled={approving} className="btn btn-accent btn-sm">
               {approving ? 'Approbation...' : '✓ Approuver'}

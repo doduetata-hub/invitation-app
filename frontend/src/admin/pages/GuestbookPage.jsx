@@ -21,7 +21,12 @@ export default function GuestbookPage() {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(new Set());
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  // Sur téléphone, on arrive directement sur les messages À VALIDER : c'est la tâche principale de
+  // la soirée. Sur grand écran, la liste complète comme avant.
+  const [statusFilter, setStatusFilter] = useState(() =>
+    window.matchMedia?.('(max-width: 900px)').matches ? 'PENDING' : 'ALL'
+  );
+  const [refreshing, setRefreshing] = useState(false);
   const [messageView, setMessageView] = useState(null);
   const [qrView, setQrView] = useState(null);
   const [tokenForm, setTokenForm] = useState({ label: '', tableNumber: '' });
@@ -56,6 +61,30 @@ export default function GuestbookPage() {
     loadTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Les messages arrivent pendant toute la soirée : la liste se met à jour toute seule (toutes les
+  // 20 s tant que la page est visible, et dès qu'on revient sur l'onglet/l'application), sans avoir
+  // à recharger la page. Erreurs ignorées ici : une coupure réseau passagère ne doit pas afficher
+  // un message d'erreur permanent, la prochaine actualisation rattrape.
+  useEffect(() => {
+    const silentRefresh = () => {
+      if (document.hidden) return;
+      api.get(`/invitations/${id}/guestbook`).then(setData).catch(() => {});
+    };
+    const timer = setInterval(silentRefresh, 20000);
+    document.addEventListener('visibilitychange', silentRefresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', silentRefresh);
+    };
+  }, [id]);
+
+  const refreshNow = async () => {
+    setRefreshing(true);
+    setError('');
+    await loadEntries();
+    setRefreshing(false);
+  };
 
   const toggleSelected = (entryId) => {
     setSelected((prev) => {
@@ -233,8 +262,15 @@ export default function GuestbookPage() {
     setSelected(new Set());
   };
 
+  const statusFilters = [
+    ['PENDING', 'À valider', stats.pending],
+    ['APPROVED', 'Approuvés', stats.approved],
+    ['REJECTED', 'Rejetés', stats.rejected],
+    ['ALL', 'Tous', stats.total],
+  ];
+
   return (
-    <div>
+    <div className="gb-admin">
       <div className="page-header">
         <div>
           <span className="admin-eyebrow">{invitation.title}</span>
@@ -274,18 +310,18 @@ export default function GuestbookPage() {
 
       {error && <p className="error-text">{error}</p>}
 
-      <div className="stats-grid" style={{ marginTop: '1.25rem' }}>
+      <div className="stats-grid gb-stats" style={{ marginTop: '1.25rem' }}>
         <StatCard label="Messages reçus" value={stats.total} />
         <StatCard label="En attente" value={stats.pending} />
         <StatCard label="Approuvés" value={stats.approved} />
         <StatCard label="Rejetés" value={stats.rejected} />
-        <StatCard label="Via invitation numérique" value={stats.bySource.DIGITAL || 0} />
-        <StatCard label="Via QR code" value={stats.bySource.QR || 0} />
-        <StatCard label="Avec photo" value={entries.filter((e) => e.photo).length} />
-        <StatCard label="Photos en attente" value={entries.filter((e) => e.pendingPhotoId || e.pendingPhotoRemoved).length} />
+        <StatCard minor label="Via invitation numérique" value={stats.bySource.DIGITAL || 0} />
+        <StatCard minor label="Via QR code" value={stats.bySource.QR || 0} />
+        <StatCard minor label="Avec photo" value={entries.filter((e) => e.photo).length} />
+        <StatCard minor label="Photos en attente" value={entries.filter((e) => e.pendingPhotoId || e.pendingPhotoRemoved).length} />
       </div>
 
-      <div className="editor-section">
+      <div className="editor-section gb-later">
         <h2>Souvenir du mariage</h2>
         <p className="admin-muted" style={{ marginTop: 0 }}>
           Conserve les témoignages approuvés — pas les messages en attente ou rejetés, écartés de
@@ -312,7 +348,7 @@ export default function GuestbookPage() {
         </div>
       </div>
 
-      <div className="editor-section">
+      <div className="editor-section gb-later">
         <h2>Modération</h2>
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
           <input
@@ -335,7 +371,7 @@ export default function GuestbookPage() {
         </label>
       </div>
 
-      <div className="editor-section">
+      <div className="editor-section gb-later">
         <h2>QR codes</h2>
         <p className="admin-muted" style={{ marginTop: 0 }}>
           À imprimer et poser sur les tables (ou à l'accueil pour un QR unique) — un invité qui
@@ -460,11 +496,16 @@ export default function GuestbookPage() {
         )}
       </div>
 
-      <div className="editor-section">
-        <h2>Messages</h2>
+      <div className="editor-section gb-messages">
+        <div className="gb-messages-head">
+          <h2 style={{ margin: 0 }}>Messages</h2>
+          <button type="button" onClick={refreshNow} disabled={refreshing} className="btn btn-outline btn-sm">
+            {refreshing ? 'Actualisation...' : '↻ Actualiser'}
+          </button>
+        </div>
 
         {selected.size > 0 && (
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="gb-bulk-bar">
             <button type="button" onClick={approveSelection} className="btn btn-primary btn-sm">
               Approuver la sélection ({selected.size})
             </button>
@@ -475,19 +516,34 @@ export default function GuestbookPage() {
           <div className="empty-state">Aucun message pour le moment.</div>
         ) : (
           <>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          {/* Grands boutons de filtre (téléphone) : un appui, sans ouvrir une liste déroulante.
+              La liste déroulante d'origine reste pour le grand écran (voir admin.css). */}
+          <div className="gb-chips" role="group" aria-label="Filtrer par statut">
+            {statusFilters.map(([value, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                className={`gb-chip${statusFilter === value ? ' active' : ''}`}
+                aria-pressed={statusFilter === value}
+                onClick={() => changeStatusFilter(value)}
+              >
+                {label} <span className="gb-chip-count">{count ?? 0}</span>
+              </button>
+            ))}
+          </div>
+          <div className="gb-search-row">
             <input
               type="text"
               placeholder="Rechercher un message (nom, texte, table)..."
               value={search}
               onChange={(e) => changeSearch(e.target.value)}
-              className="input"
+              className="input gb-search-input"
               style={{ maxWidth: '340px' }}
             />
             <select
               value={statusFilter}
               onChange={(e) => changeStatusFilter(e.target.value)}
-              className="input"
+              className="input gb-status-select"
               style={{ width: '170px', flex: 'none' }}
             >
               <option value="ALL">Tous les statuts</option>
@@ -497,10 +553,14 @@ export default function GuestbookPage() {
             </select>
           </div>
           {filteredEntries.length === 0 ? (
-            <div className="empty-state">Aucun message ne correspond à votre recherche.</div>
+            <div className="empty-state">
+              {statusFilter === 'PENDING' && !q
+                ? 'Aucun message en attente — tout est validé 🎉'
+                : 'Aucun message ne correspond à votre recherche.'}
+            </div>
           ) : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table gb-msg-table">
               <thead>
                 <tr>
                   <th></th>
@@ -518,14 +578,14 @@ export default function GuestbookPage() {
                   const isBusy = busyIds.has(entry.id);
                   return (
                     <tr key={entry.id}>
-                      <td>
+                      <td className="gb-c-check">
                         <input
                           type="checkbox"
                           checked={selected.has(entry.id)}
                           onChange={() => toggleSelected(entry.id)}
                         />
                       </td>
-                      <td>
+                      <td className="gb-c-name">
                         {entry.guestName}
                         {isPossibleDuplicate(entry) && (
                           <span
@@ -537,7 +597,7 @@ export default function GuestbookPage() {
                           </span>
                         )}
                       </td>
-                      <td className="cell-message">
+                      <td className="cell-message gb-c-msg">
                         {/* Miniature à côté du texte (pas en dessous) : une entrée avec photo garde la
                             même hauteur de ligne qu'une entrée sans photo — cliquer l'agrandit dans
                             GuestMessageModal, qui reste l'endroit où voir la photo en plein format. */}
@@ -584,13 +644,13 @@ export default function GuestbookPage() {
                           )}
                         </div>
                       </td>
-                      <td>{SOURCE_LABELS[entry.source]}</td>
-                      <td>{entry.tableNumber || '—'}</td>
-                      <td>{STATUS_BADGE[entry.status]}</td>
-                      <td>{new Date(entry.createdAt).toLocaleString('fr-FR')}</td>
-                      <td style={{ display: 'flex', gap: '0.4rem' }}>
+                      <td className="gb-c-meta">{SOURCE_LABELS[entry.source]}</td>
+                      <td className="gb-c-meta gb-c-table" data-empty={!entry.tableNumber}>{entry.tableNumber || '—'}</td>
+                      <td className="gb-c-status">{STATUS_BADGE[entry.status]}</td>
+                      <td className="gb-c-meta">{new Date(entry.createdAt).toLocaleString('fr-FR')}</td>
+                      <td className="gb-c-actions" style={{ display: 'flex', gap: '0.4rem' }}>
                         {entry.status !== 'APPROVED' && (
-                          <button type="button" disabled={isBusy} onClick={() => setStatus(entry.id, 'APPROVED')} className="btn btn-outline btn-sm">
+                          <button type="button" disabled={isBusy} onClick={() => setStatus(entry.id, 'APPROVED')} className="btn btn-outline btn-sm gb-approve">
                             ✓ Approuver
                           </button>
                         )}
@@ -647,9 +707,11 @@ export default function GuestbookPage() {
   );
 }
 
-function StatCard({ label, value }) {
+// `minor` : chiffres secondaires, masqués sur téléphone (voir admin.css) pour que les messages
+// à valider remontent plus haut dans l'écran.
+function StatCard({ label, value, minor }) {
   return (
-    <div className="stat-card">
+    <div className={`stat-card${minor ? ' gb-stat-minor' : ''}`}>
       <div className="stat-value">{value}</div>
       <div className="stat-label">{label}</div>
     </div>

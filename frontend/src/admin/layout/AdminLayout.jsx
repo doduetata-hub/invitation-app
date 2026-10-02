@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../shared/auth/AuthContext';
 
 // Icônes minimalistes (trait fin, currentColor) pour repérer chaque section d'un
@@ -50,9 +50,49 @@ const navItems = [
   { to: '/admin/settings', label: 'Paramètres', icon: 'settings' },
 ];
 
+// Barre d'accès rapide en bas de l'écran (téléphone) : mène en un appui aux sections d'une
+// invitation, sans repasser par le menu puis la liste des invitations. L'invitation visée est celle
+// de l'adresse en cours, sinon la dernière ouverte (gardée dans le navigateur — localStorage peut
+// être indisponible, on s'en passe alors).
+const LAST_INVITATION_KEY = 'admin:last-invitation';
+const INVITATION_ROUTE = /^\/admin\/invitations\/([^/]+)\/(?:edit|guests|guestbook|checkin)/;
+
+function readLastInvitation() {
+  try {
+    return window.localStorage.getItem(LAST_INVITATION_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminLayout() {
   const { admin, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { pathname } = useLocation();
+  const routeInvitationId = pathname.match(INVITATION_ROUTE)?.[1] || null;
+  const [lastInvitationId, setLastInvitationId] = useState(readLastInvitation);
+
+  useEffect(() => {
+    if (!routeInvitationId) return;
+    setLastInvitationId(routeInvitationId);
+    try {
+      window.localStorage.setItem(LAST_INVITATION_KEY, routeInvitationId);
+    } catch {
+      // stockage indisponible : la barre suit alors seulement l'invitation de l'adresse en cours
+    }
+  }, [routeInvitationId]);
+
+  const invitationId = routeInvitationId || lastInvitationId;
+  const quickLinks = invitationId
+    ? [
+        { to: `/admin/invitations/${invitationId}/guestbook`, label: 'Messages', icon: '💬' },
+        { to: `/admin/invitations/${invitationId}/checkin`, label: 'Check-in', icon: '✅' },
+        { to: `/admin/invitations/${invitationId}/guests`, label: 'Invités', icon: '👥' },
+      ]
+    : [
+        { to: '/admin', label: 'Accueil', icon: '🏠', end: true },
+        { to: '/admin/invitations', label: 'Invitations', icon: '✉️' },
+      ];
 
   return (
     <div className="admin-root app-shell">
@@ -97,6 +137,23 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </div>
+      <nav className="bottom-nav" aria-label="Accès rapide">
+        {quickLinks.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            end={link.end}
+            className={({ isActive }) => `bottom-nav-link${isActive ? ' active' : ''}`}
+          >
+            <span className="bottom-nav-icon" aria-hidden="true">{link.icon}</span>
+            {link.label}
+          </NavLink>
+        ))}
+        <button type="button" className="bottom-nav-link" onClick={() => setSidebarOpen(true)}>
+          <span className="bottom-nav-icon" aria-hidden="true">☰</span>
+          Menu
+        </button>
+      </nav>
     </div>
   );
 }

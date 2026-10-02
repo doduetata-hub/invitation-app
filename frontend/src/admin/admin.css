@@ -1224,3 +1224,312 @@ textarea.input {
     padding: 2rem 1.5rem;
   }
 }
+
+/* ============================================================
+   Accès rapide + livre d'or sur téléphone
+   ============================================================ */
+
+/* Fenêtre de lecture d'un message : si son contenu dépasse la hauteur de l'écran (téléphone en
+   paysage, long message + photo), elle défile au lieu d'être coupée, et la barre de boutons
+   (Approuver / Fermer) reste collée en bas, toujours atteignable. */
+.modal-card--wide {
+  max-height: calc(100vh - 2.5rem);
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
+}
+
+.modal-actions {
+  position: sticky;
+  bottom: -1.5rem;
+  background: var(--color-surface, #fff);
+  padding: 0.75rem 0 0.2rem;
+  z-index: 1;
+}
+
+/* Un lien stylé en bouton plein : `.admin-root a` (plus spécifique que `.btn-accent`) lui imposait
+   une couleur de texte dorée sur fond doré, quasi illisible. */
+.admin-root a.btn-accent {
+  color: #fff;
+}
+
+.admin-root a.btn-primary {
+  color: var(--color-bg);
+}
+
+/* Masqués sur grand écran (révélés dans le bloc mobile ci-dessous). */
+.bottom-nav,
+.gb-chips,
+.gb-bulk-bar:empty {
+  display: none;
+}
+
+.gb-messages-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.gb-bulk-bar {
+  margin-bottom: 1rem;
+}
+
+.gb-search-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+  /* --- Barre d'accès rapide fixée en bas --- */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 150;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border-strong);
+    box-shadow: 0 -4px 16px rgba(20, 16, 12, 0.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-nav-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    min-height: 58px;
+    padding: 0.3rem 0.2rem;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+    background: none;
+    border: none;
+    border-top: 2px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottom-nav-link.active {
+    color: var(--color-accent-dark);
+    border-top-color: var(--color-accent);
+  }
+
+  .bottom-nav-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  /* De la place sous le contenu : la barre fixe ne doit jamais cacher le bas de la page. */
+  .content-area {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+
+  /* Menu tiroir : cibles plus grandes au doigt. */
+  .sidebar-link {
+    padding: 0.9rem 1.6rem;
+    font-size: 1rem;
+  }
+
+  /* --- Page Livre d'or : les messages d'abord --- */
+  .gb-admin {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Messages juste après les statistiques ; exports, modération et QR codes (rarement utiles en
+     pleine soirée) passent après. */
+  .gb-admin .gb-later {
+    order: 1;
+  }
+
+  .gb-admin .editor-section {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+  }
+
+  .gb-admin .gb-messages {
+    margin-top: 1rem;
+  }
+
+  /* Statistiques compactes : les 4 principales sur une seule ligne, les autres masquées. */
+  .gb-admin .gb-stat-minor {
+    display: none;
+  }
+
+  .gb-admin .gb-stats {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.75rem !important;
+  }
+
+  .gb-admin .gb-stats .stat-card {
+    padding: 0.55rem 0.5rem;
+  }
+
+  .gb-admin .gb-stats .stat-value {
+    font-size: 1.35rem;
+  }
+
+  .gb-admin .gb-stats .stat-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+
+  .gb-admin .page-header h1 {
+    font-size: 1.6rem;
+  }
+
+  /* Trois boutons d'en-tête sur une seule ligne, texte sur deux lignes si besoin. */
+  .gb-admin .page-header > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+
+  .gb-admin .page-header > div:last-child .btn {
+    font-size: 0.7rem;
+    padding: 0.45rem 0.3rem;
+    line-height: 1.2;
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* --- Filtres en grands boutons --- */
+  .gb-chips {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .gb-chip {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 0.4rem 0.35rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--color-ink);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+  }
+
+  .gb-chip.active {
+    color: #fff;
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+  }
+
+  .gb-chip-count {
+    display: inline-block;
+    margin-left: 0.2rem;
+    opacity: 0.75;
+  }
+
+  .gb-status-select {
+    display: none;
+  }
+
+  .gb-search-input {
+    max-width: none !important;
+    width: 100%;
+  }
+
+  /* --- Messages en cartes (au lieu d'un tableau à faire défiler de côté) --- */
+  .gb-msg-table,
+  .gb-msg-table tbody,
+  .gb-msg-table tr,
+  .gb-msg-table td {
+    display: block;
+  }
+
+  .gb-msg-table thead {
+    display: none;
+  }
+
+  .gb-msg-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.6rem;
+    padding: 0.85rem 0.9rem;
+    margin-bottom: 0.75rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+  }
+
+  .gb-msg-table tbody tr:hover {
+    background: var(--color-surface);
+  }
+
+  .gb-msg-table td {
+    padding: 0;
+    border: none;
+    white-space: normal;
+  }
+
+  .gb-c-check { order: 1; }
+  .gb-c-check input { width: 22px; height: 22px; }
+  .gb-c-name { order: 2; flex: 1 1 0; min-width: 0; font-weight: 700; font-size: 1rem; }
+  .gb-c-status { order: 3; }
+  .gb-c-msg { order: 4; flex: 0 0 100%; max-width: none; }
+  .gb-c-meta { order: 5; font-size: 0.75rem; color: var(--color-ink-faint); }
+  .gb-c-table::before { content: 'Table '; }
+  .gb-c-table[data-empty='true'] { display: none; }
+  .gb-c-actions { order: 6; flex: 0 0 100%; margin-top: 0.3rem; }
+
+  .gb-msg-table .cell-message-btn-text {
+    -webkit-line-clamp: 4;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .gb-msg-table .cell-photo-thumb {
+    width: 56px;
+    height: 56px;
+  }
+
+  /* Boutons d'action : grands et larges, faciles à viser d'un pouce. */
+  .gb-msg-table .gb-c-actions .btn {
+    flex: 1;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .gb-msg-table .gb-c-actions .btn-icon {
+    flex: 0 0 48px;
+    width: auto;
+    height: auto;
+  }
+
+  .gb-msg-table .gb-approve {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
+
+  .gb-msg-table .cell-pending-photo .btn {
+    min-height: 40px;
+  }
+
+  /* Fenêtre de lecture : boutons plus grands. */
+  .modal-actions .btn {
+    flex: 1;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+}
