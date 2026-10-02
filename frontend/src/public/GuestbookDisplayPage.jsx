@@ -10,6 +10,9 @@ const COUNTDOWN_STEP_MS = 1000;
 const INTRO_STEP_MS = 2600;
 const FADE_MS = 700;
 const POLL_INTERVAL_MS = 2000;
+// Entrées alternées selon l'ordre de PASSAGE (1er, 2e, 3e...), pas selon l'identifiant du message :
+// deux messages qui se suivent n'ont jamais la même, et le tout premier garde l'entrée d'origine.
+const ENTRY_STYLES = ['rise', 'slide-left', 'slide-right', 'zoom'];
 
 injectStylesOnce(
   'guestbook-display',
@@ -120,6 +123,30 @@ injectStylesOnce(
   .gb-card-visible .gb-text > .gb-name { animation: gbEnterRise 900ms ease both 480ms; }
   .gb-card-visible .gb-page-indicator { animation: gbEnterRise 900ms ease both 620ms; }
   @keyframes gbEnterRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Variantes d'entrée, alternées d'un message à l'autre (voir ENTRY_STYLES) pour que la soirée ne
+     répète pas dix fois le même mouvement. La première, "rise", est celle ci-dessus : aucune règle
+     en plus. Seul le NOM de l'animation change (durées et décalages échelonnés restent ceux
+     d'origine) ; transform + opacity uniquement, donc rien ne bouge dans la mise en page et la
+     taille ajustée du message (fitMessageFont) n'est pas affectée. La sortie reste un fondu. */
+  .gb-enter-slide-left.gb-card-visible .gb-photo-frame,
+  .gb-enter-slide-left.gb-card-visible .gb-text > .gb-quote,
+  .gb-enter-slide-left.gb-card-visible .gb-text > .gb-message,
+  .gb-enter-slide-left.gb-card-visible .gb-text > .gb-name,
+  .gb-enter-slide-left.gb-card-visible .gb-page-indicator { animation-name: gbEnterSlideLeft; }
+  .gb-enter-slide-right.gb-card-visible .gb-photo-frame,
+  .gb-enter-slide-right.gb-card-visible .gb-text > .gb-quote,
+  .gb-enter-slide-right.gb-card-visible .gb-text > .gb-message,
+  .gb-enter-slide-right.gb-card-visible .gb-text > .gb-name,
+  .gb-enter-slide-right.gb-card-visible .gb-page-indicator { animation-name: gbEnterSlideRight; }
+  .gb-enter-zoom.gb-card-visible .gb-photo-frame,
+  .gb-enter-zoom.gb-card-visible .gb-text > .gb-quote,
+  .gb-enter-zoom.gb-card-visible .gb-text > .gb-message,
+  .gb-enter-zoom.gb-card-visible .gb-text > .gb-name,
+  .gb-enter-zoom.gb-card-visible .gb-page-indicator { animation-name: gbEnterZoom; }
+  @keyframes gbEnterSlideLeft { from { opacity: 0; transform: translateX(-4vw); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes gbEnterSlideRight { from { opacity: 0; transform: translateX(4vw); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes gbEnterZoom { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
 
   /* Marge en vw (comme la taille du guillemet) et non en vh : identique en 16:9 (-2vh = -1.125vw), mais
      ne vient plus mordre sur la 1re ligne du message sur un écran vertical. Discret : présent sans
@@ -402,6 +429,8 @@ export default function GuestbookDisplayPage() {
   // Page courante d'un message présenté en deux temps (voir splitMessageForDisplay) — toujours 0
   // pour un message qui tient sur un seul écran.
   const [pageIndex, setPageIndex] = useState(0);
+  const [entryStyle, setEntryStyle] = useState(ENTRY_STYLES[0]);
+  const presentedCountRef = useRef(0);
   const [visible, setVisible] = useState(true);
   // Photo qui n'a pas pu s'afficher (fichier supprimé entre-temps...) : on retombe sur le
   // message seul plutôt que d'afficher un cadre cassé.
@@ -439,6 +468,7 @@ export default function GuestbookDisplayPage() {
   const startFromReady = () => {
     shownRef.current = new Set();
     saveShown(slug, shownRef.current);
+    presentedCountRef.current = 0;
     setCurrentEntry(null);
     setIntroStep(0);
     setCountdownValue(COUNTDOWN_START);
@@ -559,6 +589,8 @@ export default function GuestbookDisplayPage() {
     if (entry.photo?.url) await preloadImage(entry.photo.url);
     setFailedPhotoId(null);
     setPageIndex(0);
+    setEntryStyle(ENTRY_STYLES[presentedCountRef.current % ENTRY_STYLES.length]);
+    presentedCountRef.current += 1;
     setCurrentEntry(entry);
     setVisible(false);
     presentingRef.current = false;
@@ -736,7 +768,7 @@ export default function GuestbookDisplayPage() {
             ) : (
               <div
                 key={currentEntry.id}
-                className={`gb-card${entryPhoto ? ' gb-card-photo' : ''} ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}
+                className={`gb-card${entryPhoto ? ' gb-card-photo' : ''} gb-enter-${entryStyle} ${visible ? 'gb-card-visible' : 'gb-card-hidden'}`}
               >
                 {entryPhoto && (
                   <figure
