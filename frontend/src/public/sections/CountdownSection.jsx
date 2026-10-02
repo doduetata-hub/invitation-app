@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { getEventTimestamp } from '../../shared/utils/eventDateTime';
 
-function getTimeParts(targetDate) {
-  const diff = Math.max(0, new Date(targetDate).getTime() - Date.now());
+function getTimeParts(targetTimestamp) {
+  const diff = Math.max(0, targetTimestamp - Date.now());
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
   const minutes = Math.floor((diff / (1000 * 60)) % 60);
@@ -10,16 +11,18 @@ function getTimeParts(targetDate) {
 }
 
 export default function CountdownSection({ invitation }) {
-  const { eventDate } = invitation;
-  const [parts, setParts] = useState(() => (eventDate ? getTimeParts(eventDate) : null));
+  const { eventDate, eventTime } = invitation;
+  const target = getEventTimestamp(eventDate, eventTime);
+  const [parts, setParts] = useState(() => (target !== null ? getTimeParts(target) : null));
 
   useEffect(() => {
-    if (!eventDate) return;
-    const interval = setInterval(() => setParts(getTimeParts(eventDate)), 1000);
+    if (target === null) return;
+    setParts(getTimeParts(target));
+    const interval = setInterval(() => setParts(getTimeParts(target)), 1000);
     return () => clearInterval(interval);
-  }, [eventDate]);
+  }, [target]);
 
-  if (!eventDate || !parts) return null;
+  if (target === null || !parts) return null;
 
   const units = [
     { label: 'Jours', value: parts.days },

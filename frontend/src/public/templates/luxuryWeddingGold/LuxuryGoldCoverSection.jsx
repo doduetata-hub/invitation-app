@@ -1,5 +1,6 @@
 import { injectStylesOnce } from '../../utils/injectStyles';
 import { buildMapsUrl } from '../../utils/mapsUrl';
+import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { CalendarIcon, ClockIcon, PinIcon, MapIcon, HeartIcon, ChevronDownIcon, DiamondIcon, SparkleIcon } from './icons';
 import leafBranchLeft from './assets/leaf-branch-left.webp';
 import leafBranchRight from './assets/leaf-branch-right.webp';
@@ -84,7 +85,7 @@ export default function LuxuryGoldCoverSection({ invitation }) {
   const namePair = splitNames(namesLine);
 
   const formattedDate = eventDate
-    ? new Date(eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? formatEventDate(eventDate)
     : null;
 
   const infoCells = [

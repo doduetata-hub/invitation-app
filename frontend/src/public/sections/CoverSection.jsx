@@ -1,9 +1,11 @@
+import { formatEventDate } from '../../shared/utils/eventDateTime';
+
 export default function CoverSection({ invitation }) {
   const { title, namesLine, eventDate, dressCode } = invitation;
   const coverUrl = (invitation.media || []).find((m) => m.type === 'cover')?.url;
 
   const formattedDate = eventDate
-    ? new Date(eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? formatEventDate(eventDate)
     : null;
 
   return (

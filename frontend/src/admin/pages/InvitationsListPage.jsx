@@ -105,7 +105,7 @@ export default function InvitationsListPage() {
                 </td>
                 <td>{inv.template.name}</td>
                 <td>
-                  {inv.eventDate ? new Date(inv.eventDate).toLocaleDateString('fr-FR') : '—'}
+                  {inv.eventDate ? new Date(inv.eventDate).toLocaleDateString('fr-FR', { timeZone: 'UTC' }) : '—'}
                 </td>
                 <td>
                   <span className={STATUS_BADGE_CLASS[inv.status]}>{STATUS_LABELS[inv.status]}</span>
