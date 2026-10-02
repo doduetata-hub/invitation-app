@@ -20,13 +20,16 @@ export default function GuestbookLivePreview({ guestName, message, photo, tableN
   return (
     <div style={styles.stage}>
       <p style={styles.stageLabel}>Aperçu — ce que verra la salle</p>
-      <div style={{ ...styles.card, flexDirection: hasPhoto ? 'row' : 'column' }}>
+      <div style={{ ...styles.card, flexDirection: hasPhoto ? 'row' : 'column', flexWrap: hasPhoto ? 'wrap' : 'nowrap' }}>
         {hasPhoto && (
           <div style={{ ...styles.photoFrame, ...frameSize }}>
             <img src={photo.thumbUrl || photo.url} alt="" style={styles.photoImg} />
           </div>
         )}
-        <div style={styles.textCol}>
+        {/* flex-basis 220px + wrap : tant qu'il y a la place (fenêtre d'ordinateur), la photo reste à
+            côté du texte ; sur un écran étroit (téléphone), le texte passe SOUS la photo, sur toute
+            la largeur, au lieu d'être écrasé dans une colonne de quelques lettres. */}
+        <div style={hasPhoto ? { ...styles.textCol, flex: '1 1 220px' } : styles.textCol}>
           <p style={styles.quote} aria-hidden="true">"</p>
           <p style={styles.message}>{message}</p>
           <p style={styles.name}>— {guestName}</p>
@@ -50,6 +53,7 @@ const styles = {
   card: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '1.1rem',
     padding: '1.2rem',
     borderRadius: '10px',
