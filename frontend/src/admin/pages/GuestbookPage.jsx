@@ -31,6 +31,21 @@ export default function GuestbookPage() {
   const [savingToken, setSavingToken] = useState(false);
   const [busyIds, setBusyIds] = useState(new Set());
   const [savingAutoApprove, setSavingAutoApprove] = useState(false);
+  const [regieCopied, setRegieCopied] = useState(false);
+
+  // Lien à confier à la régie de la salle : il ouvre le mode écran sur un bouton « Lancer » (voir
+  // ?regie=1 dans GuestbookDisplayPage). Le presse-papiers peut être refusé (page non sécurisée,
+  // permission) : on affiche alors le lien pour le copier à la main.
+  const copyRegieLink = async () => {
+    const link = `${window.location.origin}/guestbook/${invitation.slug}/display?regie=1`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setRegieCopied(true);
+      setTimeout(() => setRegieCopied(false), 2500);
+    } catch {
+      window.prompt('Copiez ce lien (Ctrl+C) :', link);
+    }
+  };
 
   const loadEntries = () => api.get(`/invitations/${id}/guestbook`).then(setData).catch((err) => setError(err.message));
   const loadTokens = () => api.get(`/invitations/${id}/guestbook/qr-tokens`).then(setTokens).catch((err) => setError(err.message));
@@ -227,6 +242,14 @@ export default function GuestbookPage() {
         </div>
         {invitation.status === 'PUBLISHED' && (
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={copyRegieLink}
+              title="Lien à envoyer à la régie de la salle : il ouvre l'écran sur un bouton « Lancer », sans identifiant. Un clic lance tout depuis le début, avec la musique."
+            >
+              {regieCopied ? '✓ Lien copié' : '📋 Copier le lien régie'}
+            </button>
             <a
               href={`/guestbook/${invitation.slug}/display?reset=1`}
               target="_blank"

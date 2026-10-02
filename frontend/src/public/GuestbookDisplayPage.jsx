@@ -162,6 +162,16 @@ injectStylesOnce(
   }
   .gb-music-btn:hover { background: rgba(17,17,17,0.8); }
 
+  /* Écran "Prêt" du mode régie (voir ?regie=1) : un seul gros bouton, impossible à manquer. */
+  .gb-start-btn {
+    font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.2em;
+    font-size: clamp(1rem, 1.3vw, 2.4rem); padding: 1.1em 2.6em; margin-top: 4vh;
+    border-radius: 999px; border: 1px solid #D6B56D; background: rgba(216,181,109,0.14);
+    color: #F7F1E5; cursor: pointer; backdrop-filter: blur(4px);
+  }
+  .gb-start-btn:hover, .gb-start-btn:focus-visible { background: rgba(216,181,109,0.3); outline: none; }
+  .gb-ready-hint { font-family: 'Inter', sans-serif; font-size: clamp(0.8rem, 0.9vw, 1.6rem); color: #F7F1E5; opacity: 0.55; margin: 2.5vh 0 0; }
+
   @media (prefers-reduced-motion: reduce) {
     .gb-glow, .gb-particle, .gb-photo-bg, .gb-mist { animation: none !important; }
     .gb-fade-rise { animation: gbFadeOnly 500ms ease both; }
@@ -398,6 +408,11 @@ export default function GuestbookDisplayPage() {
   const [failedPhotoId, setFailedPhotoId] = useState(null);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const audioRef = useRef(null);
+  // Mode régie (?regie=1) : la page s'ouvre sur un écran "Prêt" et ne démarre qu'au clic sur
+  // "Lancer" (la régie de la salle choisit le bon moment). Le clic efface aussi la mémoire des
+  // messages déjà présentés : chaque lancement rejoue donc tout depuis le début, et un essai fait
+  // plus tôt dans la soirée ne "consomme" rien. Lu une seule fois : l'adresse ne change pas ensuite.
+  const [regieMode] = useState(() => new URLSearchParams(window.location.search).has('regie'));
   const shownRef = useRef(null);
   if (shownRef.current === null) shownRef.current = loadShown(slug);
   const entriesRef = useRef([]);
@@ -415,17 +430,30 @@ export default function GuestbookDisplayPage() {
       .then((d) => {
         setData(d);
         setEntries(d.entries || []);
-        setPhase('countdown');
+        setPhase(regieMode ? 'ready' : 'countdown');
       })
       .catch(() => setNotFound(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  const startFromReady = () => {
+    shownRef.current = new Set();
+    saveShown(slug, shownRef.current);
+    setCurrentEntry(null);
+    setIntroStep(0);
+    setCountdownValue(COUNTDOWN_START);
+    // Ce clic est un geste de l'utilisateur : le navigateur autorise donc la musique, contrairement
+    // à un démarrage automatique à l'ouverture de la page.
+    audioRef.current?.play().then(() => setMusicPlaying(true)).catch(() => setMusicPlaying(false));
+    setPhase('countdown');
+  };
 
   // Cet écran tourne seul, sans personne pour cliquer "Jouer" — on tente donc le démarrage
   // automatique dès que possible. Si le navigateur le bloque (politique anti-autoplay tant
   // qu'aucune interaction n'a eu lieu sur la page), le bouton musical reste affiché et permet
   // de démarrer manuellement d'un seul clic ; une fois lancée, la musique boucle sans y retoucher.
   useEffect(() => {
-    if (!data?.musicUrl || !audioRef.current) return;
+    if (!data?.musicUrl || !audioRef.current || regieMode) return;
     audioRef.current
       .play()
       .then(() => setMusicPlaying(true))
@@ -664,6 +692,19 @@ export default function GuestbookDisplayPage() {
             {musicPlaying ? '♪' : '🔇'}
           </button>
         </>
+      )}
+
+      {phase === 'ready' && (
+        <div className="gb-intro">
+          <p className="gb-countdown-caption gb-fade-rise">Livre d'or — {data.namesLine || data.title}</p>
+          <button type="button" className="gb-start-btn" onClick={startFromReady} autoFocus>
+            ▶ Lancer le livre d'or
+          </button>
+          <p className="gb-ready-hint">
+            {entries.length} message{entries.length > 1 ? 's' : ''} prêt{entries.length > 1 ? 's' : ''}
+            {data.musicUrl ? ' · musique incluse' : ''} · tout démarre au clic
+          </p>
+        </div>
       )}
 
       {phase === 'countdown' && (
