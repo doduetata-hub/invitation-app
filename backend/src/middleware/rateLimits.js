@@ -23,20 +23,34 @@ function isDisplayDataRequest(req) {
   return req.method === 'GET' && DISPLAY_DATA_PATH.test(req.path);
 }
 
-const apiLimiter = rateLimit({
-  windowMs: WINDOW_MS,
-  limit: API_LIMIT,
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Comptée à part par displayLimiter (voir guestbookAccess.routes.js).
-  skip: isDisplayDataRequest,
-});
+// Fabriques : chaque limiteur a son propre compteur en mémoire. L'application en utilise un seul de
+// chaque (ci-dessous) ; les tests en créent de neufs pour que les compteurs ne se mélangent pas.
+function createApiLimiter() {
+  return rateLimit({
+    windowMs: WINDOW_MS,
+    limit: API_LIMIT,
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Comptée à part par displayLimiter (voir guestbookAccess.routes.js).
+    skip: isDisplayDataRequest,
+  });
+}
 
-const displayLimiter = rateLimit({
-  windowMs: WINDOW_MS,
-  limit: DISPLAY_LIMIT,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+function createDisplayLimiter() {
+  return rateLimit({
+    windowMs: WINDOW_MS,
+    limit: DISPLAY_LIMIT,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+}
 
-module.exports = { apiLimiter, displayLimiter, isDisplayDataRequest, API_LIMIT, DISPLAY_LIMIT };
+module.exports = {
+  apiLimiter: createApiLimiter(),
+  displayLimiter: createDisplayLimiter(),
+  createApiLimiter,
+  createDisplayLimiter,
+  isDisplayDataRequest,
+  API_LIMIT,
+  DISPLAY_LIMIT,
+};
