@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { injectStylesOnce } from './utils/injectStyles';
 import { durationForText } from '../shared/utils/guestbookTiming';
@@ -13,7 +13,7 @@ const POLL_INTERVAL_MS = 2000;
 injectStylesOnce(
   'guestbook-display',
   `
-  .gb-display { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(circle at 50% 20%, #201a10 0%, #111111 55%, #0a0908 100%); font-family: 'Cormorant Garamond', Georgia, serif; }
+  .gb-display { position: fixed; inset: 0; overflow: hidden; overflow: clip; background: radial-gradient(circle at 50% 20%, #201a10 0%, #111111 55%, #0a0908 100%); font-family: 'Cormorant Garamond', Georgia, serif; }
   /* 50% 22% : même cadrage que LuxuryGoldCoverSection pour cette photo (remonte le point de
      recadrage, sinon "cover" + position centrée coupe le haut des visages sur un plan large).
      La photo du couple reste volontairement très sombre (opacity/brightness bas) : un simple
@@ -75,18 +75,19 @@ injectStylesOnce(
   .gb-divider-line { display: block; height: max(1px, calc(var(--u) * 0.07)); width: calc(var(--u) * 17); background: linear-gradient(90deg, transparent, #D9AE62); }
   .gb-divider-line:last-child { background: linear-gradient(90deg, #D9AE62, transparent); }
   .gb-heart { width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6); display: block; filter: drop-shadow(0 0 calc(var(--u) * 0.4) rgba(226,172,84,0.5)); }
-  .gb-title-sub { margin: calc(var(--u) * 0.7) 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: calc(var(--u) * 1.3); letter-spacing: 0.2em; text-transform: uppercase; color: #EBCF93; }
+  .gb-title-sub { margin: calc(var(--u) * 0.45) 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: calc(var(--u) * 1); line-height: 1.15; letter-spacing: 0.18em; text-transform: uppercase; color: #EBCF93; }
 
   /* Liste : de haut en bas, le plus récent EN HAUT. Les 2.4u de marge interne haute laissent la place
-     au glissement d'entrée sans que rien soit rogné. */
-  .gb-thread { position: absolute; z-index: 2; left: calc(var(--u) * 7); right: calc(var(--u) * 36); top: calc(var(--u) * 8.7); bottom: calc(var(--u) * 6.1); padding-top: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(var(--u) * 3); overflow: hidden; }
+     au glissement d'entrée sans que rien soit rogné ; le masque estompe cette marge, de sorte qu'un
+     long message qui remonte en s'écrivant (voir keepWordVisible) disparaît en fondu sous le titre. */
+  .gb-thread { position: absolute; z-index: 2; left: calc(var(--u) * 7); right: calc(var(--u) * 36); top: calc(var(--u) * 8.7); bottom: calc(var(--u) * 6.1); padding-top: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(var(--u) * 3); overflow: hidden; overflow: clip; -webkit-mask-image: linear-gradient(180deg, transparent calc(var(--u) * 1.8), #000 calc(var(--u) * 2.4)); mask-image: linear-gradient(180deg, transparent calc(var(--u) * 1.8), #000 calc(var(--u) * 2.4)); }
   .gb-thread-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding-left: calc(var(--u) * 8); }
   .gb-thread-empty .gb-waiting { font-size: calc(var(--u) * 2); animation: gbWaitingPulse 4200ms ease-in-out infinite; }
   @keyframes gbWaitingPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
   .gb-row { display: flex; flex: none; width: 100%; }
-  .gb-msg { display: flex; align-items: flex-start; gap: calc(var(--u) * 2.2); min-width: 0; max-width: calc(var(--u) * 54.6); animation: gbMsgIn 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both var(--gb-delay, 0ms); }
+  .gb-msg { display: flex; align-items: flex-start; gap: calc(var(--u) * 2.2); min-width: 0; max-width: calc(var(--u) * 54.6); animation: gbMsgIn 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both var(--gb-delay, 0ms); transition: margin-top 800ms cubic-bezier(0.3, 0.6, 0.2, 1); }
   .gb-msg.gb-leaving { animation: gbMsgOut 800ms ease both; }
   .gb-mcol { flex: 1 1 auto; min-width: 0; padding-top: calc(var(--u) * 0.1); }
 
@@ -105,10 +106,6 @@ injectStylesOnce(
   /* Le message, directement sur le fond (aucune bulle). */
   .gb-mbody { max-width: calc(var(--u) * 44); margin-top: calc(var(--u) * 0.7); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 480ms); }
   .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: calc(var(--u) * 54.6); }
-
-  .gb-probe { position: absolute; left: 0; top: 0; width: 100%; visibility: hidden; pointer-events: none; }
-  .gb-probe-msg { animation: none !important; width: calc(var(--u) * 54.6); }
-  .gb-probe-msg *, .gb-probe-msg *::after { animation: none !important; }
 
   @keyframes gbMsgIn { from { opacity: 0; transform: translateY(calc(var(--u) * -1.8)); } to { opacity: 1; transform: translateY(0); } }
   @keyframes gbMsgOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(calc(var(--u) * 1.2)); } }
@@ -130,7 +127,6 @@ injectStylesOnce(
   .gb-w-last { position: relative; }
   .gb-w-last::after { content: ''; position: absolute; inset-inline-end: calc(var(--u) * -0.3); top: 12%; bottom: 6%; width: max(2px, calc(var(--u) * 0.12)); background: #E3B866; box-shadow: 0 0 calc(var(--u) * 0.6) rgba(227,184,102,0.7); animation: gbCaretBlink 1050ms steps(1) infinite; }
   @keyframes gbCaretBlink { 0%, 58% { opacity: 1; } 59%, 100% { opacity: 0; } }
-  .gb-bpage { margin: calc(var(--u) * 0.4) 0 0; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: calc(var(--u) * 1); color: #C9A45E; opacity: 0.75; }
   /* Emojis conservés dans la donnée (jamais modifiés), juste neutralisés visuellement. */
   .gb-emoji { filter: grayscale(0.85) opacity(0.6) brightness(0.9); font-size: 0.9em; }
 
@@ -151,7 +147,6 @@ injectStylesOnce(
     .gb-display { --u: 2.6vw; }
     .gb-thread { left: 4vw; right: 4vw; }
     .gb-msg, .gb-mbody, .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: 100%; }
-    .gb-probe-msg { width: 100%; }
     .gb-live .gb-photo-bg { width: 100%; opacity: 0.25; }
   }
 
@@ -215,7 +210,7 @@ function renderMessageWithSoberEmoji(text) {
 }
 
 // Charge une image AVANT de l'afficher : le message n'apparaît pas avec un cadre vide, et sa
-// mesure de mise en page (voir planBubble) se fait sur la photo réellement dimensionnée.
+// mise en page ne bouge pas quand elle arrive.
 // Résout dans tous les cas (erreur, délai dépassé) — une photo cassée ne doit jamais bloquer
 // l'affichage, il continue simplement avec le message seul.
 function preloadImage(url, timeoutMs = 5000) {
@@ -279,22 +274,19 @@ const LEAVE_MS = 900;
 const MOVE_MS = 700;
 // durationForText plafonne à 14 s dès 280 caractères : un témoignage de 600 ou 900 caractères doit
 // pourtant rester proportionnellement plus longtemps (on ne le coupe plus en deux écrans de 14 s
-// comme avant, il est présenté d'un seul tenant quand il tient, voir planBubble). Au-delà de 280
+// comme avant : il s'écrit d'un seul tenant, voir keepWordVisible). Au-delà de 280
 // caractères, chaque caractère ajoute ce temps de lecture (≈ 25 caractères par seconde).
 const LONG_TEXT_CHARS = 280;
 const EXTRA_MS_PER_CHAR = 40;
 function readingTime(text) {
   return durationForText(text) + Math.max(0, (text || '').length - LONG_TEXT_CHARS) * EXTRA_MS_PER_CHAR;
 }
-// Une photo se regarde en plus de se lire : temps ajouté à la première page d'un témoignage illustré.
+// Une photo se regarde en plus de se lire : temps ajouté à un témoignage illustré.
 const PHOTO_DWELL_BONUS_MS = 3000;
 // Au-delà de ce temps (messages moyens et longs, voir durationForText), deux témoignages
 // consécutifs ralentissent la cadence : le suivant garde LONG_SLOWDOWN fois son temps habituel.
 const LONG_DWELL_MS = 11000;
 const LONG_SLOWDOWN = 1.2;
-// Garde-fou : un message ne dépasse jamais 1000 caractères (limite du formulaire), donc quelques
-// pages au plus ; au-delà de ce nombre la mise en page n'est de toute façon plus pertinente.
-const MAX_PAGES = 6;
 
 // ===== Écriture progressive (révélation mot après mot) =========================================
 // Pure mise en scène visuelle d'un témoignage DÉJÀ soumis et approuvé : le texte affiché à la fin
@@ -303,9 +295,8 @@ const MAX_PAGES = 6;
 // l'ajuster sur place sans redéployer.
 const TYPING_WORDS_PER_SECOND = 4;
 // Avant le premier mot : la bulle, le nom et la photo se révèlent d'abord (voir --gb-delay et les
-// animations .gb-bphoto / .gb-bname). Deuxième page d'un long message : reprise plus courte.
+// animations .gb-bphoto / .gb-bname).
 const TYPING_LEAD_MS = 1300;
-const TYPING_LEAD_NEXT_PAGE_MS = 350;
 // Pauses naturelles, ajoutées APRÈS le mot concerné : fin de phrase, virgule, saut de ligne. Jamais
 // après chaque mot, jamais aléatoires : le rythme reste prévisible et ne ressemble pas à un blocage.
 const TYPING_PAUSE_STRONG_MS = 380;
@@ -401,9 +392,6 @@ function getTyping(text, wordsPerSecond) {
   return typing;
 }
 
-// Cherche, près de la position idéale, la frontière de phrase (ou de paragraphe) la plus proche,
-// sinon la plus proche espace — jamais en plein mot. Retourne la position où commence la page
-// suivante.
 // Cadrage de la photo d'un invité dans son cercle (object-fit: cover remplit le cercle sans jamais
 // déformer l'image). Les visages sont statistiquement dans la moitié haute d'un portrait : le point
 // de cadrage par défaut remonte donc (12 % en portrait, 32 % sinon) pour ne pas couper le
@@ -422,111 +410,26 @@ function threadInnerHeight(el) {
   return el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
 }
 
-function findCut(message, ideal, from) {
-  const radius = Math.max(60, Math.floor(message.length * 0.12));
-  const lo = Math.max(from + 1, ideal - radius);
-  const hi = Math.min(message.length - 1, ideal + radius);
-
-  let cut = -1;
-  let bestDistance = Infinity;
-  const boundary = /[.!?…]\s|\n/g;
-  boundary.lastIndex = lo;
-  let match = boundary.exec(message);
-  while (match && match.index < hi) {
-    const pos = match.index + match[0].length;
-    const distance = Math.abs(pos - ideal);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      cut = pos;
-    }
-    match = boundary.exec(message);
-  }
-  if (cut !== -1) return cut;
-
-  for (let offset = 0; offset <= radius; offset += 1) {
-    if (ideal + offset < message.length && message[ideal + offset] === ' ') return ideal + offset + 1;
-    if (ideal - offset > from && message[ideal - offset] === ' ') return ideal - offset + 1;
-  }
-  return Math.max(from + 1, ideal);
-}
-
-// Coupe un message en `count` pages d'à peu près la même longueur. Rien n'est jamais supprimé :
-// la concaténation des pages redonne tout le texte (aux espaces de coupe près).
-function splitMessageIntoPages(message, count) {
-  if (!message || count < 2) return [message || ''];
-  const pages = [];
-  let start = 0;
-  for (let k = 1; k < count; k += 1) {
-    const cut = findCut(message, Math.round((message.length * k) / count), start);
-    pages.push(message.slice(start, cut).trim());
-    start = cut;
-  }
-  pages.push(message.slice(start).trim());
-  const nonEmpty = pages.filter(Boolean);
-  return nonEmpty.length ? nonEmpty : [message];
-}
-
-// Mesure la hauteur réelle qu'aurait un message (mêmes classes, donc mêmes polices et mêmes largeurs
-// que l'affichage) en le construisant hors-champ dans le fil. Éléments créés un à un avec
-// textContent (jamais innerHTML) : le texte de l'invité ne peut jamais être interprété comme du HTML.
-function measureBubble(threadEl, { guestName, text, photo }) {
-  const probe = document.createElement('div');
-  probe.className = 'gb-probe';
-  const msg = document.createElement('div');
-  msg.className = `gb-msg gb-probe-msg${photo?.url ? ' gb-has-photo' : ''}`;
-  if (photo?.url) {
-    // Cercle de taille fixe (en unités --u) : inutile d'y charger l'image pour mesurer.
-    const figure = document.createElement('figure');
-    figure.className = 'gb-bphoto';
-    msg.appendChild(figure);
-  }
-  const col = document.createElement('div');
-  col.className = 'gb-mcol';
-  const head = document.createElement('div');
-  head.className = 'gb-mhead';
-  const name = document.createElement('p');
-  name.className = 'gb-bname';
-  name.textContent = guestName;
-  const time = document.createElement('p');
-  time.className = 'gb-btime';
-  time.textContent = 'il y a quelques secondes';
-  head.append(name, time);
-  const body = document.createElement('div');
-  body.className = 'gb-mbody';
-  const message = document.createElement('p');
-  message.className = 'gb-btext';
-  message.dir = 'auto';
-  message.textContent = text;
-  body.appendChild(message);
-  col.append(head, body);
-  msg.appendChild(col);
-  probe.appendChild(msg);
-  threadEl.appendChild(probe);
-  const height = probe.offsetHeight;
-  threadEl.removeChild(probe);
-  return height;
-}
-
-// Décide de la présentation d'un témoignage d'après la place RÉELLEMENT disponible : une seule page
-// s'il tient dans la hauteur du fil ; sinon découpage en pages (jamais de police réduite, jamais de
-// texte tronqué).
-function planBubble(threadEl, entry) {
-  const photo = entry.photo?.url ? entry.photo : null;
+// Un message plus haut que le fil (texte très long) n'est ni coupé en pages ni répété sous un second
+// bloc : il reste UN seul bloc, qui se complète vers le bas, là où le message suivant apparaîtrait.
+// Quand le mot qui vient d'être écrit dépasse le bas du fil, le bloc remonte doucement (de deux
+// lignes à la fois, jamais au-delà de sa propre fin) ; le début, déjà lu, s'estompe sous le titre.
+// Un message qui tient dans le fil n'est jamais déplacé.
+function keepWordVisible(threadEl, wordEl) {
+  const msg = wordEl?.closest('.gb-msg');
+  if (!threadEl || !msg) return;
   const available = threadInnerHeight(threadEl);
-  const base = { guestName: entry.guestName, photo };
-
-  if (measureBubble(threadEl, { ...base, text: entry.message }) <= available) return { pages: [entry.message] };
-
-  let pages = [entry.message];
-  for (let count = 2; count <= MAX_PAGES; count += 1) {
-    pages = splitMessageIntoPages(entry.message, count);
-    // La photo n'illustre que la première page : les suivantes gagnent sa place pour le texte.
-    const fits = pages.every(
-      (text, i) => measureBubble(threadEl, { ...base, photo: i === 0 ? photo : null, text }) <= available
-    );
-    if (fits) break;
-  }
-  return { pages };
+  const full = msg.offsetHeight;
+  if (full <= available) return;
+  const shift = Number(msg.dataset.shift) || 0;
+  // Positions relatives au bloc : insensibles à son glissement d'entrée comme à sa remontée en cours.
+  const wordBottom = wordEl.getBoundingClientRect().bottom - msg.getBoundingClientRect().top;
+  if (wordBottom - shift <= available) return;
+  const line = parseFloat(window.getComputedStyle(wordEl.parentElement).lineHeight) || 0;
+  const next = Math.min(full - available, wordBottom - available + 2 * line);
+  if (next <= shift) return;
+  msg.dataset.shift = String(next);
+  msg.style.marginTop = `${-next}px`;
 }
 
 // "il y a quelques secondes", "il y a 2 minutes"... d'après l'heure d'approbation réelle du message
@@ -639,14 +542,14 @@ const BOKEH = [
 // page ne bouge jamais pendant l'écriture (pas de recalcul, les bulles plus anciennes ne sont pas
 // repoussées à chaque mot). Les mots sont ensuite révélés dans l'ordre d'origine en ajoutant une
 // classe directement sur les éléments : React ne refait aucun rendu à chaque mot.
-// startsRef (clé = bulle + page) mémorise l'instant de départ : si le composant est remonté en cours
+// startsRef (clé = message) mémorise l'instant de départ : si le composant est remonté en cours
 // d'écriture (remontage React, événement dupliqué), l'écriture reprend là où elle en était au lieu
 // de se relancer depuis le début. Le calendrier se lit sur l'horloge (performance.now) : chaque réveil
 // est calculé pour tomber à l'instant du mot suivant (aucune dérive qui s'accumule), un onglet
 // ralenti rattrape le temps écoulé en révélant les mots dus, et — contrairement à
 // requestAnimationFrame — rien ne se fige si la fenêtre est masquée ou recouverte, tout en réveillant
 // la page seulement 4 fois par seconde environ au lieu de 60.
-const TypedText = memo(function TypedText({ text, stampKey, startsRef, leadMs, wordsPerSecond }) {
+const TypedText = memo(function TypedText({ text, stampKey, startsRef, leadMs, wordsPerSecond, onReveal }) {
   const rootRef = useRef(null);
   const typing = getTyping(text, wordsPerSecond);
 
@@ -671,6 +574,7 @@ const TypedText = memo(function TypedText({ text, stampKey, startsRef, leadMs, w
         for (let i = revealed + 1; i <= latest; i += 1) words[i].classList.add('gb-on');
         words[latest].classList.add('gb-w-last');
         revealed = latest;
+        onReveal?.(words[latest]);
       }
       if (revealed < words.length - 1) {
         // Prochain réveil exactement à l'instant du mot suivant (calculé sur l'horloge, pas additionné).
@@ -721,8 +625,8 @@ export default function GuestbookDisplayPage() {
   const [countdownValue, setCountdownValue] = useState(COUNTDOWN_START);
   const [introStep, setIntroStep] = useState(0);
   // Le fil de conversation : les bulles actuellement à l'écran, de la plus ancienne (en haut) à la
-  // plus récente (affichée en haut). Chaque élément : { key, entry, pages, pageIndex, photo,
-  // photoFailed, leaving }.
+  // plus récente (affichée en haut). Chaque élément : { key, entry, photo, photoFailed, leaving,
+  // afterMove }.
   const [thread, setThread] = useState([]);
   const [layoutTick, setLayoutTick] = useState(0);
   const [tick, setTick] = useState(0);
@@ -895,22 +799,20 @@ export default function GuestbookDisplayPage() {
   const entryKey = (e) => `${e.id}:${hashText(e.message)}`;
   const nextUnseen = () => entriesRef.current.find((e) => !shownRef.current.has(entryKey(e))) || null;
 
-  // Délai avant le premier mot d'une page : une bulle qui arrive attend d'abord la fin du glissement
-  // des anciennes (MOVE_MS), puis la révélation de la bulle, du nom et de la photo (TYPING_LEAD_MS).
-  const typingLead = (item) =>
-    item.pageIndex === 0 ? (item.afterMove ? MOVE_MS : 0) + TYPING_LEAD_MS : TYPING_LEAD_NEXT_PAGE_MS;
+  // Délai avant le premier mot : un message qui arrive attend d'abord la fin du glissement des
+  // anciens (MOVE_MS), puis la révélation du nom et de la photo (TYPING_LEAD_MS).
+  const typingLead = (item) => (item.afterMove ? MOVE_MS : 0) + TYPING_LEAD_MS;
 
-  // Temps pendant lequel la dernière bulle (ou page) reste seule "en tête" avant que la suivante
-  // arrive : délai d'entrée + durée d'écriture (proportionnelle à la longueur) + temps de lecture une
-  // fois le texte complet (au moins HOLD_MIN_MS, plus pour un texte long ou une photo). Les bulles
-  // plus anciennes restent à l'écran tant que la place le permet — elles ont donc toujours eu au
-  // moins ce temps complet. Deux messages ne s'écrivent jamais en même temps : le suivant n'est
-  // lancé qu'à la fin de ce délai.
+  // Temps pendant lequel le dernier message reste seul "en tête" avant que le suivant arrive : délai
+  // d'entrée + durée d'écriture (proportionnelle à la longueur) + temps de lecture une fois le texte
+  // complet (au moins HOLD_MIN_MS, plus pour un texte long ou une photo). Les messages plus anciens
+  // restent à l'écran tant que la place le permet — ils ont donc toujours eu au moins ce temps
+  // complet. Deux messages ne s'écrivent jamais en même temps : le suivant n'est lancé qu'à la fin de
+  // ce délai.
   const pageTimeline = (item) => {
-    const text = item.pages[item.pageIndex];
+    const text = item.entry.message;
     const reading = readingTime(text);
-    const hold =
-      Math.max(HOLD_MIN_MS, Math.round(HOLD_READING_SHARE * reading)) + (item.pageIndex === 0 && item.photo ? PHOTO_DWELL_BONUS_MS : 0);
+    const hold = Math.max(HOLD_MIN_MS, Math.round(HOLD_READING_SHARE * reading)) + (item.photo ? PHOTO_DWELL_BONUS_MS : 0);
     const slowedHold = reading >= LONG_DWELL_MS && lastDwellRef.current >= LONG_DWELL_MS ? Math.round(hold * LONG_SLOWDOWN) : hold;
     lastDwellRef.current = reading;
     return typingLead(item) + getTyping(text, typingWps).total + slowedHold;
@@ -942,12 +844,9 @@ export default function GuestbookDisplayPage() {
       return;
     }
 
-    const { pages } = planBubble(threadRef.current, entry);
     const item = {
       key: entryKey(entry),
       entry,
-      pages,
-      pageIndex: 0,
       photo: entry.photo?.url ? entry.photo : null,
       photoFailed: false,
       leaving: false,
@@ -959,20 +858,11 @@ export default function GuestbookDisplayPage() {
     startDwell(item);
   };
 
-  // Chef d'orchestre : à chaque fin de temps de lecture (tick) ou nouvelle liste (entries), soit
-  // la dernière bulle passe à la page suivante de son message, soit le prochain message non
-  // présenté rejoint le fil, soit on attend (fil laissé tel quel, jamais de conclusion automatique
-  // : d'autres témoignages peuvent encore arriver pendant toute la réception).
+  // Chef d'orchestre : à chaque fin de temps de lecture (tick) ou nouvelle liste (entries), soit le
+  // prochain message non présenté rejoint le fil, soit on attend (fil laissé tel quel, jamais de
+  // conclusion automatique : d'autres témoignages peuvent encore arriver pendant toute la réception).
   useEffect(() => {
     if (phase !== 'loop' || presentingRef.current || dwellingRef.current) return;
-    const current = threadStateRef.current;
-    const last = current[current.length - 1];
-    if (last && last.pageIndex < last.pages.length - 1) {
-      const advanced = { ...last, pageIndex: last.pageIndex + 1 };
-      setThread((items) => items.map((i) => (i.key === last.key ? advanced : i)));
-      startDwell(advanced);
-      return;
-    }
     const next = nextUnseen();
     if (next) present(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1000,13 +890,16 @@ export default function GuestbookDisplayPage() {
   // Libère les minuteurs à la fermeture de la page.
   useEffect(() => () => clearTimeout(dwellTimerRef.current), []);
 
+  // Appelé à chaque mot révélé : un texte plus long que le fil remonte pour rester visible.
+  const onReveal = useCallback((wordEl) => keepWordVisible(threadRef.current, wordEl), []);
+
   // Mise en page du fil (avant la peinture, pour ne jamais montrer un état intermédiaire) :
   // 1. les bulles déjà présentes glissent doucement vers le haut quand une nouvelle arrive ;
   // 2. on garde les bulles les plus récentes qui tiennent dans la hauteur du fil, les plus
   //    anciennes sont marquées "leaving" (fondu de sortie) — jamais de chevauchement ni de texte
-  //    coupé. La plus récente est toujours conservée (sa mise en page, au besoin en pages, a déjà
-  //    été décidée à son arrivée, voir planBubble). Le nombre de bulles visibles n'est donc pas une
-  //    constante : il dépend de la place et de la longueur réelle des textes.
+  //    coupé. La plus récente est toujours conservée (si elle est trop longue pour le fil, elle
+  //    occupe seule l'écran et se complète vers le bas, voir keepWordVisible). Le nombre de messages visibles n'est donc pas une constante : il dépend de
+  //    la place et de la longueur réelle des textes.
   useLayoutEffect(() => {
     if (phase !== 'loop') return;
     const root = threadRef.current;
@@ -1182,7 +1075,7 @@ export default function GuestbookDisplayPage() {
           <div className="gb-thread" ref={threadRef}>
             {/* Le plus récent en haut : la liste est tenue du plus ancien au plus récent, affichée à l'envers. */}
             {[...thread].reverse().map((item) => {
-              const showPhoto = item.photo && !item.photoFailed && item.pageIndex === 0;
+              const showPhoto = item.photo && !item.photoFailed;
               const timeLabel = relativeTimeLabel(item.entry.approvedAt, now);
               return (
                 <div
@@ -1195,7 +1088,7 @@ export default function GuestbookDisplayPage() {
                 >
                   <div
                     className={`gb-msg${showPhoto ? ' gb-has-photo' : ''}${item.leaving ? ' gb-leaving' : ''}`}
-                    style={item.afterMove && item.pageIndex === 0 ? { '--gb-delay': `${MOVE_MS}ms` } : undefined}
+                    style={item.afterMove ? { '--gb-delay': `${MOVE_MS}ms` } : undefined}
                   >
                     {showPhoto && (
                       <figure className="gb-bphoto">
@@ -1216,19 +1109,17 @@ export default function GuestbookDisplayPage() {
                         {timeLabel && <p className="gb-btime">{timeLabel}</p>}
                       </div>
                       <div className="gb-mbody">
-                        {/* key = message + page : chaque page est écrite une seule fois, et un texte différent
-                            remonte toujours un composant neuf (jamais de mots déjà révélés d'un autre texte). */}
+                        {/* key = message : écrit une seule fois, et un texte différent remonte toujours un
+                            composant neuf (jamais de mots déjà révélés d'un autre texte). */}
                         <TypedText
-                          key={`${item.key}#${item.pageIndex}`}
-                          text={item.pages[item.pageIndex]}
-                          stampKey={`${item.key}#${item.pageIndex}`}
+                          key={item.key}
+                          text={item.entry.message}
+                          stampKey={item.key}
                           startsRef={typingStartsRef}
                           leadMs={typingLead(item)}
                           wordsPerSecond={typingWps}
+                          onReveal={onReveal}
                         />
-                        {item.pages.length > 1 && (
-                          <p className="gb-bpage">{item.pageIndex + 1} / {item.pages.length}</p>
-                        )}
                       </div>
                     </div>
                   </div>
