@@ -4,9 +4,9 @@ const cors = require('cors');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 
 const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/rateLimits');
 const { requireAuth } = require('./middleware/auth');
 const authRoutes = require('./routes/auth.routes');
 const clientsRoutes = require('./routes/clients.routes');
@@ -60,12 +60,8 @@ app.use(
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Limite générale (300 requêtes / 15 min / IP) ; la route de lecture de l'écran du livre d'or a la
+// sienne, voir middleware/rateLimits.js.
 app.use('/api', apiLimiter);
 
 // Les fichiers uploadés sont content-addressés (nom = UUID généré à l'upload, jamais réécrit

@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { getByToken, submitEntry, updateEntry, getEntryStatus, getDisplayData, streamDisplay } = require('../controllers/guestbookAccess.controller');
 const { uploadGuestbookPhoto } = require('../middleware/upload');
+const { displayLimiter } = require('../middleware/rateLimits');
 
 const router = express.Router();
 
@@ -14,7 +15,9 @@ const submitLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/display/:slug', getDisplayData);
+// displayLimiter : limite propre à cette lecture publique (écran de la salle, interrogé toutes les
+// 2 s), exclue de la limite générale de l'API — voir middleware/rateLimits.js.
+router.get('/display/:slug', displayLimiter, getDisplayData);
 router.get('/display/:slug/stream', streamDisplay);
 router.get('/:token', getByToken);
 // uploadGuestbookPhoto : photo facultative (multipart) ; un envoi JSON sans photo le traverse tel quel.
