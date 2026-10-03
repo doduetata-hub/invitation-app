@@ -57,7 +57,7 @@ injectStylesOnce(
      passe à droite, teintée sépia, fondue vers le noir ; le voile plein écran de l'intro est remplacé
      par de simples ombres en haut et en bas. */
   .gb-live { background: radial-gradient(ellipse at 24% 18%, #1b140c 0%, #0c0a07 52%, #060504 100%); }
-  .gb-live .gb-photo-bg { inset: 0 0 0 auto; width: 41%; background-position: 62% 16%; opacity: 0.92; filter: sepia(0.5) saturate(1.2) brightness(0.8) contrast(1.06); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 44%); mask-image: linear-gradient(90deg, transparent 0%, #000 44%); animation: none; }
+  .gb-live .gb-photo-bg { inset: 0 0 0 auto; width: 38%; background-position: 62% 16%; opacity: 0.92; filter: sepia(0.5) saturate(1.2) brightness(0.8) contrast(1.06); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 52%); mask-image: linear-gradient(90deg, transparent 0%, #000 52%); animation: none; }
   .gb-live .gb-overlay { background: linear-gradient(0deg, rgba(6,5,4,0.7) 0%, rgba(6,5,4,0) 24%), linear-gradient(180deg, rgba(6,5,4,0.35) 0%, rgba(6,5,4,0) 20%); }
   .gb-live .gb-glow-a { left: 32%; opacity: 0.5; }
 
@@ -75,39 +75,39 @@ injectStylesOnce(
   .gb-divider-line { display: block; height: max(1px, calc(var(--u) * 0.07)); width: calc(var(--u) * 17); background: linear-gradient(90deg, transparent, #D9AE62); }
   .gb-divider-line:last-child { background: linear-gradient(90deg, #D9AE62, transparent); }
   .gb-heart { width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6); display: block; filter: drop-shadow(0 0 calc(var(--u) * 0.4) rgba(226,172,84,0.5)); }
-  .gb-title-sub { margin: calc(var(--u) * 0.7) 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: calc(var(--u) * 1.2); letter-spacing: 0.22em; text-transform: uppercase; color: #EBCF93; }
+  .gb-title-sub { margin: calc(var(--u) * 0.7) 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: calc(var(--u) * 1.3); letter-spacing: 0.2em; text-transform: uppercase; color: #EBCF93; }
 
   /* Liste : de haut en bas, le plus récent EN HAUT. Les 2.4u de marge interne haute laissent la place
      au glissement d'entrée sans que rien soit rogné. */
-  .gb-thread { position: absolute; z-index: 2; left: calc(var(--u) * 11.7); right: calc(var(--u) * 33); top: calc(var(--u) * 8.7); bottom: calc(var(--u) * 6.1); padding-top: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(var(--u) * 2.4); overflow: hidden; }
+  .gb-thread { position: absolute; z-index: 2; left: calc(var(--u) * 7); right: calc(var(--u) * 36); top: calc(var(--u) * 8.7); bottom: calc(var(--u) * 6.1); padding-top: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(var(--u) * 3); overflow: hidden; }
   .gb-thread-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding-left: calc(var(--u) * 8); }
   .gb-thread-empty .gb-waiting { font-size: calc(var(--u) * 2); animation: gbWaitingPulse 4200ms ease-in-out infinite; }
   @keyframes gbWaitingPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
   .gb-row { display: flex; flex: none; width: 100%; }
-  .gb-msg { display: flex; align-items: flex-start; gap: calc(var(--u) * 2); min-width: 0; max-width: calc(var(--u) * 50.6); animation: gbMsgIn 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both var(--gb-delay, 0ms); }
+  .gb-msg { display: flex; align-items: flex-start; gap: calc(var(--u) * 2.2); min-width: 0; max-width: calc(var(--u) * 54.6); animation: gbMsgIn 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both var(--gb-delay, 0ms); }
   .gb-msg.gb-leaving { animation: gbMsgOut 800ms ease both; }
   .gb-mcol { flex: 1 1 auto; min-width: 0; padding-top: calc(var(--u) * 0.1); }
 
   /* Avatar : cercle parfait (largeur = hauteur, border-radius 50 %, overflow hidden), anneau doré,
      filet sombre intérieur et halo doré. object-fit: cover : jamais déformé ; point de cadrage
      (object-position) posé en ligne par photo. */
-  .gb-bphoto { position: relative; margin: 0; flex: none; box-sizing: border-box; width: calc(var(--u) * 7.1); height: calc(var(--u) * 7.1); aspect-ratio: 1 / 1; border-radius: 50%; overflow: hidden; line-height: 0; background: #14110c; border: calc(var(--u) * 0.2) solid #D9AE62; box-shadow: 0 0 calc(var(--u) * 1.5) rgba(228,182,94,0.5); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 150ms); }
+  .gb-bphoto { position: relative; margin: 0; flex: none; box-sizing: border-box; width: calc(var(--u) * 8.4); height: calc(var(--u) * 8.4); aspect-ratio: 1 / 1; border-radius: 50%; overflow: hidden; line-height: 0; background: #14110c; border: calc(var(--u) * 0.2) solid #D9AE62; box-shadow: 0 0 calc(var(--u) * 1.5) rgba(228,182,94,0.5); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 150ms); }
   .gb-bphoto::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 calc(var(--u) * 0.13) rgba(8,7,6,0.9); }
   .gb-bphoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
   .gb-mhead { animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 330ms); }
-  .gb-bname { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 1.14); line-height: 1.3; color: #F2D28C; }
-  .gb-btime { margin: calc(var(--u) * 0.08) 0 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 0.84); line-height: 1.3; color: #EDE3CF; opacity: 0.85; }
-  .gb-bname:dir(rtl) { font-size: calc(var(--u) * 1.4); }
+  .gb-bname { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 2.1); line-height: 1.25; color: #F2D28C; text-shadow: 0 0 calc(var(--u) * 1) rgba(0,0,0,0.85); }
+  .gb-btime { margin: calc(var(--u) * 0.08) 0 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 1.3); line-height: 1.3; color: #EDE3CF; opacity: 0.88; text-shadow: 0 0 calc(var(--u) * 0.8) rgba(0,0,0,0.85); }
+  .gb-bname.gb-rtl { font-size: calc(var(--u) * 2.4); letter-spacing: 0; text-transform: none; }
 
   /* Le message, directement sur le fond (aucune bulle). */
-  .gb-mbody { max-width: calc(var(--u) * 41.5); margin-top: calc(var(--u) * 0.4); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 480ms); }
-  .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: calc(var(--u) * 50.6); }
+  .gb-mbody { max-width: calc(var(--u) * 44); margin-top: calc(var(--u) * 0.7); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 480ms); }
+  .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: calc(var(--u) * 54.6); }
 
   .gb-probe { position: absolute; left: 0; top: 0; width: 100%; visibility: hidden; pointer-events: none; }
-  .gb-probe-msg { animation: none !important; width: calc(var(--u) * 50.6); }
+  .gb-probe-msg { animation: none !important; width: calc(var(--u) * 54.6); }
   .gb-probe-msg *, .gb-probe-msg *::after { animation: none !important; }
 
   @keyframes gbMsgIn { from { opacity: 0; transform: translateY(calc(var(--u) * -1.8)); } to { opacity: 1; transform: translateY(0); } }
@@ -117,17 +117,20 @@ injectStylesOnce(
 
   /* white-space: pre-line : les paragraphes tapés par l'invité sont conservés. dir="auto" (posé dans
      le JSX) : un message en arabe ou autre écriture RTL se lit dans le bon sens. */
-  .gb-btext { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 1.04); line-height: 1.58; color: #F7F1E5; font-weight: 400; white-space: pre-line; overflow-wrap: break-word; text-wrap: pretty; }
+  .gb-btext { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 2.05); line-height: 1.42; color: #F7F1E5; font-weight: 400; text-shadow: 0 0 calc(var(--u) * 1.2) rgba(0,0,0,0.8); white-space: pre-line; overflow-wrap: break-word; text-wrap: pretty; }
   /* Écriture progressive : chaque mot est présent dans la mise en page mais invisible, puis se révèle
      (classe .gb-on posée par TypedText) avec un fondu court et une légère teinte champagne qui
      s'éteint vers l'ivoire. Le curseur doré est positionné en absolu après le dernier mot révélé :
      il ne change jamais la largeur de la ligne, donc jamais les retours à la ligne. */
+  /* Écriture arabe/RTL : la police de repli a des lettres plus petites que le latin à taille égale ; on
+     compense pour qu'elle reste lisible depuis le fond de la salle. */
+  .gb-btext.gb-rtl { font-size: calc(var(--u) * 2.6); line-height: 1.6; }
   .gb-w { opacity: 0; color: #EACB86; transition: opacity 260ms ease, color 900ms ease; }
   .gb-w.gb-on { opacity: 1; color: #F7F1E5; }
   .gb-w-last { position: relative; }
   .gb-w-last::after { content: ''; position: absolute; inset-inline-end: calc(var(--u) * -0.3); top: 12%; bottom: 6%; width: max(2px, calc(var(--u) * 0.12)); background: #E3B866; box-shadow: 0 0 calc(var(--u) * 0.6) rgba(227,184,102,0.7); animation: gbCaretBlink 1050ms steps(1) infinite; }
   @keyframes gbCaretBlink { 0%, 58% { opacity: 1; } 59%, 100% { opacity: 0; } }
-  .gb-bpage { margin: calc(var(--u) * 0.4) 0 0; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: calc(var(--u) * 0.6); color: #C9A45E; opacity: 0.7; }
+  .gb-bpage { margin: calc(var(--u) * 0.4) 0 0; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: calc(var(--u) * 1); color: #C9A45E; opacity: 0.75; }
   /* Emojis conservés dans la donnée (jamais modifiés), juste neutralisés visuellement. */
   .gb-emoji { filter: grayscale(0.85) opacity(0.6) brightness(0.9); font-size: 0.9em; }
 
@@ -136,9 +139,9 @@ injectStylesOnce(
   .gb-foot-center .gb-divider-line { width: calc(var(--u) * 12.5); }
   .gb-foot-center .gb-heart { width: calc(var(--u) * 1.5); height: calc(var(--u) * 1.5); }
   .gb-foot-script { margin: calc(var(--u) * 0.1) 0 0; font-family: 'Great Vibes', 'Dancing Script', cursive; font-size: calc(var(--u) * 2.4); line-height: 1.1; color: #E9C47A; text-shadow: 0 0 calc(var(--u) * 0.7) rgba(226,172,84,0.35); }
-  .gb-foot-music { position: absolute; z-index: 3; left: calc(var(--u) * 3.7); bottom: calc(var(--u) * 2); display: flex; align-items: center; gap: calc(var(--u) * 0.7); padding: 0; background: none; border: 0; cursor: pointer; font-family: 'Cormorant Garamond', Georgia, serif; font-size: calc(var(--u) * 0.98); color: #D9B66F; }
-  .gb-foot-music svg { width: calc(var(--u) * 1.8); height: calc(var(--u) * 1.8); }
-  .gb-foot-count { position: absolute; z-index: 3; right: calc(var(--u) * 3.6); bottom: calc(var(--u) * 2); display: flex; align-items: center; gap: calc(var(--u) * 1.2); font-size: calc(var(--u) * 0.98); color: #D9B66F; }
+  .gb-foot-music { position: absolute; z-index: 3; left: calc(var(--u) * 3.7); bottom: calc(var(--u) * 2); display: flex; align-items: center; gap: calc(var(--u) * 0.7); padding: 0; background: none; border: 0; cursor: pointer; font-family: 'Cormorant Garamond', Georgia, serif; font-size: calc(var(--u) * 1.25); color: #D9B66F; }
+  .gb-foot-music svg { width: calc(var(--u) * 2.2); height: calc(var(--u) * 2.2); }
+  .gb-foot-count { position: absolute; z-index: 3; right: calc(var(--u) * 3.6); bottom: calc(var(--u) * 2); display: flex; align-items: center; gap: calc(var(--u) * 1.2); font-size: calc(var(--u) * 1.25); color: #D9B66F; }
   .gb-dots { display: flex; align-items: center; gap: calc(var(--u) * 0.5); }
   .gb-dots i { display: block; width: calc(var(--u) * 0.62); height: calc(var(--u) * 0.62); border-radius: 50%; background: rgba(255,255,255,0.22); }
   .gb-dots i.on { width: calc(var(--u) * 0.8); height: calc(var(--u) * 0.8); background: #F3D58C; box-shadow: 0 0 calc(var(--u) * 0.5) rgba(243,213,140,0.7); }
@@ -315,6 +318,13 @@ const TYPING_SETTLE_MS = 300;
 const HOLD_MIN_MS = 3000;
 const HOLD_READING_SHARE = 0.4;
 
+// Texte écrit de droite à gauche (arabe, hébreu...) d'après sa première lettre : sert à agrandir
+// légèrement ces écritures dont la police de repli est plus petite (voir .gb-rtl).
+const RTL_FIRST_LETTER = /^[^\p{L}]*[֐-ࣿיִ-﷿ﹰ-﻿]/u;
+function isRtlText(text) {
+  return RTL_FIRST_LETTER.test(text || '');
+}
+
 function readTypingSpeed() {
   const raw = Number(new URLSearchParams(window.location.search).get('wps'));
   return Number.isFinite(raw) && raw >= 1 && raw <= 12 ? raw : TYPING_WORDS_PER_SECOND;
@@ -396,13 +406,13 @@ function getTyping(text, wordsPerSecond) {
 // suivante.
 // Cadrage de la photo d'un invité dans son cercle (object-fit: cover remplit le cercle sans jamais
 // déformer l'image). Les visages sont statistiquement dans la moitié haute d'un portrait : le point
-// de cadrage par défaut remonte donc un peu (22 % en portrait, 32 % sinon) pour ne pas couper le
+// de cadrage par défaut remonte donc (12 % en portrait, 32 % sinon) pour ne pas couper le
 // haut de la tête. Si les données fournissent un point de cadrage (photo.focusX / photo.focusY, en
 // %), il est utilisé tel quel — le serveur n'en envoie pas aujourd'hui.
 function photoObjectPosition(photo) {
   const portrait = photo?.width && photo?.height && photo.width / photo.height < 0.85;
   const x = Number.isFinite(photo?.focusX) ? photo.focusX : 50;
-  const y = Number.isFinite(photo?.focusY) ? photo.focusY : portrait ? 22 : 32;
+  const y = Number.isFinite(photo?.focusY) ? photo.focusY : portrait ? 12 : 32;
   return `${x}% ${y}%`;
 }
 
@@ -676,7 +686,7 @@ const TypedText = memo(function TypedText({ text, stampKey, startsRef, leadMs, w
   }, [text, stampKey, wordsPerSecond]);
 
   return (
-    <p ref={rootRef} className="gb-btext" dir="auto">
+    <p ref={rootRef} className={`gb-btext${isRtlText(text) ? ' gb-rtl' : ''}`} dir="auto">
       {typing.units.map((unit, i) => (
         <span key={i} className="gb-w">{renderMessageWithSoberEmoji(unit)}</span>
       ))}
@@ -1202,7 +1212,7 @@ export default function GuestbookDisplayPage() {
                     )}
                     <div className="gb-mcol">
                       <div className="gb-mhead">
-                        <p className="gb-bname" dir="auto">{item.entry.guestName}</p>
+                        <p className={`gb-bname${isRtlText(item.entry.guestName) ? ' gb-rtl' : ''}`} dir="auto">{item.entry.guestName}</p>
                         {timeLabel && <p className="gb-btime">{timeLabel}</p>}
                       </div>
                       <div className="gb-mbody">
