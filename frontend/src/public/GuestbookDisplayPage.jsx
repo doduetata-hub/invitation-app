@@ -45,91 +45,111 @@ injectStylesOnce(
   .gb-intro-names { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 5vw, 12rem); color: #D6B56D; margin: 0; }
   .gb-intro-title { font-family: 'Playfair Display', serif; font-size: clamp(2.6rem, 3.75vw, 9rem); letter-spacing: 0.2em; text-transform: uppercase; color: #F7F1E5; margin: 0; }
 
-  /* ===== Mode conversation ==========================================================
-     Les témoignages forment un fil vivant : des bulles sobres, alternées à gauche et à droite,
-     empilées par le bas ; les plus anciennes quittent l'écran quand la place manque.
-     --u est l'unité de composition : 1vw sur un écran 16:9, ramenée à la hauteur sur un écran
-     moins large (1.7778vh = 1vw en 16:9). Tout est dimensionné en multiples de --u et SANS
-     plafond en pixels : la composition est la même en 1366x768, 1080p et 4K, qui profite de sa
-     résolution au lieu de rester minuscule. */
+  /* ===== Mode "Livre d'Or" (maquette) ==================================================
+     Titre en script doré ; liste de témoignages SANS bulle : avatar rond à anneau doré, nom, heure
+     relative, puis le message directement sur le fond. Le plus récent EN HAUT. Photo des mariés à
+     droite, feuilles dorées, bokeh, pied de page. --u est l'unité de composition : 1vw sur un écran
+     16:9, ramenée à la hauteur sur un écran moins large (1.7778vh = 1vw en 16:9). Toutes les mesures
+     sont des multiples de --u, SANS plafond en pixels : même composition en 1366x768, 1080p et 4K. */
   .gb-display { --u: min(1vw, 1.7778vh); }
 
-  .gb-thread-head { position: absolute; z-index: 1; top: calc(var(--u) * 2.6); left: 0; right: 0; margin: 0; text-align: center; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.3em; font-size: calc(var(--u) * 0.95); color: #B88A32; }
+  /* Décor propre à ce mode (classe .gb-live posée pendant la boucle seulement) : la photo des mariés
+     passe à droite, teintée sépia, fondue vers le noir ; le voile plein écran de l'intro est remplacé
+     par de simples ombres en haut et en bas. */
+  .gb-live { background: radial-gradient(ellipse at 24% 18%, #1b140c 0%, #0c0a07 52%, #060504 100%); }
+  .gb-live .gb-photo-bg { inset: 0 0 0 auto; width: 41%; background-position: 62% 16%; opacity: 0.92; filter: sepia(0.5) saturate(1.2) brightness(0.8) contrast(1.06); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 44%); mask-image: linear-gradient(90deg, transparent 0%, #000 44%); animation: none; }
+  .gb-live .gb-overlay { background: linear-gradient(0deg, rgba(6,5,4,0.7) 0%, rgba(6,5,4,0) 24%), linear-gradient(180deg, rgba(6,5,4,0.35) 0%, rgba(6,5,4,0) 20%); }
+  .gb-live .gb-glow-a { left: 32%; opacity: 0.5; }
 
-  .gb-thread { position: absolute; z-index: 1; left: calc(var(--u) * 6); right: calc(var(--u) * 6); top: calc(var(--u) * 7); bottom: calc(var(--u) * 1.6); padding-bottom: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: calc(var(--u) * 1.7); overflow: hidden; }
-  .gb-thread-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .gb-bokeh { position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(240,196,110,0.7) 0%, rgba(240,196,110,0.28) 50%, transparent 72%); filter: blur(calc(var(--u) * 0.5)); transform-origin: center; animation: gbBokeh 9s ease-in-out infinite alternate; }
+  @keyframes gbBokeh { from { opacity: 0.5; transform: scale(0.94); } to { opacity: 1; transform: scale(1.07); } }
+  .gb-leaf { position: absolute; z-index: 1; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 calc(var(--u) * 0.6) rgba(226,172,84,0.4)); }
+  .gb-leaf-tl { left: calc(var(--u) * -0.6); top: calc(var(--u) * -0.7); width: calc(var(--u) * 8.4); transform: rotate(-24deg); }
+  .gb-leaf-bl { left: calc(var(--u) * -2.4); bottom: calc(var(--u) * -3.4); width: calc(var(--u) * 13); opacity: 0.6; filter: blur(calc(var(--u) * 0.14)) drop-shadow(0 0 calc(var(--u) * 0.8) rgba(226,172,84,0.3)); transform: rotate(18deg); }
+  .gb-leaf-br { right: calc(var(--u) * -1.4); bottom: calc(var(--u) * 0.1); width: calc(var(--u) * 11); transform: scaleX(-1) rotate(-62deg); }
+
+  /* Titre */
+  .gb-title { position: absolute; z-index: 2; top: calc(var(--u) * 0.1); left: 0; right: 0; text-align: center; pointer-events: none; }
+  .gb-title-script { margin: 0; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 6.3); line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 calc(var(--u) * 0.7) rgba(226,170,80,0.35)); }
+  .gb-divider { display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 1); }
+  .gb-divider-line { display: block; height: max(1px, calc(var(--u) * 0.07)); width: calc(var(--u) * 17); background: linear-gradient(90deg, transparent, #D9AE62); }
+  .gb-divider-line:last-child { background: linear-gradient(90deg, #D9AE62, transparent); }
+  .gb-heart { width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6); display: block; filter: drop-shadow(0 0 calc(var(--u) * 0.4) rgba(226,172,84,0.5)); }
+  .gb-title-sub { margin: calc(var(--u) * 0.7) 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: calc(var(--u) * 1.2); letter-spacing: 0.22em; text-transform: uppercase; color: #EBCF93; }
+
+  /* Liste : de haut en bas, le plus récent EN HAUT. Les 2.4u de marge interne haute laissent la place
+     au glissement d'entrée sans que rien soit rogné. */
+  .gb-thread { position: absolute; z-index: 2; left: calc(var(--u) * 11.7); right: calc(var(--u) * 33); top: calc(var(--u) * 8.7); bottom: calc(var(--u) * 6.1); padding-top: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(var(--u) * 2.4); overflow: hidden; }
+  .gb-thread-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding-left: calc(var(--u) * 8); }
   .gb-thread-empty .gb-waiting { font-size: calc(var(--u) * 2); animation: gbWaitingPulse 4200ms ease-in-out infinite; }
   @keyframes gbWaitingPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
   .gb-row { display: flex; flex: none; width: 100%; }
-  .gb-row-left { justify-content: flex-start; }
-  .gb-row-right { justify-content: flex-end; }
+  .gb-msg { display: flex; align-items: flex-start; gap: calc(var(--u) * 2); min-width: 0; max-width: calc(var(--u) * 50.6); animation: gbMsgIn 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both var(--gb-delay, 0ms); }
+  .gb-msg.gb-leaving { animation: gbMsgOut 800ms ease both; }
+  .gb-mcol { flex: 1 1 auto; min-width: 0; padding-top: calc(var(--u) * 0.1); }
 
-  /* Bulle : contour fin, verre sombre légèrement teinté (ivoire à gauche, champagne à droite),
-     jamais de vert/vif, pas d'ombre appuyée. Un seul coin resserré côté parole, discrète allusion
-     à la bulle sans copier une messagerie. */
-  .gb-bubble {
-    position: relative; display: flex; align-items: center; gap: calc(var(--u) * 2);
-    box-sizing: border-box; max-width: calc(var(--u) * 58);
-    padding: calc(var(--u) * 1.5) calc(var(--u) * 2.1);
-    border-radius: calc(var(--u) * 1.7);
-    border: max(1px, calc(var(--u) * 0.07)) solid rgba(214,181,109,0.34);
-    background: linear-gradient(150deg, rgba(247,241,229,0.085) 0%, rgba(14,12,9,0.62) 62%);
-    animation: gbBubbleIn 1000ms cubic-bezier(0.2, 0.7, 0.2, 1) both, gbBubbleGlow 3200ms ease-out both;
-    animation-delay: var(--gb-delay, 0ms), var(--gb-delay, 0ms);
-  }
-  .gb-bubble-left { border-bottom-left-radius: calc(var(--u) * 0.45); }
-  .gb-bubble-right { flex-direction: row-reverse; border-bottom-right-radius: calc(var(--u) * 0.45); background: linear-gradient(210deg, rgba(227,197,127,0.11) 0%, rgba(14,12,9,0.62) 62%); }
-  /* Témoignage particulièrement long : plus large, plus d'air, sans halo — présentation posée. */
-  .gb-bubble.gb-featured { max-width: calc(var(--u) * 76); padding: calc(var(--u) * 2) calc(var(--u) * 2.8); animation: gbBubbleIn 1000ms cubic-bezier(0.2, 0.7, 0.2, 1) both var(--gb-delay, 0ms); }
-  .gb-bubble.gb-leaving { animation: gbBubbleOut 800ms ease both; }
-  .gb-probe { position: absolute; left: 0; top: 0; width: 100%; visibility: hidden; pointer-events: none; }
-  .gb-probe-bubble { animation: none !important; width: calc(var(--u) * 58); }
-  .gb-probe-bubble.gb-featured { width: calc(var(--u) * 76); }
-
-  @keyframes gbBubbleIn { from { opacity: 0; transform: translateY(calc(var(--u) * 2.2)); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes gbBubbleOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(calc(var(--u) * -1.2)); } }
-  @keyframes gbBubbleGlow { from { box-shadow: 0 0 calc(var(--u) * 2.6) rgba(216,181,109,0.26); } to { box-shadow: 0 0 0 rgba(216,181,109,0); } }
-  @keyframes gbPartIn { from { opacity: 0; transform: translateY(calc(var(--u) * 0.6)); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes gbFadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-  /* Photo de l'invité : ratio d'origine conservé (jamais recadré ni déformé), cadre fin doré. */
-  /* Photo d'invité : cercle parfait (largeur = hauteur, border-radius 50 %, overflow hidden), contour
-     doré fin, halo à peine perceptible. L'image remplit le cercle (object-fit: cover, jamais déformée) ;
-     son point de cadrage (object-position) est posé en ligne par photo. Épaisseurs et rayon du halo en
-     unités --u : le cercle reste rond et proportionné en 1080p comme en 4K. */
-  .gb-bphoto { margin: 0; flex: none; align-self: flex-start; box-sizing: border-box; width: calc(var(--u) * 8); height: calc(var(--u) * 8); aspect-ratio: 1 / 1; border-radius: 50%; overflow: hidden; line-height: 0; background: #14110c; border: max(1px, calc(var(--u) * 0.09)) solid rgba(214,181,109,0.78); box-shadow: 0 0 calc(var(--u) * 1.5) rgba(216,181,109,0.18); animation: gbPartIn 900ms ease both calc(var(--gb-delay, 0ms) + 250ms); }
+  /* Avatar : cercle parfait (largeur = hauteur, border-radius 50 %, overflow hidden), anneau doré,
+     filet sombre intérieur et halo doré. object-fit: cover : jamais déformé ; point de cadrage
+     (object-position) posé en ligne par photo. */
+  .gb-bphoto { position: relative; margin: 0; flex: none; box-sizing: border-box; width: calc(var(--u) * 7.1); height: calc(var(--u) * 7.1); aspect-ratio: 1 / 1; border-radius: 50%; overflow: hidden; line-height: 0; background: #14110c; border: calc(var(--u) * 0.2) solid #D9AE62; box-shadow: 0 0 calc(var(--u) * 1.5) rgba(228,182,94,0.5); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 150ms); }
+  .gb-bphoto::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 calc(var(--u) * 0.13) rgba(8,7,6,0.9); }
   .gb-bphoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-  .gb-bbody { flex: 1 1 auto; min-width: 0; align-self: center; }
-  .gb-bname { margin: 0 0 calc(var(--u) * 0.5); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.15em; font-size: calc(var(--u) * 1.1); font-weight: 500; color: #E3C57F; animation: gbPartIn 800ms ease both calc(var(--gb-delay, 0ms) + 450ms); }
-  /* white-space: pre-line : les paragraphes tapés par l'invité sont conservés. dir="auto" (posé
-     dans le JSX) : un message en arabe ou autre écriture RTL se lit dans le bon sens. */
-  .gb-btext { margin: 0; font-size: calc(var(--u) * 2.3); line-height: 1.35; color: #FFFDF8; font-weight: 600; text-shadow: 0 2px 18px rgba(0,0,0,0.55); white-space: pre-line; overflow-wrap: break-word; text-wrap: pretty; animation: gbPartIn 900ms ease both calc(var(--gb-delay, 0ms) + 150ms); }
-  /* Écritures arabes/RTL : pas d'espacement de lettres (il casserait leur liaison) ni de capitales, et
-     une taille un peu plus grande (la police latine n'a pas ces glyphes, le repli est plus petit). */
-  .gb-bname:dir(rtl) { letter-spacing: 0; text-transform: none; font-size: calc(var(--u) * 1.4); }
-  .gb-featured .gb-btext { line-height: 1.42; }
+  .gb-mhead { animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 330ms); }
+  .gb-bname { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 1.14); line-height: 1.3; color: #F2D28C; }
+  .gb-btime { margin: calc(var(--u) * 0.08) 0 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 0.84); line-height: 1.3; color: #EDE3CF; opacity: 0.85; }
+  .gb-bname:dir(rtl) { font-size: calc(var(--u) * 1.4); }
+
+  /* Le message, directement sur le fond (aucune bulle). */
+  .gb-mbody { max-width: calc(var(--u) * 41.5); margin-top: calc(var(--u) * 0.4); animation: gbPartIn 700ms ease both calc(var(--gb-delay, 0ms) + 480ms); }
+  .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: calc(var(--u) * 50.6); }
+
+  .gb-probe { position: absolute; left: 0; top: 0; width: 100%; visibility: hidden; pointer-events: none; }
+  .gb-probe-msg { animation: none !important; width: calc(var(--u) * 50.6); }
+  .gb-probe-msg *, .gb-probe-msg *::after { animation: none !important; }
+
+  @keyframes gbMsgIn { from { opacity: 0; transform: translateY(calc(var(--u) * -1.8)); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes gbMsgOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(calc(var(--u) * 1.2)); } }
+  @keyframes gbPartIn { from { opacity: 0; transform: translateY(calc(var(--u) * 0.5)); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes gbFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+  /* white-space: pre-line : les paragraphes tapés par l'invité sont conservés. dir="auto" (posé dans
+     le JSX) : un message en arabe ou autre écriture RTL se lit dans le bon sens. */
+  .gb-btext { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 1.04); line-height: 1.58; color: #F7F1E5; font-weight: 400; white-space: pre-line; overflow-wrap: break-word; text-wrap: pretty; }
   /* Écriture progressive : chaque mot est présent dans la mise en page mais invisible, puis se révèle
      (classe .gb-on posée par TypedText) avec un fondu court et une légère teinte champagne qui
      s'éteint vers l'ivoire. Le curseur doré est positionné en absolu après le dernier mot révélé :
      il ne change jamais la largeur de la ligne, donc jamais les retours à la ligne. */
-  .gb-w { opacity: 0; color: #E3C57F; transition: opacity 260ms ease, color 900ms ease; }
-  .gb-w.gb-on { opacity: 1; color: #FFFDF8; }
+  .gb-w { opacity: 0; color: #EACB86; transition: opacity 260ms ease, color 900ms ease; }
+  .gb-w.gb-on { opacity: 1; color: #F7F1E5; }
   .gb-w-last { position: relative; }
-  .gb-w-last::after { content: ''; position: absolute; inset-inline-end: calc(var(--u) * -0.25); top: 14%; bottom: 8%; width: max(2px, calc(var(--u) * 0.11)); background: #D6B56D; box-shadow: 0 0 calc(var(--u) * 0.6) rgba(216,181,109,0.65); animation: gbCaretBlink 1050ms steps(1) infinite; }
+  .gb-w-last::after { content: ''; position: absolute; inset-inline-end: calc(var(--u) * -0.3); top: 12%; bottom: 6%; width: max(2px, calc(var(--u) * 0.12)); background: #E3B866; box-shadow: 0 0 calc(var(--u) * 0.6) rgba(227,184,102,0.7); animation: gbCaretBlink 1050ms steps(1) infinite; }
   @keyframes gbCaretBlink { 0%, 58% { opacity: 1; } 59%, 100% { opacity: 0; } }
-  .gb-bpage { margin: calc(var(--u) * 0.9) 0 0; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: calc(var(--u) * 0.7); color: #B88A32; opacity: 0.6; }
+  .gb-bpage { margin: calc(var(--u) * 0.4) 0 0; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.28em; font-size: calc(var(--u) * 0.6); color: #C9A45E; opacity: 0.7; }
   /* Emojis conservés dans la donnée (jamais modifiés), juste neutralisés visuellement. */
   .gb-emoji { filter: grayscale(0.85) opacity(0.6) brightness(0.9); font-size: 0.9em; }
 
-  /* Écran en hauteur (portrait) : unité plus généreuse et bulles pleine largeur. */
+  /* Pied de page : musique (gauche), "Merci d'être ici" (centre), compteur et points (droite). */
+  .gb-foot-center { position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(var(--u) * 1.1); text-align: center; pointer-events: none; }
+  .gb-foot-center .gb-divider-line { width: calc(var(--u) * 12.5); }
+  .gb-foot-center .gb-heart { width: calc(var(--u) * 1.5); height: calc(var(--u) * 1.5); }
+  .gb-foot-script { margin: calc(var(--u) * 0.1) 0 0; font-family: 'Great Vibes', 'Dancing Script', cursive; font-size: calc(var(--u) * 2.4); line-height: 1.1; color: #E9C47A; text-shadow: 0 0 calc(var(--u) * 0.7) rgba(226,172,84,0.35); }
+  .gb-foot-music { position: absolute; z-index: 3; left: calc(var(--u) * 3.7); bottom: calc(var(--u) * 2); display: flex; align-items: center; gap: calc(var(--u) * 0.7); padding: 0; background: none; border: 0; cursor: pointer; font-family: 'Cormorant Garamond', Georgia, serif; font-size: calc(var(--u) * 0.98); color: #D9B66F; }
+  .gb-foot-music svg { width: calc(var(--u) * 1.8); height: calc(var(--u) * 1.8); }
+  .gb-foot-count { position: absolute; z-index: 3; right: calc(var(--u) * 3.6); bottom: calc(var(--u) * 2); display: flex; align-items: center; gap: calc(var(--u) * 1.2); font-size: calc(var(--u) * 0.98); color: #D9B66F; }
+  .gb-dots { display: flex; align-items: center; gap: calc(var(--u) * 0.5); }
+  .gb-dots i { display: block; width: calc(var(--u) * 0.62); height: calc(var(--u) * 0.62); border-radius: 50%; background: rgba(255,255,255,0.22); }
+  .gb-dots i.on { width: calc(var(--u) * 0.8); height: calc(var(--u) * 0.8); background: #F3D58C; box-shadow: 0 0 calc(var(--u) * 0.5) rgba(243,213,140,0.7); }
+
+  /* Écran en hauteur (portrait) : unité plus généreuse, liste pleine largeur. */
   @media (max-aspect-ratio: 1/1) {
     .gb-display { --u: 2.6vw; }
     .gb-thread { left: 4vw; right: 4vw; }
-    .gb-bubble, .gb-bubble.gb-featured { max-width: 100%; }
-    .gb-probe-bubble, .gb-probe-bubble.gb-featured { width: 100%; }
+    .gb-msg, .gb-mbody, .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: 100%; }
+    .gb-probe-msg { width: 100%; }
+    .gb-live .gb-photo-bg { width: 100%; opacity: 0.25; }
   }
 
   .gb-fade-rise { animation: gbFadeRise 900ms ease both; }
@@ -166,9 +186,9 @@ injectStylesOnce(
     .gb-glow, .gb-particle, .gb-photo-bg, .gb-mist { animation: none !important; }
     .gb-fade-rise { animation: gbFadeOnly 500ms ease both; }
     .gb-countdown-pop { animation: gbFadeOnly 400ms ease both; }
-    .gb-thread-empty .gb-waiting { animation: none; }
-    .gb-bubble:not(.gb-leaving), .gb-bphoto, .gb-bname, .gb-btext { animation: gbFadeOnly 500ms ease both !important; }
-    .gb-bubble.gb-leaving { animation: gbFadeOut 500ms ease both !important; }
+    .gb-thread-empty .gb-waiting, .gb-bokeh { animation: none; }
+    .gb-msg:not(.gb-leaving), .gb-bphoto, .gb-mhead, .gb-mbody { animation: gbFadeOnly 500ms ease both !important; }
+    .gb-msg.gb-leaving { animation: gbFadeOut 500ms ease both !important; }
   }
   @keyframes gbFadeOnly { from { opacity: 0; } to { opacity: 1; } }
   `
@@ -269,9 +289,6 @@ const PHOTO_DWELL_BONUS_MS = 3000;
 // consécutifs ralentissent la cadence : le suivant garde LONG_SLOWDOWN fois son temps habituel.
 const LONG_DWELL_MS = 11000;
 const LONG_SLOWDOWN = 1.2;
-// Un témoignage dont la bulle normale occuperait plus de cette part de la hauteur du fil passe en
-// présentation "large" (voir .gb-featured).
-const FEATURED_FRACTION = 0.42;
 // Garde-fou : un message ne dépasse jamais 1000 caractères (limite du formulaire), donc quelques
 // pages au plus ; au-delà de ce nombre la mise en page n'est de toute façon plus pertinente.
 const MAX_PAGES = 6;
@@ -439,64 +456,173 @@ function splitMessageIntoPages(message, count) {
   return nonEmpty.length ? nonEmpty : [message];
 }
 
-// Mesure la hauteur réelle qu'aurait une bulle (mêmes classes, donc mêmes polices et mêmes
-// largeurs que l'affichage) en la construisant hors-champ dans le fil. Éléments créés un à un avec
+// Mesure la hauteur réelle qu'aurait un message (mêmes classes, donc mêmes polices et mêmes largeurs
+// que l'affichage) en le construisant hors-champ dans le fil. Éléments créés un à un avec
 // textContent (jamais innerHTML) : le texte de l'invité ne peut jamais être interprété comme du HTML.
-function measureBubble(threadEl, { guestName, text, photo, featured }) {
+function measureBubble(threadEl, { guestName, text, photo }) {
   const probe = document.createElement('div');
   probe.className = 'gb-probe';
-  const bubble = document.createElement('div');
-  bubble.className = `gb-bubble gb-bubble-left gb-probe-bubble${featured ? ' gb-featured' : ''}`;
+  const msg = document.createElement('div');
+  msg.className = `gb-msg gb-probe-msg${photo?.url ? ' gb-has-photo' : ''}`;
   if (photo?.url) {
-    // Cercle de taille fixe (en unités --u) : inutile d'y charger l'image pour mesurer la bulle.
+    // Cercle de taille fixe (en unités --u) : inutile d'y charger l'image pour mesurer.
     const figure = document.createElement('figure');
     figure.className = 'gb-bphoto';
-    bubble.appendChild(figure);
+    msg.appendChild(figure);
   }
-  const body = document.createElement('div');
-  body.className = 'gb-bbody';
+  const col = document.createElement('div');
+  col.className = 'gb-mcol';
+  const head = document.createElement('div');
+  head.className = 'gb-mhead';
   const name = document.createElement('p');
   name.className = 'gb-bname';
   name.textContent = guestName;
+  const time = document.createElement('p');
+  time.className = 'gb-btime';
+  time.textContent = 'il y a quelques secondes';
+  head.append(name, time);
+  const body = document.createElement('div');
+  body.className = 'gb-mbody';
   const message = document.createElement('p');
   message.className = 'gb-btext';
   message.dir = 'auto';
   message.textContent = text;
-  body.append(name, message);
-  bubble.appendChild(body);
-  probe.appendChild(bubble);
+  body.appendChild(message);
+  col.append(head, body);
+  msg.appendChild(col);
+  probe.appendChild(msg);
   threadEl.appendChild(probe);
   const height = probe.offsetHeight;
   threadEl.removeChild(probe);
   return height;
 }
 
-// Décide de la présentation d'un témoignage d'après la place RÉELLEMENT disponible : bulle normale,
-// bulle large s'il est long, et seulement si même la bulle large ne tient pas dans la hauteur du
-// fil, découpage en pages (jamais de police réduite, jamais de texte tronqué).
+// Décide de la présentation d'un témoignage d'après la place RÉELLEMENT disponible : une seule page
+// s'il tient dans la hauteur du fil ; sinon découpage en pages (jamais de police réduite, jamais de
+// texte tronqué).
 function planBubble(threadEl, entry) {
   const photo = entry.photo?.url ? entry.photo : null;
   const available = threadInnerHeight(threadEl);
   const base = { guestName: entry.guestName, photo };
 
-  const normalHeight = measureBubble(threadEl, { ...base, text: entry.message, featured: false });
-  if (normalHeight <= available * FEATURED_FRACTION) return { featured: false, pages: [entry.message] };
-
-  const wideHeight = measureBubble(threadEl, { ...base, text: entry.message, featured: true });
-  if (wideHeight <= available) return { featured: true, pages: [entry.message] };
+  if (measureBubble(threadEl, { ...base, text: entry.message }) <= available) return { pages: [entry.message] };
 
   let pages = [entry.message];
   for (let count = 2; count <= MAX_PAGES; count += 1) {
     pages = splitMessageIntoPages(entry.message, count);
-    // La photo n'illustre que la première page (comme dans l'ancien affichage) : les suivantes
-    // gagnent sa place pour le texte.
+    // La photo n'illustre que la première page : les suivantes gagnent sa place pour le texte.
     const fits = pages.every(
-      (text, i) => measureBubble(threadEl, { ...base, photo: i === 0 ? photo : null, text, featured: true }) <= available
+      (text, i) => measureBubble(threadEl, { ...base, photo: i === 0 ? photo : null, text }) <= available
     );
     if (fits) break;
   }
-  return { featured: true, pages };
+  return { pages };
 }
+
+// "il y a quelques secondes", "il y a 2 minutes"... d'après l'heure d'approbation réelle du message
+// (fournie par le serveur). Sans date exploitable : aucune mention plutôt qu'une mention inventée.
+function relativeTimeLabel(isoDate, now) {
+  const time = Date.parse(isoDate);
+  if (!Number.isFinite(time)) return '';
+  const seconds = Math.max(0, Math.round((now - time) / 1000));
+  if (seconds < 45) return 'il y a quelques secondes';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `il y a ${minutes <= 1 ? '1 minute' : `${minutes} minutes`}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+  const days = Math.round(hours / 24);
+  return `il y a ${days} jour${days > 1 ? 's' : ''}`;
+}
+
+// ----- Décor : feuilles dorées, cœur, note de musique (SVG en ligne, aucun fichier à charger) -----
+// Une branche : une tige courbe (Bézier) et des feuilles en amande posées le long, alternées de part
+// et d'autre, de plus en plus petites vers la pointe.
+const BRANCH_STEM = { p0: [30, 158], p1: [38, 110], p2: [52, 70], p3: [84, 12] };
+function bezierPoint(t) {
+  const { p0, p1, p2, p3 } = BRANCH_STEM;
+  const mt = 1 - t;
+  const x = mt ** 3 * p0[0] + 3 * mt * mt * t * p1[0] + 3 * mt * t * t * p2[0] + t ** 3 * p3[0];
+  const y = mt ** 3 * p0[1] + 3 * mt * mt * t * p1[1] + 3 * mt * t * t * p2[1] + t ** 3 * p3[1];
+  const dx = 3 * mt * mt * (p1[0] - p0[0]) + 6 * mt * t * (p2[0] - p1[0]) + 3 * t * t * (p3[0] - p2[0]);
+  const dy = 3 * mt * mt * (p1[1] - p0[1]) + 6 * mt * t * (p2[1] - p1[1]) + 3 * t * t * (p3[1] - p2[1]);
+  return { x, y, angle: (Math.atan2(dy, dx) * 180) / Math.PI };
+}
+const BRANCH_LEAVES = Array.from({ length: 9 }, (_, i) => {
+  const t = 0.1 + (i / 8) * 0.9;
+  const { x, y, angle } = bezierPoint(t);
+  const side = i % 2 === 0 ? -1 : 1;
+  return { x, y, rotate: angle + side * 52, scale: 1.05 - t * 0.5 };
+});
+
+function GoldBranch({ className }) {
+  return (
+    <svg className={`gb-leaf ${className}`} viewBox="0 0 120 160" aria-hidden="true">
+      <defs>
+        <linearGradient id="gbLeafGold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FBE5A6" />
+          <stop offset="0.55" stopColor="#D9A94F" />
+          <stop offset="1" stopColor="#A87423" />
+        </linearGradient>
+      </defs>
+      <path d="M30 158 C 38 110, 52 70, 84 12" stroke="url(#gbLeafGold)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      {BRANCH_LEAVES.map((leaf, i) => (
+        <path
+          key={i}
+          d="M0 0 C 8 -13 24 -13 33 0 C 24 13 8 13 0 0 Z"
+          transform={`translate(${leaf.x.toFixed(1)} ${leaf.y.toFixed(1)}) rotate(${leaf.rotate.toFixed(1)}) scale(${leaf.scale.toFixed(2)})`}
+          fill="url(#gbLeafGold)"
+        />
+      ))}
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg className="gb-heart" viewBox="0 0 24 24" aria-hidden="true">
+      <defs>
+        <linearGradient id="gbHeartGold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#FBE5A6" />
+          <stop offset="1" stopColor="#D9A94F" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 21s-7.5-4.6-9.5-9.2C1 8 3.2 5 6.2 5c1.9 0 3.4 1 5.8 3.3C14.4 6 15.9 5 17.8 5c3 0 5.2 3 3.7 6.8C19.5 16.4 12 21 12 21z"
+        fill="url(#gbHeartGold)"
+      />
+    </svg>
+  );
+}
+
+function NoteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 18zm10-2a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 19 16z"
+        fill="none"
+        stroke="#D9B66F"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+
+const BOKEH = [
+  { l: '6%', t: '6%', s: 7.2 },
+  { l: '12%', t: '14%', s: 3.2 },
+  { l: '1%', t: '30%', s: 8.4 },
+  { l: '8%', t: '46%', s: 3.5 },
+  { l: '2%', t: '63%', s: 6 },
+  { l: '13%', t: '72%', s: 2.6 },
+  { l: '5%', t: '86%', s: 7.8 },
+  { l: '18%', t: '91%', s: 3 },
+  { l: '46%', t: '3%', s: 2.4 },
+  { l: '66%', t: '90%', s: 3.2 },
+  { l: '91%', t: '31%', s: 2.2 },
+];
 
 // Texte d'un témoignage révélé mot après mot. TOUT le texte est rendu dès le départ, invisible
 // (opacity 0, voir .gb-w) : la bulle a donc sa taille définitive dès son apparition et la mise en
@@ -585,7 +711,7 @@ export default function GuestbookDisplayPage() {
   const [countdownValue, setCountdownValue] = useState(COUNTDOWN_START);
   const [introStep, setIntroStep] = useState(0);
   // Le fil de conversation : les bulles actuellement à l'écran, de la plus ancienne (en haut) à la
-  // plus récente (en bas). Chaque élément : { key, entry, side, featured, pages, pageIndex, photo,
+  // plus récente (affichée en haut). Chaque élément : { key, entry, pages, pageIndex, photo,
   // photoFailed, leaving }.
   const [thread, setThread] = useState([]);
   const [layoutTick, setLayoutTick] = useState(0);
@@ -604,7 +730,6 @@ export default function GuestbookDisplayPage() {
   const dwellingRef = useRef(false);
   const dwellTimerRef = useRef(null);
   const lastDwellRef = useRef(0);
-  const presentedCountRef = useRef(0);
   const runIdRef = useRef(0);
   const threadRef = useRef(null);
   const threadStateRef = useRef([]);
@@ -613,6 +738,8 @@ export default function GuestbookDisplayPage() {
   // Instant de départ de l'écriture de chaque page (voir TypedText) et vitesse d'écriture (mots/s).
   const typingStartsRef = useRef(new Map());
   const [typingWps] = useState(readTypingSpeed);
+  // Horloge de l'écran, rafraîchie toutes les 15 s : met à jour les "il y a … minutes".
+  const [now, setNow] = useState(() => Date.now());
   threadStateRef.current = thread;
 
   useEffect(() => {
@@ -653,7 +780,6 @@ export default function GuestbookDisplayPage() {
     dwellingRef.current = false;
     presentingRef.current = false;
     lastDwellRef.current = 0;
-    presentedCountRef.current = 0;
     prevTopsRef.current = new Map();
     typingStartsRef.current = new Map();
     setThread([]);
@@ -806,22 +932,16 @@ export default function GuestbookDisplayPage() {
       return;
     }
 
-    const { featured, pages } = planBubble(threadRef.current, entry);
-    // Alternance gauche/droite selon l'ordre de passage : un simple rythme visuel, jamais une
-    // réponse entre deux personnes (chaque bulle est un témoignage indépendant).
-    const side = presentedCountRef.current % 2 === 0 ? 'left' : 'right';
-    presentedCountRef.current += 1;
+    const { pages } = planBubble(threadRef.current, entry);
     const item = {
       key: entryKey(entry),
       entry,
-      side,
-      featured,
       pages,
       pageIndex: 0,
       photo: entry.photo?.url ? entry.photo : null,
       photoFailed: false,
       leaving: false,
-      // Des bulles sont déjà à l'écran et vont glisser vers le haut : celle-ci patiente.
+      // Des messages sont déjà à l'écran et vont glisser vers le bas : celui-ci patiente.
       afterMove: threadStateRef.current.some((i) => !i.leaving),
     };
     setThread((current) => [...current, item]);
@@ -859,6 +979,13 @@ export default function GuestbookDisplayPage() {
       return kept.length === items.length ? items : kept;
     });
   }, [entries, phase]);
+
+  // Met à jour les "il y a … minutes" pendant la boucle.
+  useEffect(() => {
+    if (phase !== 'loop') return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, [phase]);
 
   // Libère les minuteurs à la fermeture de la page.
   useEffect(() => () => clearTimeout(dwellTimerRef.current), []);
@@ -951,8 +1078,13 @@ export default function GuestbookDisplayPage() {
     );
   }
 
+  // Compteur du pied de page : messages déjà passés / messages approuvés, et 6 points de progression.
+  const totalCount = entries.length;
+  const shownCount = Math.min(shownRef.current.size, totalCount);
+  const activeDots = shownCount > 0 ? Math.max(1, Math.round((6 * shownCount) / totalCount)) : 0;
+
   return (
-    <div className="gb-display">
+    <div className={`gb-display${phase === 'loop' ? ' gb-live' : ''}`}>
       {data.coverUrl && <div className="gb-photo-bg" style={{ backgroundImage: `url(${data.coverUrl})` }} />}
       <div className="gb-overlay" />
       <div className="gb-mist" />
@@ -963,14 +1095,16 @@ export default function GuestbookDisplayPage() {
       {data.musicUrl && (
         <>
           <audio ref={audioRef} src={data.musicUrl} loop />
-          <button
-            type="button"
-            onClick={toggleMusic}
-            className="gb-music-btn"
-            aria-label={musicPlaying ? 'Couper la musique' : 'Jouer la musique'}
-          >
-            {musicPlaying ? '♪' : '🔇'}
-          </button>
+          {phase !== 'loop' && (
+            <button
+              type="button"
+              onClick={toggleMusic}
+              className="gb-music-btn"
+              aria-label={musicPlaying ? 'Couper la musique' : 'Jouer la musique'}
+            >
+              {musicPlaying ? '♪' : '🔇'}
+            </button>
+          )}
         </>
       )}
 
@@ -1007,21 +1141,50 @@ export default function GuestbookDisplayPage() {
 
       {phase === 'loop' && (
         <>
-          <p className="gb-thread-head">Livre d'or — {data.namesLine || data.title}</p>
+          {BOKEH.map((spot, i) => (
+            <span
+              key={i}
+              className="gb-bokeh"
+              aria-hidden="true"
+              style={{
+                left: spot.l,
+                top: spot.t,
+                width: `calc(var(--u) * ${spot.s})`,
+                height: `calc(var(--u) * ${spot.s})`,
+                animationDelay: `${(i * 1.1).toFixed(1)}s`,
+              }}
+            />
+          ))}
+          <GoldBranch className="gb-leaf-bl" />
+          <GoldBranch className="gb-leaf-tl" />
+          <GoldBranch className="gb-leaf-br" />
+
+          <header className="gb-title">
+            <h1 className="gb-title-script">Livre d’Or</h1>
+            <div className="gb-divider" aria-hidden="true">
+              <span className="gb-divider-line" />
+              <HeartIcon />
+              <span className="gb-divider-line" />
+            </div>
+            <p className="gb-title-sub">Vos mots d’amour pour les mariés</p>
+          </header>
+
           <div className="gb-thread" ref={threadRef}>
-            {thread.map((item) => {
+            {/* Le plus récent en haut : la liste est tenue du plus ancien au plus récent, affichée à l'envers. */}
+            {[...thread].reverse().map((item) => {
               const showPhoto = item.photo && !item.photoFailed && item.pageIndex === 0;
+              const timeLabel = relativeTimeLabel(item.entry.approvedAt, now);
               return (
                 <div
                   key={item.key}
-                  className={`gb-row gb-row-${item.side}`}
+                  className="gb-row"
                   ref={(el) => {
                     if (el) rowRefs.current.set(item.key, el);
                     else rowRefs.current.delete(item.key);
                   }}
                 >
                   <div
-                    className={`gb-bubble gb-bubble-${item.side}${item.featured ? ' gb-featured' : ''}${item.leaving ? ' gb-leaving' : ''}`}
+                    className={`gb-msg${showPhoto ? ' gb-has-photo' : ''}${item.leaving ? ' gb-leaving' : ''}`}
                     style={item.afterMove && item.pageIndex === 0 ? { '--gb-delay': `${MOVE_MS}ms` } : undefined}
                   >
                     {showPhoto && (
@@ -1037,21 +1200,26 @@ export default function GuestbookDisplayPage() {
                         />
                       </figure>
                     )}
-                    <div className="gb-bbody">
-                      <p className="gb-bname" dir="auto">{item.entry.guestName}</p>
-                      {/* key = bulle + page : chaque page est écrite une seule fois, et un texte différent
-                          remonte toujours un composant neuf (jamais de mots déjà révélés d'un autre texte). */}
-                      <TypedText
-                        key={`${item.key}#${item.pageIndex}`}
-                        text={item.pages[item.pageIndex]}
-                        stampKey={`${item.key}#${item.pageIndex}`}
-                        startsRef={typingStartsRef}
-                        leadMs={typingLead(item)}
-                        wordsPerSecond={typingWps}
-                      />
-                      {item.pages.length > 1 && (
-                        <p className="gb-bpage">{item.pageIndex + 1} / {item.pages.length}</p>
-                      )}
+                    <div className="gb-mcol">
+                      <div className="gb-mhead">
+                        <p className="gb-bname" dir="auto">{item.entry.guestName}</p>
+                        {timeLabel && <p className="gb-btime">{timeLabel}</p>}
+                      </div>
+                      <div className="gb-mbody">
+                        {/* key = message + page : chaque page est écrite une seule fois, et un texte différent
+                            remonte toujours un composant neuf (jamais de mots déjà révélés d'un autre texte). */}
+                        <TypedText
+                          key={`${item.key}#${item.pageIndex}`}
+                          text={item.pages[item.pageIndex]}
+                          stampKey={`${item.key}#${item.pageIndex}`}
+                          startsRef={typingStartsRef}
+                          leadMs={typingLead(item)}
+                          wordsPerSecond={typingWps}
+                        />
+                        {item.pages.length > 1 && (
+                          <p className="gb-bpage">{item.pageIndex + 1} / {item.pages.length}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1065,6 +1233,36 @@ export default function GuestbookDisplayPage() {
               </div>
             )}
           </div>
+
+          {data.musicUrl && (
+            <button
+              type="button"
+              className="gb-foot-music"
+              onClick={toggleMusic}
+              aria-label={musicPlaying ? 'Couper la musique' : 'Jouer la musique'}
+            >
+              <NoteIcon />
+              {musicPlaying ? 'Ambiance musicale douce...' : 'Activer la musique'}
+            </button>
+          )}
+          <div className="gb-foot-center">
+            <div className="gb-divider" aria-hidden="true">
+              <span className="gb-divider-line" />
+              <HeartIcon />
+              <span className="gb-divider-line" />
+            </div>
+            <p className="gb-foot-script">Merci d’être ici</p>
+          </div>
+          {totalCount > 0 && (
+            <div className="gb-foot-count">
+              <span>{shownCount} / {totalCount}</span>
+              <span className="gb-dots" aria-hidden="true">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <i key={i} className={i < activeDots ? 'on' : ''} />
+                ))}
+              </span>
+            </div>
+          )}
         </>
       )}
     </div>
