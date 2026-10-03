@@ -82,7 +82,7 @@ injectStylesOnce(
      long message qui remonte en s'écrivant (voir keepWordVisible) disparaît en fondu sous le titre. */
   .gb-thread { position: absolute; z-index: 2; left: calc(var(--u) * 7); right: calc(var(--u) * 36); top: calc(var(--u) * 8.7); bottom: calc(var(--u) * 6.1); padding-top: calc(var(--u) * 2.4); box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(var(--u) * 3); overflow: hidden; overflow: clip; -webkit-mask-image: linear-gradient(180deg, transparent calc(var(--u) * 1.8), #000 calc(var(--u) * 2.4)); mask-image: linear-gradient(180deg, transparent calc(var(--u) * 1.8), #000 calc(var(--u) * 2.4)); }
   .gb-thread-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding-left: calc(var(--u) * 8); }
-  .gb-thread-empty .gb-waiting { font-size: calc(var(--u) * 2); animation: gbWaitingPulse 4200ms ease-in-out infinite; }
+  .gb-thread-empty .gb-waiting { font-size: calc(var(--u) * 2.5); font-style: italic; animation: gbWaitingPulse 4200ms ease-in-out infinite; }
   @keyframes gbWaitingPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
   .gb-waiting { font-size: clamp(1.4rem, 2.4vw, 2rem); color: #F7F1E5; opacity: 0.75; }
 
@@ -859,12 +859,20 @@ export default function GuestbookDisplayPage() {
   };
 
   // Chef d'orchestre : à chaque fin de temps de lecture (tick) ou nouvelle liste (entries), soit le
-  // prochain message non présenté rejoint le fil, soit on attend (fil laissé tel quel, jamais de
-  // conclusion automatique : d'autres témoignages peuvent encore arriver pendant toute la réception).
+  // prochain message non présenté rejoint le fil, soit, s'il n'y en a plus, le fil s'efface et
+  // l'écran d'attente s'affiche (jamais de conclusion définitive : d'autres témoignages peuvent
+  // encore arriver pendant toute la réception).
   useEffect(() => {
     if (phase !== 'loop' || presentingRef.current || dwellingRef.current) return;
     const next = nextUnseen();
-    if (next) present(next);
+    if (next) {
+      present(next);
+      return;
+    }
+    // Plus rien à présenter et le dernier message a eu tout son temps : le fil s'efface en fondu et
+    // l'écran d'attente prend la place ("D'autres mots arrivent bientôt...", voir .gb-thread-empty),
+    // comme l'écran l'a toujours fait. Un message approuvé ensuite arrive sur un fil vide.
+    setThread((items) => (items.some((i) => !i.leaving) ? items.map((i) => (i.leaving ? i : { ...i, leaving: true })) : items));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, entries, tick]);
 
