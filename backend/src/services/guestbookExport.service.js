@@ -11,17 +11,28 @@ const env = require('../config/env');
 // (Times, Helvetica — les 14 polices PDF de base) n'encodent que le jeu WinAnsi (latin de base +
 // Europe de l'Ouest, accents français inclus) — au-delà (emojis, arabe, CJK, cyrillique...),
 // elles produisent des glyphes aléatoires plutôt qu'une erreur (vérifié : aucune exception levée,
-// juste du charabia à l'écran). Embarquer une police Unicode/couleur complète pour ce cas —
-// jamais demandé ailleurs dans l'appli — serait disproportionné pour un simple export imprimable.
-// On retire donc, UNIQUEMENT dans cette version imprimée, les caractères hors de ce répertoire :
+// juste du charabia à l'écran). Seules exceptions : les polices embarquées depuis
+// src/assets/fonts (Libre Baskerville couvre ce répertoire, Noto Naskh Arabic ajoute l'arabe).
+// Emojis, CJK, cyrillique... ne sont pas pris en charge : on retire donc, UNIQUEMENT dans cette
+// version imprimée, les caractères hors de ce répertoire :
 // jamais dans la donnée elle-même, qui reste intacte partout ailleurs (base, administration,
 // mode écran, où le navigateur affiche nativement emojis et toute écriture).
 const WINANSI_SAFE_CHAR = /^[\u0000-\u007E\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]$/u;
 
-function textForPrint(text, fallback = '(message avec des caractères non imprimables — consultez le livre d\'or numérique)') {
+// Écriture arabe : conservée seulement quand la police arabe est embarquée (voir registerFonts,
+// option arabic de textForPrint) — fontkit assure alors la liaison des lettres. La ponctuation
+// arabe (U+060C, U+061B, U+061F) en fait partie ; les marques directionnelles invisibles sont retirées.
+const ARABIC_CHAR = /^[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]$/u;
+// Texte dont la première lettre est arabe : écrit de droite à gauche (comme l'écran, voir isRtlText).
+const ARABIC_FIRST_LETTER = /^[^\p{L}]*[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/u;
+const isArabicText = (text) => ARABIC_FIRST_LETTER.test(text || '');
+
+function textForPrint(text, fallback = '(message avec des caractères non imprimables — consultez le livre d\'or numérique)', { arabic = false } = {}) {
   // Itère par point de code Unicode (pas par unité UTF-16) : un emoji composé de deux unités
   // "surrogate pairs" ne doit pas être coupé en deux caractères invalides au milieu.
-  const kept = [...String(text || '')].filter((ch) => WINANSI_SAFE_CHAR.test(ch)).join('');
+  const kept = [...String(text || '')]
+    .filter((ch) => WINANSI_SAFE_CHAR.test(ch) || (arabic && ARABIC_CHAR.test(ch)))
+    .join('');
   const cleaned = kept.replace(/[ \t]{2,}/g, ' ').trim();
   return cleaned || fallback;
 }
@@ -103,8 +114,11 @@ const FONT_FILES = {
   SerifBold: 'LibreBaskerville-Bold.ttf',
   SerifItalic: 'LibreBaskerville-Italic.ttf',
   Script: 'GreatVibes-Regular.ttf',
+  Arabic: 'NotoNaskhArabic-Medium.ttf',
 };
-const FONT_FALLBACK = { Serif: 'Times-Roman', SerifBold: 'Times-Bold', SerifItalic: 'Times-Italic', Script: 'Times-BoldItalic' };
+// Arabic : pas de repli (les polices Times ne contiennent pas l'écriture arabe) ; sans ce fichier, les
+// caractères arabes restent retirés de la version imprimée, comme avant (voir textForPrint).
+const FONT_FALLBACK = { Serif: 'Times-Roman', SerifBold: 'Times-Bold', SerifItalic: 'Times-Italic', Script: 'Times-BoldItalic', Arabic: null };
 
 // Enregistre chaque police dont le fichier existe ; pour les autres, la police Times de repli.
 // Un fichier de police corrompu ne doit pas empêcher d'imprimer : on retombe aussi sur le repli.
@@ -123,6 +137,7 @@ function registerFonts(doc) {
     }
   }
   fonts.hasScript = fonts.Script === 'Script';
+  fonts.hasArabic = fonts.Arabic === 'Arabic';
   return fonts;
 }
 
@@ -294,20 +309,126 @@ async function drawCoverPage(doc, invitation, fonts) {
   }
 }
 
+// ----- Blocs de texte : latin (mise en page de pdfkit) ou arabe (droite à gauche) -----
+// pdfkit ne gère pas le sens de lecture : un texte arabe ressort avec la ponctuation du mauvais côté
+// et, dès qu'il contient un mot latin ou un chiffre, avec les mots dans le désordre. Pour les textes
+// en arabe, on découpe donc nous-mêmes les lignes (retour à la ligne sur les espaces), on ordonne
+// chaque ligne à la façon d'un paragraphe de droite à gauche, puis on pose chaque morceau l'un après
+// l'autre (voir drawRtlLine). Le texte latin garde la mise en page habituelle de pdfkit.
+const ARABIC_LETTER = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/u;
+const STRONG_OTHER = /[\p{L}\p{N}]/u;
+const RTL_PUNCTUATION = '.,;:!?\u060C\u061B\u061F\u2026';
+const RTL_TOKEN = new RegExp('^([' + RTL_PUNCTUATION + ']*)(.*?)([' + RTL_PUNCTUATION + ']*)$', 'su');
+
+// Découpe une ligne en morceaux de même nature (arabe / latin et chiffres), dans l'ORDRE VISUEL d'un
+// paragraphe de droite à gauche : le premier morceau logique est à droite. Les espaces et la
+// ponctuation prennent la nature de leurs voisins s'ils sont identiques, sinon celle de l'arabe.
+function visualRuns(line) {
+  const chars = [...line];
+  const kind = chars.map((ch) => (ARABIC_LETTER.test(ch) ? 'ar' : STRONG_OTHER.test(ch) ? 'lat' : null));
+  for (let i = 0; i < chars.length; i += 1) {
+    if (kind[i] !== null) continue;
+    let j = i;
+    while (j < chars.length && kind[j] === null) j += 1;
+    const left = i > 0 ? kind[i - 1] : null;
+    const right = j < chars.length ? kind[j] : null;
+    const resolved = left && left === right ? left : 'ar';
+    for (let k = i; k < j; k += 1) kind[k] = resolved;
+    i = j - 1;
+  }
+  const runs = [];
+  chars.forEach((ch, i) => {
+    const last = runs[runs.length - 1];
+    if (last && last.kind === kind[i]) last.text += ch;
+    else runs.push({ kind: kind[i], text: ch });
+  });
+  return runs.reverse();
+}
+
+// Dans un morceau arabe, la ponctuation collée à un mot (« ! », « . », « ، ») est posée de l'autre
+// côté du mot : le moteur de pdfkit la remet alors du bon côté à l'affichage (vérifié à l'œil).
+function mirrorPunctuation(text) {
+  return text
+    .split(/(\s+)/)
+    .map((token) => {
+      const m = token.match(RTL_TOKEN);
+      return m && m[2] ? m[3] + m[2] + m[1] : token;
+    })
+    .join('');
+}
+
+// Retours à la ligne sur les espaces, d'après la largeur réelle des mots (police et taille déjà
+// choisies sur doc). Les sauts de ligne de l'invité sont conservés.
+function wrapLogicalLines(doc, text, width) {
+  const lines = [];
+  for (const paragraph of text.split('\n')) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      lines.push('');
+      continue;
+    }
+    let current = words[0];
+    for (const word of words.slice(1)) {
+      if (doc.widthOfString(current + ' ' + word) <= width) current += ' ' + word;
+      else {
+        lines.push(current);
+        current = word;
+      }
+    }
+    lines.push(current);
+  }
+  return lines;
+}
+
+// Pose une ligne arabe alignée à droite sur x = right : chaque morceau est dessiné à la suite du
+// précédent (du plus à gauche au plus à droite), avec sa propre largeur mesurée.
+function drawRtlLine(doc, line, right, y) {
+  // Espace final ajouté à chaque morceau arabe : le moteur de pdfkit fait disparaître le DERNIER espace
+  // d'un morceau arabe composé (vérifié : deux mots collés sans lui) ; ainsi, c'est celui-là qui saute.
+  const runs = visualRuns(line.trim()).map((run) => ({ ...run, text: run.kind === 'ar' ? `${mirrorPunctuation(run.text)} ` : run.text }));
+  const widths = runs.map((run) => doc.widthOfString(run.text));
+  let x = right - widths.reduce((sum, w) => sum + w, 0);
+  runs.forEach((run, i) => {
+    doc.text(run.text, x, y, { lineBreak: false });
+    x += widths[i];
+  });
+}
+
+const MESSAGE_SIZES = [20, 18, 16, 14, 12.5, 11];
+// L'arabe (Naskh) a des lettres plus petites et des signes qui dépassent : taille et interligne plus
+// généreux, comme .gb-rtl à l'écran.
+const ARABIC_MESSAGE_SIZES = [25, 22, 19.5, 17, 15, 13];
+const ARABIC_LINE_STEP = 1.65;
+
+// spec : { font, size, text, width, lineGap, rtl }. Retourne la hauteur occupée (et les lignes si arabe).
+function measureTextBlock(doc, spec) {
+  doc.font(spec.font).fontSize(spec.size);
+  if (spec.rtl) {
+    const lines = wrapLogicalLines(doc, spec.text, spec.width);
+    const step = spec.size * ARABIC_LINE_STEP;
+    return { height: lines.length * step, lines, step };
+  }
+  return { height: doc.heightOfString(spec.text, { width: spec.width, lineGap: spec.lineGap }) };
+}
+
+function drawTextBlock(doc, spec, layout, x, y, { color, opacity = 1 }) {
+  doc.fillColor(color).opacity(opacity).font(spec.font).fontSize(spec.size);
+  if (spec.rtl) layout.lines.forEach((line, i) => drawRtlLine(doc, line, x + spec.width, y + i * layout.step));
+  else doc.text(spec.text, x, y, { width: spec.width, lineGap: spec.lineGap });
+  doc.opacity(1);
+}
+
 // Plus grande taille de texte (parmi quelques paliers) pour laquelle le message tient dans la
 // hauteur disponible : jamais de texte tronqué, jamais de page supplémentaire.
-const MESSAGE_SIZES = [20, 18, 16, 14, 12.5, 11];
-function fitMessage(doc, fonts, message, width, maxHeight) {
-  let size = MESSAGE_SIZES[MESSAGE_SIZES.length - 1];
-  for (const candidate of MESSAGE_SIZES) {
-    doc.font(fonts.Serif).fontSize(candidate);
-    if (doc.heightOfString(message, { width, lineGap: candidate * 0.38 }) <= maxHeight) {
-      size = candidate;
-      break;
-    }
+function fitTextBlock(doc, base, sizes, maxHeight) {
+  let spec = null;
+  let layout = null;
+  for (const size of sizes) {
+    spec = { ...base, size, lineGap: size * 0.38 };
+    layout = measureTextBlock(doc, spec);
+    if (layout.height <= maxHeight) break;
   }
-  doc.font(fonts.Serif).fontSize(size);
-  return { size, lineGap: size * 0.38, height: doc.heightOfString(message, { width, lineGap: size * 0.38 }) };
+  return { spec, layout };
 }
 
 // Avatar rond : photo recadrée (cover) dans un cercle, anneau doré, filet sombre intérieur et halo.
@@ -348,9 +469,14 @@ function drawEntryPage(doc, entry, photoBytes, fonts, pageIndex, pageCount) {
   doc.fillColor('#D9B66F').font(fonts.Serif).fontSize(9)
     .text(`${pageIndex + 1} / ${pageCount}`, PAGE.width - 270, 507, { width: 130, align: 'right', characterSpacing: 1 });
 
-  const message = textForPrint(entry.message);
-  const name = textForPrint(entry.guestName, 'Un invité');
+  const printOptions = { arabic: fonts.hasArabic };
+  const message = textForPrint(entry.message, undefined, printOptions);
+  const name = textForPrint(entry.guestName, 'Un invité', printOptions);
   const tableLine = entry.tableNumber ? `Table ${textForPrint(String(entry.tableNumber), '')}`.trim() : '';
+  // Message ou nom en arabe : police arabe et sens de lecture de droite à gauche, le reste de la
+  // page ne change pas.
+  const messageRtl = fonts.hasArabic && isArabicText(message);
+  const nameRtl = fonts.hasArabic && isArabicText(name);
 
   const BODY_TOP = 104;
   const BODY_BOTTOM = 462;
@@ -361,18 +487,23 @@ function drawEntryPage(doc, entry, photoBytes, fonts, pageIndex, pageCount) {
   const textX = hasPhoto ? margin + photoDiameter + 42 : (PAGE.width - 740) / 2;
   const textW = hasPhoto ? PAGE.width - 70 - textX : 740;
 
-  doc.font(fonts.SerifBold).fontSize(22);
-  const nameH = doc.heightOfString(name, { width: textW });
+  const nameSpec = { font: nameRtl ? fonts.Arabic : fonts.SerifBold, size: nameRtl ? 26 : 22, text: name, width: textW, lineGap: 0, rtl: nameRtl };
+  const nameLayout = measureTextBlock(doc, nameSpec);
   let tableH = 0;
   if (tableLine) {
     doc.font(fonts.SerifItalic).fontSize(11);
-    tableH = doc.heightOfString(tableLine, { width: textW });
+    tableH = doc.heightOfString(tableLine, { width: textW, align: nameRtl ? 'right' : 'left' });
   }
   const GAP_TABLE = 3;
   const GAP_MESSAGE = 16;
-  const headH = nameH + (tableLine ? GAP_TABLE + tableH : 0);
-  const fit = fitMessage(doc, fonts, message, textW, bodyHeight - headH - GAP_MESSAGE);
-  const textBlockH = headH + GAP_MESSAGE + fit.height;
+  const headH = nameLayout.height + (tableLine ? GAP_TABLE + tableH : 0);
+  const { spec: messageSpec, layout: messageLayout } = fitTextBlock(
+    doc,
+    { font: messageRtl ? fonts.Arabic : fonts.Serif, text: message, width: textW, rtl: messageRtl },
+    messageRtl ? ARABIC_MESSAGE_SIZES : MESSAGE_SIZES,
+    bodyHeight - headH - GAP_MESSAGE
+  );
+  const textBlockH = headH + GAP_MESSAGE + messageLayout.height;
   const groupH = Math.max(textBlockH, hasPhoto ? photoDiameter : 0);
   let y = BODY_TOP + (bodyHeight - groupH) / 2;
 
@@ -381,16 +512,16 @@ function drawEntryPage(doc, entry, photoBytes, fonts, pageIndex, pageCount) {
     drawAvatar(doc, photoBytes, margin + photoDiameter / 2, y + photoDiameter / 2, photoDiameter / 2, portrait);
   }
 
-  doc.fillColor(GOLD_BRIGHT).font(fonts.SerifBold).fontSize(22).text(name, textX, y, { width: textW });
-  y += nameH;
+  drawTextBlock(doc, nameSpec, nameLayout, textX, y, { color: GOLD_BRIGHT });
+  y += nameLayout.height;
   if (tableLine) {
     y += GAP_TABLE;
-    doc.fillColor(IVORY).opacity(0.75).font(fonts.SerifItalic).fontSize(11).text(tableLine, textX, y, { width: textW });
+    doc.fillColor(IVORY).opacity(0.75).font(fonts.SerifItalic).fontSize(11).text(tableLine, textX, y, { width: textW, align: nameRtl ? 'right' : 'left' });
     doc.opacity(1);
     y += tableH;
   }
   y += GAP_MESSAGE;
-  doc.fillColor(IVORY).font(fonts.Serif).fontSize(fit.size).text(message, textX, y, { width: textW, lineGap: fit.lineGap });
+  drawTextBlock(doc, messageSpec, messageLayout, textX, y, { color: IVORY });
 }
 
 async function buildGuestbookPdf(invitation, entries) {
