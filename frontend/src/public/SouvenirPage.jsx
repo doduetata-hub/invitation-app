@@ -370,10 +370,10 @@ export default function SouvenirPage() {
               Tous les mots d’amour de vos proches, tels qu’ils sont apparus dans la salle : chaque message s’écrit mot après mot, avec les photos, la musique et la page de remerciement. C’est
               l’expérience complète, celle à vivre en premier.
             </p>
-            <a className="sv-cta is-big" href={watchUrl} target="_blank" rel="noreferrer" onClick={() => setWatched(true)}>
+            <a className="sv-cta is-big" href={watchUrl} onClick={() => setWatched(true)}>
               ▶&nbsp; {watched ? 'Le revoir' : 'Lancer le livre d’or'}
             </a>
-            <p className="sv-hint">Un nouvel onglet s’ouvre en plein écran, avec le son. Prenez le temps de tout lire : environ une minute par message.</p>
+            <p className="sv-hint">Le livre d’or s’ouvre en plein écran, avec le son. Prenez le temps de tout lire : environ une minute par message. Pour revenir ici, utilisez le bouton « Retour » de votre navigateur.</p>
           </article>
 
           {/* ---- 2. Vidéo ---- */}
