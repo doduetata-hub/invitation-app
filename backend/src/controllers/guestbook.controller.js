@@ -48,7 +48,8 @@ async function listForInvitation(req, res) {
 // messages encore en attente ou rejetés. `?status=all` reste disponible pour l'admin qui aurait
 // besoin d'une extraction complète à des fins de vérification, hors du cadre "souvenir".
 async function fetchEntriesForExport(invitationId, statusFilter) {
-  const invitation = await prisma.invitation.findUnique({ where: { id: invitationId } });
+  // media (type "cover") : la photo des mariés, reprise sur la couverture du PDF.
+  const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, include: { media: { where: { type: 'cover' } } } });
   if (!invitation) return null;
 
   const where = { invitationId };
