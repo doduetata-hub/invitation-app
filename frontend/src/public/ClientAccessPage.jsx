@@ -132,6 +132,9 @@ export default function ClientAccessPage() {
   }
 
   const { guests, stats, invitation } = data;
+  // Livre d'or terminé par les organisateurs : la liste des invités est figée (voir requireGuestListOpen côté
+  // serveur). Consultation, liens, QR codes et pointage restent disponibles.
+  const locked = Boolean(invitation.guestbookClosedAt);
   // Suggestions de table : derivees des tables deja saisies pour cette invitation, pas de
   // stockage a part -- des qu'un nom de table est utilise une fois, il reapparait ici.
   const tableSuggestions = [...new Set(guests.map((g) => g.tableNumber).filter(Boolean))].sort();
@@ -162,6 +165,17 @@ export default function ClientAccessPage() {
 
         <div className="editor-section">
           <h2>Créer un lien personnalisé</h2>
+          {locked && (
+            <div style={styles.lockedNotice} role="status">
+              <span style={styles.lockedIcon} aria-hidden="true">🔒</span>
+              <div>
+                <strong>La liste des invités est désormais figée.</strong>
+                <br />
+                Le livre d'or est terminé : il n'est plus possible de créer, d'importer, de modifier ou de supprimer des invités. Les liens et les QR codes déjà générés restent valables.
+              </div>
+            </div>
+          )}
+          <fieldset disabled={locked} style={{ ...styles.fieldset, opacity: locked ? 0.45 : 1, filter: locked ? 'grayscale(1)' : 'none' }}>
           <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
             <input
               placeholder="Nom (optionnel)"
@@ -213,6 +227,7 @@ export default function ClientAccessPage() {
             </a>
             {importMessage && <span className="success-text">{importMessage}</span>}
           </div>
+          </fieldset>
 
           {guests.length === 0 ? (
             <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
@@ -316,7 +331,7 @@ export default function ClientAccessPage() {
                       ) : (
                         <>
                           <td style={{ display: 'flex', gap: '0.4rem' }}>
-                            <button type="button" onClick={() => startEdit(g)} className="btn btn-outline btn-sm">
+                            <button type="button" onClick={() => startEdit(g)} disabled={locked} className="btn btn-outline btn-sm">
                               Modifier
                             </button>
                             <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
@@ -341,7 +356,7 @@ export default function ClientAccessPage() {
                             )}
                           </td>
                           <td>
-                            <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
+                            <button type="button" onClick={() => handleDelete(g.id)} disabled={locked} className="btn btn-danger-outline btn-icon">✕</button>
                           </td>
                         </>
                       )}
@@ -391,6 +406,9 @@ function StatCard({ label, value }) {
 }
 
 const styles = {
+  fieldset: { border: 0, padding: 0, margin: 0, minWidth: 0, transition: 'opacity 300ms ease' },
+  lockedNotice: { display: 'flex', gap: '0.8rem', alignItems: 'flex-start', margin: '0 0 1.1rem', padding: '0.9rem 1rem', borderRadius: '10px', border: '1px solid rgba(184,138,50,0.55)', background: 'rgba(184,138,50,0.1)', lineHeight: 1.45 },
+  lockedIcon: { fontSize: '1.4rem', lineHeight: 1 },
   page: { minHeight: '100vh', background: 'var(--color-bg, #faf7f2)', padding: '2rem 1rem' },
   container: { maxWidth: '900px', margin: '0 auto' },
   center: {

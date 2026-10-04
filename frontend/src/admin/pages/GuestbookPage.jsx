@@ -40,6 +40,9 @@ export default function GuestbookPage() {
   const [regieCopied, setRegieCopied] = useState(false);
   // Analyse des anciennes photos (visage) : { done, total } pendant le traitement, null sinon.
   const [focusJob, setFocusJob] = useState(null);
+  const [endBusy, setEndBusy] = useState(false);
+  const [souvenirBusy, setSouvenirBusy] = useState(false);
+  const [souvenirCopied, setSouvenirCopied] = useState(false);
 
   // Lien à confier à la régie de la salle : il ouvre le mode écran sur un bouton « Lancer » (voir
   // ?regie=1 dans GuestbookDisplayPage). Le presse-papiers peut être refusé (page non sécurisée,
@@ -128,6 +131,80 @@ export default function GuestbookPage() {
       setMessageView((view) => (view?.entryId === entryId ? { ...view, photoUrl: null, photo: null } : view));
       await loadEntries();
     });
+
+  const reloadInvitation = () => api.get(`/invitations/${id}`).then(setInvitation).catch((err) => setError(err.message));
+
+  // Fin du livre d'or : plus de nouveaux messages, liste d'invités du lien client figée, page « Merci » à
+  // l'écran, PDF et vidéo téléchargeables par les mariés (voir closeGuestbook côté serveur). Réversible.
+  const endGuestbook = async () => {
+    const ok = window.confirm(
+      "Terminer le livre d'or ?\n\n• les nouveaux messages ne seront plus acceptés (QR code et invitation numérique)\n• la liste des invités du lien client ne sera plus modifiable\n• l'écran de la salle affichera la page « Merci » après le dernier message\n• les mariés pourront télécharger le PDF et la vidéo\n\nVous pourrez le rouvrir si besoin."
+    );
+    if (!ok) return;
+    setEndBusy(true);
+    setError('');
+    try {
+      await api.post(`/invitations/${id}/guestbook/close`, {});
+      await reloadInvitation();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEndBusy(false);
+    }
+  };
+
+  const reopenGuestbook = async () => {
+    if (!window.confirm("Rouvrir le livre d'or ? Les nouveaux messages seront de nouveau acceptés et la liste des invités redeviendra modifiable.")) return;
+    setEndBusy(true);
+    setError('');
+    try {
+      await api.post(`/invitations/${id}/guestbook/reopen`, {});
+      await reloadInvitation();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEndBusy(false);
+    }
+  };
+
+  // Lien « Souvenir » à envoyer aux mariés (voir SouvenirPage) : créer, régénérer (l'ancien lien cesse de
+  // fonctionner) ou désactiver.
+  const souvenirUrl = invitation?.souvenirToken ? `${window.location.origin}/souvenir/${invitation.souvenirToken}` : null;
+  const createSouvenirLink = async () => {
+    if (invitation.souvenirToken && !window.confirm("Générer un nouveau lien ? L'ancien lien cessera de fonctionner.")) return;
+    setSouvenirBusy(true);
+    setError('');
+    try {
+      await api.post(`/invitations/${id}/souvenir-token`, {});
+      await reloadInvitation();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSouvenirBusy(false);
+    }
+  };
+  const revokeSouvenirLink = async () => {
+    if (!window.confirm('Désactiver le lien Souvenir ? Les mariés ne pourront plus y accéder tant que vous n\'en aurez pas créé un nouveau.')) return;
+    setSouvenirBusy(true);
+    setError('');
+    try {
+      await api.delete(`/invitations/${id}/souvenir-token`);
+      await reloadInvitation();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSouvenirBusy(false);
+    }
+  };
+  const copySouvenirLink = async () => {
+    try {
+      await navigator.clipboard.writeText(souvenirUrl);
+      setSouvenirCopied(true);
+      setTimeout(() => setSouvenirCopied(false), 2500);
+    } catch {
+      window.prompt('Copiez ce lien (Ctrl+C) :', souvenirUrl);
+    }
+  };
 
   // Cadrage d'un avatar enregistré (à la main ou par une nouvelle détection) : mis à jour tout de
   // suite dans la liste et dans la fenêtre ouverte, sans attendre la prochaine actualisation.
@@ -347,6 +424,67 @@ export default function GuestbookPage() {
       <InvitationTabs id={id} />
 
       {error && <p className="error-text">{error}</p>}
+
+      <div className="editor-section" style={{ marginTop: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <h2 style={{ marginTop: 0 }}>
+              Fin du livre d'or{' '}
+              {invitation.guestbookClosedAt && <span className="badge badge-success" style={{ verticalAlign: 'middle' }}>Terminé</span>}
+            </h2>
+            {invitation.guestbookClosedAt ? (
+              <p className="admin-muted" style={{ marginTop: 0, textAlign: 'left' }}>
+                Terminé le {new Date(invitation.guestbookClosedAt).toLocaleString('fr-FR')}. Les nouveaux messages sont refusés, la liste des invités du lien client est figée et l'écran de
+                la salle affiche la page « Merci » après le dernier message.
+              </p>
+            ) : (
+              <p className="admin-muted" style={{ marginTop: 0, textAlign: 'left' }}>
+                Quand tous les messages sont arrivés, terminez le livre d'or : l'écran de la salle affichera la page « Merci » à la fin (jusque-là, « D'autres mots arrivent bientôt »
+                reste affiché), plus aucun message ne sera accepté, et les mariés pourront télécharger le PDF et la vidéo.
+              </p>
+            )}
+            {invitation.guestbookClosedAt ? (
+              <button type="button" className="btn btn-outline" disabled={endBusy} onClick={reopenGuestbook}>
+                {endBusy ? '...' : '↺ Rouvrir le livre d\'or'}
+              </button>
+            ) : (
+              <button type="button" className="btn btn-accent" disabled={endBusy} onClick={endGuestbook}>
+                {endBusy ? '...' : '🏁 Terminer le livre d\'or'}
+              </button>
+            )}
+          </div>
+
+          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <h2 style={{ marginTop: 0 }}>Lien Souvenir des mariés</h2>
+            <p className="admin-muted" style={{ marginTop: 0, textAlign: 'left' }}>
+              Une page à envoyer aux mariés : revoir le livre d'or, puis le télécharger en vidéo et en PDF (téléchargements disponibles une fois le livre d'or terminé).
+            </p>
+            {souvenirUrl ? (
+              <>
+                <input className="input" readOnly value={souvenirUrl} onFocus={(e) => e.target.select()} style={{ width: '100%', marginBottom: '0.6rem' }} />
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button type="button" className="btn btn-accent btn-sm" onClick={copySouvenirLink}>
+                    {souvenirCopied ? '✓ Lien copié' : '📋 Copier le lien'}
+                  </button>
+                  <a href={souvenirUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                    Voir la page →
+                  </a>
+                  <button type="button" className="btn btn-outline btn-sm" disabled={souvenirBusy} onClick={createSouvenirLink} title="Crée un nouveau lien ; l'ancien cesse de fonctionner">
+                    ↻ Nouveau lien
+                  </button>
+                  <button type="button" className="btn btn-danger-outline btn-sm" disabled={souvenirBusy} onClick={revokeSouvenirLink}>
+                    Désactiver
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button type="button" className="btn btn-accent" disabled={souvenirBusy} onClick={createSouvenirLink}>
+                {souvenirBusy ? '...' : '✨ Créer le lien Souvenir'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {(photosToCenter > 0 || focusJob) && (
         <p className="admin-muted" style={{ margin: '1rem 0 0', display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', textAlign: 'left' }}>

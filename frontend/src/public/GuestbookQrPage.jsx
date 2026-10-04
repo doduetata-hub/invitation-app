@@ -165,7 +165,9 @@ export default function GuestbookQrPage() {
 
   const template = getTemplate(info.templateKey);
   const cssVars = tokensToCssVars(template.tokens);
-  const showForm = !locked && (!submitted || editing);
+  // Livre d'or terminé par les mariés : plus de nouveau message ni de modification (voir closeGuestbook).
+  const closedBook = Boolean(info.closed);
+  const showForm = !closedBook && !locked && (!submitted || editing);
 
   return (
     <div style={{ ...styles.page, ...cssVars }}>
@@ -175,6 +177,15 @@ export default function GuestbookQrPage() {
         {info.namesLine && <h1 style={styles.names}>{info.namesLine}</h1>}
         <p style={styles.eyebrow}>Livre d'or</p>
         {info.tableLabel && <p style={styles.tableBadge}>{info.tableLabel}</p>}
+
+        {closedBook && (
+          <div style={styles.confirmation}>
+            <p style={styles.confirmationTitle}>Le livre d'or est désormais clos.</p>
+            <p style={styles.confirmationSub}>
+              Merci à tous ceux qui ont partagé leurs mots{info.namesLine ? ` avec ${info.namesLine}` : ''}. Les nouveaux messages ne sont plus acceptés.
+            </p>
+          </div>
+        )}
 
         {locked && existingEntrySource === 'DIGITAL' && (
           <div style={styles.confirmation}>
@@ -207,13 +218,15 @@ export default function GuestbookQrPage() {
             <p style={styles.confirmationTitle}>Votre message a bien été déposé dans le livre d'or.</p>
             <p style={styles.confirmationSub}>Merci d'avoir partagé ce moment avec eux.</p>
             {hasPhoto && <p style={styles.confirmationSub}>📷 Votre photo est jointe à votre message.</p>}
-            <button type="button" onClick={() => setEditing(true)} style={styles.linkButton}>
-              Modifier mon message
-            </button>
+            {!closedBook && (
+              <button type="button" onClick={() => setEditing(true)} style={styles.linkButton}>
+                Modifier mon message
+              </button>
+            )}
           </div>
         )}
 
-        {!locked && !submitted && existingEntryId && (
+        {!closedBook && !locked && !submitted && existingEntryId && (
           <p style={styles.hint}>
             Vous avez déjà laissé un mot depuis cet appareil — vous pouvez le modifier ci-dessous.
           </p>

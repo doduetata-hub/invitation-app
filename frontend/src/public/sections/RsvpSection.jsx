@@ -41,6 +41,8 @@ function ContactHint({ invitation, children }) {
 }
 
 export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invitation }) {
+  // Livre d'or terminé par les mariés : la réponse (présence...) reste possible, mais plus le mot ni la photo.
+  const guestbookClosed = Boolean(invitation?.guestbookClosed);
   const [form, setForm] = useState(emptyForm);
   const [submitted, setSubmitted] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -209,9 +211,14 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
             onChange={handleChange('message')}
             rows={3}
             placeholder={`Écrivez quelques mots pour ${namesLine || 'les mariés'}...`}
-            style={styles.input}
+            style={{ ...styles.input, ...(guestbookClosed ? { opacity: 0.5 } : null) }}
+            disabled={guestbookClosed}
           />
-          <span style={styles.hint}>Votre mot sera conservé dans leur livre d'or.</span>
+          <span style={styles.hint}>
+            {guestbookClosed
+              ? "Le livre d'or est clos : les nouveaux mots ne sont plus acceptés. Merci à tous ceux qui ont écrit !"
+              : "Votre mot sera conservé dans leur livre d'or."}
+          </span>
         </label>
 
         <GuestbookPhotoPicker
@@ -230,7 +237,7 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
             }
           }}
           onBusyChange={setPhotoBusy}
-          disabled={submitting}
+          disabled={submitting || guestbookClosed}
         />
         {photoPending && !photo && !removeExistingPhoto && (
           <span style={styles.hint}>

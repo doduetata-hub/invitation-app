@@ -144,8 +144,27 @@ injectStylesOnce(
   .gb-dots i.on { width: calc(var(--u) * 0.8); height: calc(var(--u) * 0.8); background: #F3D58C; box-shadow: 0 0 calc(var(--u) * 0.5) rgba(243,213,140,0.7); }
 
   /* Écran en hauteur (portrait) : unité plus généreuse, liste pleine largeur. */
+  /* Page de clôture (livre d'or terminé par les mariés) : la photo des mariés à gauche, fondue vers le fond,
+     le remerciement à droite. Remplace le titre, la liste et le pied de page. */
+  /* visibility (et non display: none) pour le titre et le pied de page : leur cœur SVG porte le dégradé doré
+     que le cœur de la page de clôture réutilise, et un dégradé défini dans un bloc display: none ne s'affiche plus. */
+  .gb-ended .gb-title, .gb-ended .gb-foot-center { visibility: hidden; }
+  .gb-ended .gb-thread, .gb-ended .gb-photo-bg, .gb-ended .gb-foot-count { display: none; }
+  .gb-closing { position: absolute; inset: 0; z-index: 4; animation: gbFadeOnly 1600ms ease both; }
+  .gb-closing-photo { position: absolute; left: 0; top: 0; bottom: 0; width: 42%; background-size: cover; background-position: 50% 14%; filter: sepia(0.28) saturate(1.1) brightness(0.86); -webkit-mask-image: linear-gradient(270deg, transparent 0%, #000 50%); mask-image: linear-gradient(270deg, transparent 0%, #000 50%); }
+  .gb-closing-text { position: absolute; left: 42%; right: calc(var(--u) * 4); top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .gb-closing-text > * { animation: gbPartIn 1100ms ease both; }
+  .gb-closing-eyebrow { margin: 0 0 calc(var(--u) * 1.2); font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: calc(var(--u) * 1.5); letter-spacing: 0.3em; text-transform: uppercase; color: #B8873F; animation-delay: 500ms; }
+  .gb-closing-merci { margin: 0; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 14.5); line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 calc(var(--u) * 1) rgba(226,170,80,0.4)); animation-delay: 900ms; }
+  .gb-closing-text .gb-divider { margin: calc(var(--u) * 1.4) 0 calc(var(--u) * 2); animation: gbPartIn 1100ms ease both 1500ms; }
+  .gb-closing-line { margin: 0 0 calc(var(--u) * 1.6); font-family: 'Libre Baskerville', Georgia, serif; font-style: italic; font-size: calc(var(--u) * 2.5); color: #F7F1E5; animation-delay: 1900ms; }
+  .gb-closing-names { margin: 0 0 calc(var(--u) * 1.4); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 3); letter-spacing: 0.05em; color: #F2D28C; animation-delay: 2300ms; }
+  .gb-closing-count { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 1.4); letter-spacing: 0.08em; color: #EDE3CF; opacity: 0.8; animation-delay: 2700ms; }
+
   @media (max-aspect-ratio: 1/1) {
     .gb-display { --u: 2.6vw; }
+    .gb-closing-photo { width: 100%; opacity: 0.28; -webkit-mask-image: none; mask-image: none; }
+    .gb-closing-text { left: 4vw; right: 4vw; }
     .gb-thread { left: 4vw; right: 4vw; }
     .gb-msg, .gb-mbody, .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: 100%; }
     .gb-live .gb-photo-bg { width: 100%; opacity: 0.25; }
@@ -605,11 +624,39 @@ function Particles() {
   );
 }
 
+// Page de clôture : affichée après le dernier message quand les mariés ont terminé le livre d'or (voir
+// closed dans GET /guestbook/display/:slug) — la même que celle qui ferme le PDF.
+function ClosingPage({ coverUrl, namesLine, count, eventDate }) {
+  const dateText = eventDate ? new Date(eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+  return (
+    <div className="gb-closing">
+      {coverUrl && <div className="gb-closing-photo" style={{ backgroundImage: `url(${coverUrl})` }} />}
+      <div className="gb-closing-text">
+        <p className="gb-closing-eyebrow">Avec tout notre amour</p>
+        <h2 className="gb-closing-merci">Merci</h2>
+        <div className="gb-divider" aria-hidden="true">
+          <span className="gb-divider-line" />
+          <HeartIcon />
+          <span className="gb-divider-line" />
+        </div>
+        <p className="gb-closing-line">d’avoir partagé notre bonheur</p>
+        <p className="gb-closing-names">{namesLine}</p>
+        <p className="gb-closing-count">
+          {count} mot{count > 1 ? 's' : ''} d’amour réunis{dateText ? ` · ${dateText}` : ''}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function GuestbookDisplayPage() {
   const { slug } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [entries, setEntries] = useState([]);
+  // Livre d'or terminé par les mariés : suit la liste (interrogée toutes les 2 s), donc la clôture
+  // arrive à l'écran sans le recharger.
+  const [closed, setClosed] = useState(false);
   const [phase, setPhase] = useState('loading');
   const [countdownValue, setCountdownValue] = useState(COUNTDOWN_START);
   const [introStep, setIntroStep] = useState(0);
@@ -654,6 +701,7 @@ export default function GuestbookDisplayPage() {
       .then((d) => {
         setData(d);
         setEntries(d.entries || []);
+        setClosed(Boolean(d.closed));
         setPhase(regieMode ? 'ready' : 'countdown');
       })
       .catch(() => setNotFound(true));
@@ -759,6 +807,7 @@ export default function GuestbookDisplayPage() {
         .then((d) => {
           if (stopped || !d?.entries) return;
           setEntries((prev) => (sameList(prev, d.entries) ? prev : d.entries));
+          setClosed(Boolean(d.closed));
         })
         .catch(() => {});
     };
@@ -984,9 +1033,12 @@ export default function GuestbookDisplayPage() {
   const totalCount = entries.length;
   const shownCount = Math.min(shownRef.current.size, totalCount);
   const activeDots = shownCount > 0 ? Math.max(1, Math.round((6 * shownCount) / totalCount)) : 0;
+  // Page de clôture : livre d'or terminé, plus rien à présenter et le dernier message a eu tout son temps
+  // (le fil est vide). Tant que les mariés n'ont pas terminé, « D'autres mots arrivent bientôt » reste.
+  const ended = phase === 'loop' && closed && thread.length === 0 && !entries.some((e) => !shownRef.current.has(entryKey(e)));
 
   return (
-    <div className={`gb-display${phase === 'loop' ? ' gb-live' : ''}`}>
+    <div className={`gb-display${phase === 'loop' ? ' gb-live' : ''}${ended ? ' gb-ended' : ''}`}>
       {data.coverUrl && <div className="gb-photo-bg" style={{ backgroundImage: `url(${data.coverUrl})` }} />}
       <div className="gb-overlay" />
       <div className="gb-mist" />
@@ -1125,7 +1177,7 @@ export default function GuestbookDisplayPage() {
                 </div>
               );
             })}
-            {thread.length === 0 && (
+            {thread.length === 0 && !ended && (
               <div className="gb-thread-empty">
                 <p className="gb-waiting">
                   {shownRef.current.size > 0 ? "D'autres mots arrivent bientôt..." : 'Les premiers mots arrivent bientôt...'}
@@ -1133,6 +1185,8 @@ export default function GuestbookDisplayPage() {
               </div>
             )}
           </div>
+
+          {ended && <ClosingPage coverUrl={data.coverUrl} namesLine={data.namesLine || data.title} count={totalCount} eventDate={data.eventDate} />}
 
           {data.musicUrl && (
             <button
