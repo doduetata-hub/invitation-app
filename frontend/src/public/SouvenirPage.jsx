@@ -7,6 +7,11 @@ import { generateGuestbookVideo, VIDEO_WIDTH, VIDEO_HEIGHT } from '../shared/vid
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// La création de la vidéo dans le navigateur du client est désactivée : sur un livre d'or de plusieurs
+// dizaines de messages elle prend des heures sur un appareil modeste. L'organisateur génère la vidéo
+// depuis l'admin et l'envoie à part (lien cloud). Passer à true pour rouvrir la génération ici.
+const VIDEO_GENERATION_ENABLED = false;
+
 // ===== Page « Souvenir » des mariés =================================================================
 // Un lien secret, à envoyer aux mariés (voir le lien Souvenir de l'admin). Trois temps, dans cet ordre
 // voulu : 1. revivre le livre d'or en version web (l'expérience complète, avec la musique), 2. le
@@ -290,7 +295,7 @@ export default function SouvenirPage() {
   // Quelle étape est mise en avant. 1 tant que la version web n'a pas été revue, puis la vidéo, puis le PDF.
   const watchedOrSkipped = watched || skipWatch;
   const videoOrSkipped = videoDone || skipVideo;
-  const activeStep = !watchedOrSkipped ? 1 : !videoOrSkipped ? 2 : 3;
+  const activeStep = !watchedOrSkipped ? 1 : VIDEO_GENERATION_ENABLED && !videoOrSkipped ? 2 : 3;
 
   return (
     <div className="sv">
@@ -340,10 +345,10 @@ export default function SouvenirPage() {
             <em>{watchedOrSkipped ? '✓' : '1'}</em>Revivre
           </div>
           <div className={`sv-link${watchedOrSkipped ? ' is-full' : ''}`} />
-          <div className={`sv-node ${videoOrSkipped ? 'is-done' : activeStep === 2 ? 'is-active' : ''}`}>
-            <em>{videoOrSkipped ? '✓' : '2'}</em>Vidéo
+          <div className={`sv-node ${VIDEO_GENERATION_ENABLED && videoOrSkipped ? 'is-done' : activeStep === 2 ? 'is-active' : ''}`}>
+            <em>{VIDEO_GENERATION_ENABLED && videoOrSkipped ? '✓' : '2'}</em>Vidéo
           </div>
-          <div className={`sv-link${videoOrSkipped ? ' is-full' : ''}`} />
+          <div className={`sv-link${VIDEO_GENERATION_ENABLED ? (videoOrSkipped ? ' is-full' : '') : watchedOrSkipped ? ' is-full' : ''}`} />
           <div className={`sv-node ${pdfDone ? 'is-done' : activeStep === 3 ? 'is-active' : ''}`}>
             <em>{pdfDone ? '✓' : '3'}</em>PDF
           </div>
@@ -365,11 +370,22 @@ export default function SouvenirPage() {
           </article>
 
           {/* ---- 2. Vidéo ---- */}
-          <article className={`sv-card${activeStep < 2 || !info.closed ? ' is-dim' : ''}`}>
-            <span className={`sv-tag is-quiet${videoDone ? ' is-done' : ''}`}>{videoDone ? '✓ Téléchargée' : 'Étape 2'}</span>
+          <article className={`sv-card${VIDEO_GENERATION_ENABLED ? (activeStep < 2 || !info.closed ? ' is-dim' : '') : ' is-dim'}`}>
+            <span className={`sv-tag is-quiet${videoDone ? ' is-done' : ''}`}>
+              {VIDEO_GENERATION_ENABLED ? (videoDone ? '✓ Téléchargée' : 'Étape 2') : 'Envoyée par lien'}
+            </span>
             <h2>La vidéo souvenir</h2>
             <p>Le livre d’or en un film (MP4), avec la musique : à garder, à partager, à revoir quand vous voulez.</p>
-            {!info.closed ? (
+            {!VIDEO_GENERATION_ENABLED ? (
+              <>
+                <button type="button" className="sv-cta" disabled aria-disabled="true" title="Votre vidéo vous est envoyée par un lien de téléchargement">
+                  🎬&nbsp; Créer ma vidéo
+                </button>
+                <p className="sv-hint">
+                  Pas besoin de la créer ici : votre vidéo vous est envoyée à part par votre organisateur, par un lien de téléchargement. En attendant, vous pouvez télécharger le livre en PDF.
+                </p>
+              </>
+            ) : !info.closed ? (
               <div className="sv-lock">
                 <span aria-hidden="true">🔒</span>
                 <div>Disponible dès que le livre d’or sera terminé, pour que votre vidéo soit complète.</div>
@@ -401,7 +417,7 @@ export default function SouvenirPage() {
               <>
                 {activeStep < 3 && (
                   <p className="sv-hint sv-nudge">
-                    💡 Profitez d’abord de la version web{!videoOrSkipped ? ' et de la vidéo' : ''}.
+                    💡 Profitez d’abord de la version web{VIDEO_GENERATION_ENABLED && !videoOrSkipped ? ' et de la vidéo' : ''}.
                     <button type="button" className="sv-skip" onClick={() => { setSkipWatch(true); setSkipVideo(true); }}>
                       Je veux le PDF maintenant
                     </button>
