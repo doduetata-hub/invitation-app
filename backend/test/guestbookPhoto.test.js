@@ -13,6 +13,7 @@
 
 process.env.JWT_SECRET = 'test-secret';
 process.env.PUBLIC_BASE_URL = 'http://localhost:8080';
+process.env.FACE_FOCUS = 'off'; // images synthétiques : pas de visage, et le détecteur alourdirait chaque test
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -512,7 +513,7 @@ test('I. photo APPROVED -> visible au mode ecran, avec uniquement les champs pub
   assert.match(entry.photo.url, /^\/uploads\/guestbook-[0-9a-f-]{36}\.jpg$/);
   assert.equal(entry.photo.width, 1200);
   assert.equal(entry.photo.height, 800);
-  assert.deepEqual(Object.keys(entry.photo).sort(), ['height', 'url', 'width']);
+  assert.deepEqual(Object.keys(entry.photo).sort(), ['focusX', 'focusY', 'height', 'url', 'width']);
   assert.deepEqual(Object.keys(entry).sort(), ['approvedAt', 'guestName', 'id', 'message', 'photo', 'source', 'tableNumber']);
   // Ni miniature (réservée à l'admin), ni id de média, ni secrets.
   const json = JSON.stringify(data);

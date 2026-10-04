@@ -5,6 +5,7 @@ import QrCodeModal from '../../shared/components/QrCodeModal';
 import GuestMessageModal from '../../shared/components/GuestMessageModal';
 import GuestbookLivePreview from '../../shared/components/GuestbookLivePreview';
 import InvitationTabs from '../components/InvitationTabs';
+import PhotoFocusEditor from '../components/PhotoFocusEditor';
 
 const SOURCE_LABELS = { DIGITAL: 'Invitation numérique', QR: 'QR code' };
 const STATUS_BADGE = {
@@ -37,6 +38,8 @@ export default function GuestbookPage() {
   const [busyIds, setBusyIds] = useState(new Set());
   const [savingAutoApprove, setSavingAutoApprove] = useState(false);
   const [regieCopied, setRegieCopied] = useState(false);
+  // Analyse des anciennes photos (visage) : { done, total } pendant le traitement, null sinon.
+  const [focusJob, setFocusJob] = useState(null);
 
   // Lien à confier à la régie de la salle : il ouvre le mode écran sur un bouton « Lancer » (voir
   // ?regie=1 dans GuestbookDisplayPage). Le presse-papiers peut être refusé (page non sécurisée,
@@ -125,6 +128,40 @@ export default function GuestbookPage() {
       setMessageView((view) => (view?.entryId === entryId ? { ...view, photoUrl: null, photo: null } : view));
       await loadEntries();
     });
+
+  // Cadrage d'un avatar enregistré (à la main ou par une nouvelle détection) : mis à jour tout de
+  // suite dans la liste et dans la fenêtre ouverte, sans attendre la prochaine actualisation.
+  const applyPhotoFocus = (entryId, focus) => {
+    const merge = (photo) => (photo ? { ...photo, focusX: focus.focusX, focusY: focus.focusY, focusSource: focus.focusSource } : photo);
+    setData((current) => ({ ...current, entries: current.entries.map((e) => (e.id === entryId ? { ...e, photo: merge(e.photo) } : e)) }));
+    setMessageView((view) => (view?.entryId === entryId ? { ...view, photo: merge(view.photo) } : view));
+  };
+
+  // Analyse, par petits lots, les photos reçues avant la détection de visages (voir
+  // detectMissingPhotoFocus côté serveur). S'arrête quand tout est fait, ou si un lot n'avance plus
+  // (détecteur indisponible) : on n'insiste pas en boucle.
+  const detectMissingFocus = async () => {
+    setError('');
+    const total = entries.filter((e) => e.photo && !e.photo.focusSource).length;
+    setFocusJob({ done: 0, total });
+    let done = 0;
+    try {
+      for (;;) {
+        const result = await api.post(`/invitations/${id}/guestbook/photo-focus/detect`, {});
+        done += result.processed;
+        setFocusJob({ done, total: Math.max(total, done) });
+        if (result.remaining === 0 || result.processed === 0) {
+          if (result.remaining > 0) setError("La détection de visage est momentanément indisponible pour certaines photos : réessayez dans un moment.");
+          break;
+        }
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setFocusJob(null);
+      await loadEntries();
+    }
+  };
 
   // Tranche un changement de photo demandé par l'invité APRÈS approbation de son message (voir
   // resolvePendingPhoto côté backend) : le message et son statut ne bougent pas, seule la photo
@@ -228,6 +265,7 @@ export default function GuestbookPage() {
 
   const { entries, stats } = data;
   const guestbookUrl = (token) => `${window.location.origin}/guestbook/${token}`;
+  const photosToCenter = entries.filter((e) => e.photo && !e.photo.focusSource).length;
 
   // Aide à la modération, purement indicative : un même invité peut se retrouver avec deux
   // messages (invitation numérique + QR papier scanné en plus, ou l'inverse) sans qu'on puisse
@@ -309,6 +347,19 @@ export default function GuestbookPage() {
       <InvitationTabs id={id} />
 
       {error && <p className="error-text">{error}</p>}
+
+      {(photosToCenter > 0 || focusJob) && (
+        <p className="admin-muted" style={{ margin: '1rem 0 0', display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', textAlign: 'left' }}>
+          {focusJob
+            ? `Analyse des visages en cours : ${focusJob.done} / ${focusJob.total}...`
+            : `${photosToCenter} photo${photosToCenter > 1 ? 's' : ''} pas encore centrée${photosToCenter > 1 ? 's' : ''} sur le visage.`}
+          {!focusJob && (
+            <button type="button" className="btn btn-outline btn-sm" onClick={detectMissingFocus}>
+              Centrer automatiquement les avatars
+            </button>
+          )}
+        </p>
+      )}
 
       <div className="stats-grid gb-stats" style={{ marginTop: '1.25rem' }}>
         <StatCard label="Messages reçus" value={stats.total} />
@@ -687,7 +738,21 @@ export default function GuestbookPage() {
       {messageView && (
         <GuestMessageModal
           {...messageView}
-          preview={<GuestbookLivePreview guestName={messageView.name} message={messageView.message} photo={messageView.photo} tableNumber={messageView.tableNumber} />}
+          preview={
+            <>
+              <GuestbookLivePreview guestName={messageView.name} message={messageView.message} photo={messageView.photo} tableNumber={messageView.tableNumber} />
+              {/* Seulement pour la photo actuellement diffusée : le cadrage d'une photo « en attente »
+                  se règle une fois qu'elle est validée. */}
+              {messageView.photo?.id && messageView.photo.id === entries.find((e) => e.id === messageView.entryId)?.photo?.id && (
+                <PhotoFocusEditor
+                  key={`${messageView.entryId}:${messageView.photo.id}`}
+                  entryId={messageView.entryId}
+                  photo={messageView.photo}
+                  onSaved={(focus) => applyPhotoFocus(messageView.entryId, focus)}
+                />
+              )}
+            </>
+          }
           onRemovePhoto={messageView.photoUrl ? () => removeEntryPhoto(messageView.entryId) : undefined}
           onApprove={
             // Seulement pour un message pas encore approuvé : un message déjà approuvé (ex. ouvert

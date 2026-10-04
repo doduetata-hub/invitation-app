@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import { useParams } from 'react-router-dom';
 import { injectStylesOnce } from './utils/injectStyles';
 import { durationForText } from '../shared/utils/guestbookTiming';
+import { avatarObjectPosition } from '../shared/utils/avatarFocus';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -392,18 +393,6 @@ function getTyping(text, wordsPerSecond) {
   return typing;
 }
 
-// Cadrage de la photo d'un invité dans son cercle (object-fit: cover remplit le cercle sans jamais
-// déformer l'image). Les visages sont statistiquement dans la moitié haute d'un portrait : le point
-// de cadrage par défaut remonte donc (12 % en portrait, 32 % sinon) pour ne pas couper le
-// haut de la tête. Si les données fournissent un point de cadrage (photo.focusX / photo.focusY, en
-// %), il est utilisé tel quel — le serveur n'en envoie pas aujourd'hui.
-function photoObjectPosition(photo) {
-  const portrait = photo?.width && photo?.height && photo.width / photo.height < 0.85;
-  const x = Number.isFinite(photo?.focusX) ? photo.focusX : 50;
-  const y = Number.isFinite(photo?.focusY) ? photo.focusY : portrait ? 12 : 32;
-  return `${x}% ${y}%`;
-}
-
 // Hauteur utile du fil : sans la marge interne basse (réservée au glissement d'entrée des bulles).
 function threadInnerHeight(el) {
   const style = window.getComputedStyle(el);
@@ -759,7 +748,9 @@ export default function GuestbookDisplayPage() {
           x.id === b[i].id &&
           x.message === b[i].message &&
           x.guestName === b[i].guestName &&
-          (x.photo?.url || null) === (b[i].photo?.url || null)
+          (x.photo?.url || null) === (b[i].photo?.url || null) &&
+          (x.photo?.focusX ?? null) === (b[i].photo?.focusX ?? null) &&
+          (x.photo?.focusY ?? null) === (b[i].photo?.focusY ?? null)
       );
 
     const poll = () => {
@@ -1102,7 +1093,7 @@ export default function GuestbookDisplayPage() {
                       <figure className="gb-bphoto">
                         <img
                           src={item.photo.url}
-                          style={{ objectPosition: photoObjectPosition(item.photo) }}
+                          style={{ objectPosition: avatarObjectPosition(item.photo) }}
                           alt={`Photo de ${item.entry.guestName}`}
                           decoding="async"
                           onError={() =>

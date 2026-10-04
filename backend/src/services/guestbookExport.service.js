@@ -5,7 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
-const env = require('../config/env');
+const { fetchMediaBytes } = require('./mediaBytes.service');
+const { squareCropAroundFocus } = require('./faceFocus.service');
 
 // Limite connue et assumée, propre à ce PDF : les polices standard embarquées par pdfkit
 // (Times, Helvetica — les 14 polices PDF de base) n'encodent que le jeu WinAnsi (latin de base +
@@ -95,16 +96,6 @@ async function buildGuestbookXlsx(entries) {
   sheet.getColumn(EXPORT_HEADERS.indexOf('Reçu le') + 1).numFmt = 'yyyy-mm-dd hh:mm';
 
   return workbook.xlsx.writeBuffer();
-}
-
-// Une URL de média est soit relative ("/uploads/...", stockage local) soit déjà absolue
-// (stockage S3/R2) — dans les deux cas, une simple requête HTTP suffit à en récupérer le
-// contenu, sans avoir à connaître le pilote de stockage réellement configuré ici.
-async function fetchMediaBytes(url) {
-  const fullUrl = /^https?:\/\//i.test(url) ? url : `${env.publicBaseUrl}${url}`;
-  const res = await fetch(fullUrl);
-  if (!res.ok) throw new Error(`Impossible de récupérer le média (${res.status})`);
-  return Buffer.from(await res.arrayBuffer());
 }
 
 // "Livre d'or de mariage" imprimable : même identité visuelle que l'écran de la salle (voir
@@ -630,6 +621,14 @@ async function buildGuestbookPdf(invitation, entries) {
         photoBytes = await fetchMediaBytes(entry.photo.url);
       } catch {
         photoBytes = null; // une photo inaccessible ne doit jamais interrompre l'export
+      }
+      // Avatar centré sur le visage détecté (ou placé à la main) ; sans visage connu, cadrage par défaut.
+      if (photoBytes && Number.isFinite(entry.photo.focusX) && Number.isFinite(entry.photo.focusY)) {
+        try {
+          photoBytes = await squareCropAroundFocus(photoBytes, { focusX: entry.photo.focusX, focusY: entry.photo.focusY });
+        } catch {
+          // recadrage impossible : l'image d'origine est utilisée telle quelle
+        }
       }
     }
     drawEntryPage(doc, entry, photoBytes, fonts, i, entries.length);

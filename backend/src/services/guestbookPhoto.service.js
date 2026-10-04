@@ -3,6 +3,7 @@ const prisma = require('../db/prismaClient');
 // Chemin explicite : voir le commentaire équivalent dans invitations.controller.js.
 const storage = require('./storage/index.js');
 const { processGuestbookPhoto } = require('./image.service');
+const { detectFaceFocus } = require('./faceFocus.service');
 
 // Les photos du livre d'or sont stockées comme n'importe quel média (table Media, mêmes pilotes
 // de stockage local/S3) mais sous ce type distinct : il permet de ne JAMAIS les mélanger à la
@@ -20,6 +21,10 @@ const PUBLIC_MEDIA_TYPES = ['cover', 'gallery'];
 async function storeGuestbookPhoto(file, invitationId) {
   const processed = await processGuestbookPhoto(file.buffer, { mimetype: file.mimetype });
   const base = `guestbook-${crypto.randomUUID()}`;
+  // Visage principal, pour centrer l'avatar rond dessus. Meilleur effort, jamais bloquant : sans visage
+  // (null) ou détecteur indisponible (false), la photo garde le cadrage par défaut ; seul « indisponible »
+  // laisse la photo à réanalyser plus tard (focusSource vide, voir detectMissingPhotoFocus).
+  const focus = await detectFaceFocus(processed.display.buffer);
 
   let url;
   let thumbUrl;
@@ -36,6 +41,9 @@ async function storeGuestbookPhoto(file, invitationId) {
         width: processed.display.width,
         height: processed.display.height,
         order: 0,
+        focusX: focus ? focus.focusX : null,
+        focusY: focus ? focus.focusY : null,
+        focusSource: focus ? 'auto' : focus === null ? 'none' : null,
       },
     });
   } catch (err) {
@@ -56,11 +64,12 @@ async function deleteGuestbookPhoto(media) {
   await Promise.all([storage.remove(media.url), media.thumbUrl ? storage.remove(media.thumbUrl) : null]);
 }
 
-// Ce que le public (grand écran, SSE) a le droit de voir d'une photo : l'URL d'affichage et les
-// dimensions — jamais l'id de la ligne Media, l'invitation, ni la miniature (réservée à l'admin).
+// Ce que le public (grand écran, SSE) a le droit de voir d'une photo : l'URL d'affichage, les
+// dimensions et le centre du visage (en % de l'image, null si inconnu) — jamais l'id de la ligne
+// Media, l'invitation, ni la miniature (réservée à l'admin).
 function toPublicPhoto(media) {
   if (!media) return null;
-  return { url: media.url, width: media.width, height: media.height };
+  return { url: media.url, width: media.width, height: media.height, focusX: media.focusX ?? null, focusY: media.focusY ?? null };
 }
 
 // Liste blanche (et non liste noire) de ce qu'une entrée expose publiquement : un champ ajouté

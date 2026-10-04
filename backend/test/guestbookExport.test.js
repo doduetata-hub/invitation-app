@@ -10,6 +10,7 @@
 process.env.JWT_SECRET = 'test-secret-export';
 process.env.PUBLIC_BASE_URL = 'http://127.0.0.1:0'; // corrigé après ouverture du port, voir before()
 process.env.STORAGE_DRIVER = 'local';
+process.env.FACE_FOCUS = 'off';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');

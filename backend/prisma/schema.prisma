@@ -158,6 +158,14 @@ model Media {
   width    Int?
   height   Int?
 
+  // Visage principal de la photo, pour centrer l'avatar rond dessus : centre du visage en % de
+  // l'image (0-100). focusSource : null = pas encore analysée, "auto" = détection, "none" = aucun
+  // visage trouvé (cadrage par défaut), "manual" = placé à la main depuis l'admin (jamais écrasé
+  // par une nouvelle détection).
+  focusX      Float?  @map("focus_x")
+  focusY      Float?  @map("focus_y")
+  focusSource String? @map("focus_source")
+
   guestbookEntry        GuestbookEntry? @relation("GuestbookEntryPhoto")
   guestbookEntryPending GuestbookEntry? @relation("GuestbookEntryPendingPhoto")
 

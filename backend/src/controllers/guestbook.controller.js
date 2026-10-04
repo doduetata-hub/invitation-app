@@ -5,6 +5,8 @@ const { generateUniqueGuestbookToken } = require('../services/guestbookToken.ser
 const { broadcast } = require('../services/guestbookRealtime.service');
 const { deleteGuestbookPhoto } = require('../services/guestbookPhoto.service');
 const { buildGuestbookCsv, buildGuestbookXlsx, buildGuestbookPdf } = require('../services/guestbookExport.service');
+const { detectFaceFocus } = require('../services/faceFocus.service');
+const { fetchMediaBytes } = require('../services/mediaBytes.service');
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
 
@@ -33,7 +35,7 @@ async function listForInvitation(req, res) {
   // photo : url + miniature + dimensions pour la modération (page admin authentifiée).
   // pendingPhoto : changement de photo demandé après approbation du message, à trancher à part
   // (voir resolvePendingPhoto) — jamais mêlé au statut/à la photo déjà diffusée ci-dessus.
-  const mediaSelect = { id: true, url: true, thumbUrl: true, width: true, height: true };
+  const mediaSelect = { id: true, url: true, thumbUrl: true, width: true, height: true, focusX: true, focusY: true, focusSource: true };
   const entries = await prisma.guestbookEntry.findMany({
     where: { invitationId: req.params.id },
     orderBy: { createdAt: 'desc' },
@@ -58,7 +60,7 @@ async function fetchEntriesForExport(invitationId, statusFilter) {
   const entries = await prisma.guestbookEntry.findMany({
     where,
     orderBy: [{ approvedAt: 'asc' }, { createdAt: 'asc' }],
-    include: { photo: { select: { url: true, width: true, height: true } } },
+    include: { photo: { select: { url: true, width: true, height: true, focusX: true, focusY: true } } },
   });
 
   return { invitation, entries };
@@ -219,6 +221,72 @@ async function resolvePendingPhoto(req, res) {
   res.json(entry);
 }
 
+// Cadrage de l'avatar rond d'une photo : centre du visage en % de l'image (0-100). Deux usages :
+//   { focusX, focusY } : placé à la main depuis l'admin (jamais écrasé ensuite par la détection) ;
+//   { reset: true }    : retour à la détection automatique (relancée tout de suite sur la photo).
+async function setPhotoFocus(req, res) {
+  const entry = await prisma.guestbookEntry.findUnique({ where: { id: req.params.id }, include: { photo: true } });
+  if (!entry) return res.status(404).json({ error: 'Message introuvable' });
+  if (!entry.photo) return res.status(404).json({ error: 'Ce message n\'a pas de photo' });
+
+  let data;
+  if (req.body?.reset === true) {
+    let focus = false;
+    try {
+      focus = await detectFaceFocus(await fetchMediaBytes(entry.photo.url), { timeoutMs: 20000 });
+    } catch {
+      focus = false;
+    }
+    if (focus === false) return res.status(503).json({ error: 'La détection de visage est momentanément indisponible' });
+    data = focus ? { focusX: focus.focusX, focusY: focus.focusY, focusSource: 'auto' } : { focusX: null, focusY: null, focusSource: 'none' };
+  } else {
+    const { focusX, focusY } = req.body || {};
+    const valid = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100;
+    if (!valid(focusX) || !valid(focusY)) return res.status(400).json({ error: 'focusX et focusY doivent être des pourcentages entre 0 et 100' });
+    data = { focusX, focusY, focusSource: 'manual' };
+  }
+
+  const media = await prisma.media.update({ where: { id: entry.photo.id }, data });
+  res.json({ focusX: media.focusX, focusY: media.focusY, focusSource: media.focusSource });
+}
+
+// Analyse, par petits lots, les photos reçues avant l'arrivée de la détection de visages (focus_source
+// vide) : un appel traite au plus PHOTO_FOCUS_BATCH photos dans le temps imparti d'une requête ; la
+// page admin rappelle tant qu'il en reste. Une photo sans visage est marquée "none" (pas réanalysée) ;
+// une photo qu'on n'a pas pu analyser (détecteur indisponible, photo introuvable) reste à faire.
+const PHOTO_FOCUS_BATCH = 6;
+const PHOTO_FOCUS_BUDGET_MS = 20000;
+async function detectMissingPhotoFocus(req, res) {
+  const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id }, select: { id: true } });
+  if (!invitation) return res.status(404).json({ error: 'Invitation introuvable' });
+
+  const where = { invitationId: invitation.id, type: 'guestbook', focusSource: null };
+  const batch = await prisma.media.findMany({ where, orderBy: { createdAt: 'asc' }, take: PHOTO_FOCUS_BATCH });
+  const startedAt = Date.now();
+  let processed = 0;
+  let failed = 0;
+  for (const media of batch) {
+    if (Date.now() - startedAt > PHOTO_FOCUS_BUDGET_MS) break;
+    let focus = false;
+    try {
+      focus = await detectFaceFocus(await fetchMediaBytes(media.url), { timeoutMs: 12000 });
+    } catch {
+      focus = false;
+    }
+    if (focus === false) {
+      failed += 1;
+      continue;
+    }
+    await prisma.media.update({
+      where: { id: media.id },
+      data: focus ? { focusX: focus.focusX, focusY: focus.focusY, focusSource: 'auto' } : { focusX: null, focusY: null, focusSource: 'none' },
+    });
+    processed += 1;
+  }
+  const remaining = await prisma.media.count({ where });
+  res.json({ processed, failed, remaining });
+}
+
 async function updateSettings(req, res) {
   try {
     const invitation = await prisma.invitation.update({
@@ -320,6 +388,8 @@ module.exports = {
   remove,
   removePhoto,
   resolvePendingPhoto,
+  setPhotoFocus,
+  detectMissingPhotoFocus,
   updateSettings,
   listQrTokens,
   createQrToken,

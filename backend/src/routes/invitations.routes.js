@@ -45,6 +45,7 @@ const {
   updateSettings: updateGuestbookSettings,
   listQrTokens,
   createQrToken,
+  detectMissingPhotoFocus,
 } = require('../controllers/guestbook.controller');
 const { upload, uploadAudio, uploadSpreadsheet } = require('../middleware/upload');
 
@@ -105,6 +106,7 @@ router.get('/:id/guestbook/export.pdf', exportGuestbookPdf);
 router.patch('/:id/guestbook/settings', updateGuestbookSettings);
 router.get('/:id/guestbook/qr-tokens', listQrTokens);
 router.post('/:id/guestbook/qr-tokens', createQrToken);
+router.post('/:id/guestbook/photo-focus/detect', detectMissingPhotoFocus);
 
 router.post('/:id/client-access-token', regenerateClientAccessToken);
 router.delete('/:id/client-access-token', revokeClientAccessToken);
