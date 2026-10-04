@@ -82,7 +82,7 @@ export default function GuestbookVideoPage() {
 
   const selectedEntries = display && selectedIds ? display.entries.filter((e) => selectedIds.has(e.id)) : [];
   const estimatedTimeline = display
-    ? buildGuestbookVideoTimeline({ namesLine: display.namesLine, title: display.title, entries: selectedEntries })
+    ? buildGuestbookVideoTimeline({ namesLine: display.namesLine, title: display.title, eventDate: display.eventDate, entries: selectedEntries })
     : null;
 
   const start = async () => {
@@ -95,6 +95,7 @@ export default function GuestbookVideoPage() {
       const timeline = buildGuestbookVideoTimeline({
         namesLine: display.namesLine,
         title: display.title,
+        eventDate: display.eventDate,
         entries: selectedEntries,
       });
       const blob = await generateGuestbookVideo({

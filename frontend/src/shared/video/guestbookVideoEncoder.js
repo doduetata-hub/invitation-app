@@ -1,6 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
-import { renderFrame } from './guestbookVideoRenderer';
+import { renderFrame, ensureVideoFonts } from './guestbookVideoRenderer';
 
 // Cœur ffmpeg.wasm MONO-thread (pas -mt) chargé depuis un CDN au moment de la génération, pas au
 // chargement de l'appli : la version multi-thread irait plus vite mais exige des en-têtes
@@ -215,7 +215,7 @@ export async function generateGuestbookVideo({ canvas, timeline, coverUrl, music
   canvas.height = VIDEO_HEIGHT;
 
   onProgress?.({ phase: 'preload', current: 0, total: 1 });
-  await document.fonts.ready;
+  await ensureVideoFonts();
   const images = await preloadImages(timeline, coverUrl);
   const particles = buildParticles();
 

@@ -464,7 +464,7 @@ function VideoMaker({ slug, names, done, onDone }) {
   }, [running]);
 
   const timeline = useMemo(
-    () => (display ? buildGuestbookVideoTimeline({ namesLine: display.namesLine, title: display.title, entries: display.entries }) : null),
+    () => (display ? buildGuestbookVideoTimeline({ namesLine: display.namesLine, title: display.title, eventDate: display.eventDate, entries: display.entries }) : null),
     [display]
   );
 
