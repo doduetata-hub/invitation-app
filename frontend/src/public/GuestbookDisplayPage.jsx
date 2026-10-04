@@ -71,8 +71,8 @@ injectStylesOnce(
   .gb-leaf-br { right: calc(var(--u) * -1.4); bottom: calc(var(--u) * 0.1); width: calc(var(--u) * 11); transform: scaleX(-1) rotate(-62deg); }
 
   /* Titre */
-  .gb-title { position: absolute; z-index: 2; top: calc(var(--u) * 0.1); left: 0; right: 0; text-align: center; pointer-events: none; }
-  .gb-title-script { margin: 0; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 6.3); line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 calc(var(--u) * 0.7) rgba(226,170,80,0.35)); }
+  .gb-title { position: absolute; z-index: 2; top: calc(var(--u) * 0.8); left: 0; right: 0; text-align: center; pointer-events: none; }
+  .gb-title-script { padding: 0.16em 0.14em 0.2em; margin: -0.16em -0.14em -0.2em; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 6); line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 calc(var(--u) * 0.7) rgba(226,170,80,0.35)); }
   .gb-divider { display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 1); }
   .gb-divider-line { display: block; height: max(1px, calc(var(--u) * 0.07)); width: calc(var(--u) * 17); background: linear-gradient(90deg, transparent, #D9AE62); }
   .gb-divider-line:last-child { background: linear-gradient(90deg, #D9AE62, transparent); }
@@ -156,7 +156,7 @@ injectStylesOnce(
   .gb-closing-text { position: absolute; left: 42%; right: calc(var(--u) * 4); top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
   .gb-closing-text > * { animation: gbPartIn 1100ms ease both; }
   .gb-closing-eyebrow { margin: 0 0 calc(var(--u) * 1.2); font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: calc(var(--u) * 1.5); letter-spacing: 0.3em; text-transform: uppercase; color: #B8873F; animation-delay: 500ms; }
-  .gb-closing-merci { margin: 0; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 14.5); line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 calc(var(--u) * 1) rgba(226,170,80,0.4)); animation-delay: 900ms; }
+  .gb-closing-merci { padding: 0.16em 0.14em 0.2em; margin: -0.16em -0.14em -0.2em; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 14.5); line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 calc(var(--u) * 1) rgba(226,170,80,0.4)); animation-delay: 900ms; }
   .gb-closing-text .gb-divider { margin: calc(var(--u) * 1.4) 0 calc(var(--u) * 2); animation: gbPartIn 1100ms ease both 1500ms; }
   .gb-closing-line { margin: 0 0 calc(var(--u) * 1.6); font-family: 'Libre Baskerville', Georgia, serif; font-style: italic; font-size: calc(var(--u) * 2.5); color: #F7F1E5; animation-delay: 1900ms; }
   .gb-closing-names { margin: 0 0 calc(var(--u) * 1.4); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 3); letter-spacing: 0.05em; color: #F2D28C; animation-delay: 2300ms; }

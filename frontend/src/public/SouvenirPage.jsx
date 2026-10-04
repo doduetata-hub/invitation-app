@@ -33,7 +33,7 @@ injectStylesOnce(
   /* En-tête */
   .sv-hero { text-align: center; padding: 8px 0 8px; }
   .sv-eyebrow { margin: 0 0 6px; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 15px; letter-spacing: 0.34em; text-transform: uppercase; color: #B8873F; animation: svRise 900ms ease both; }
-  .sv-title { margin: 0; font-family: 'Great Vibes', cursive; font-weight: 400; font-size: clamp(64px, 12vw, 128px); line-height: 1.05; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px rgba(226,170,80,0.38)); animation: svRise 1100ms ease both 150ms; }
+  .sv-title { padding: 0.16em 0.14em 0.2em; margin: -0.16em -0.14em -0.2em; font-family: 'Great Vibes', cursive; font-weight: 400; font-size: clamp(64px, 12vw, 128px); line-height: 1.05; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px rgba(226,170,80,0.38)); animation: svRise 1100ms ease both 150ms; }
   .sv-divider { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 6px 0 14px; animation: svRise 1100ms ease both 350ms; }
   .sv-divider i { display: block; height: 1px; width: min(26vw, 200px); background: linear-gradient(90deg, transparent, var(--gold)); }
   .sv-divider i:last-child { background: linear-gradient(90deg, var(--gold), transparent); }
