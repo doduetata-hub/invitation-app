@@ -204,10 +204,16 @@ function drawBranch(doc, { cx, cy, width, rotate = 0, flip = false, opacity = 1 
   doc.restore();
 }
 
-function drawCornerBranches(doc) {
-  drawBranch(doc, { cx: 3.6 * U, cy: 4.9 * U, width: 8.4 * U, rotate: -24 });
-  drawBranch(doc, { cx: 4.1 * U, cy: 50.9 * U, width: 13 * U, rotate: 18, opacity: 0.6 });
-  drawBranch(doc, { cx: 95.9 * U, cy: 48.8 * U, width: 11 * U, rotate: -62, flip: true });
+// mirror : la page de clôture a sa photo à gauche, les branches passent donc de l'autre côté.
+function drawCornerBranches(doc, mirror = false) {
+  const branches = [
+    { cx: 3.6 * U, cy: 4.9 * U, width: 8.4 * U, rotate: -24 },
+    { cx: 4.1 * U, cy: 50.9 * U, width: 13 * U, rotate: 18, opacity: 0.6 },
+    { cx: 95.9 * U, cy: 48.8 * U, width: 11 * U, rotate: -62, flip: true },
+  ];
+  for (const b of branches) {
+    drawBranch(doc, mirror ? { ...b, cx: PAGE.width - b.cx, flip: !b.flip } : b);
+  }
 }
 
 const HEART_PATH = 'M12 21s-7.5-4.6-9.5-9.2C1 8 3.2 5 6.2 5c1.9 0 3.4 1 5.8 3.3C14.4 6 15.9 5 17.8 5c3 0 5.2 3 3.7 6.8C19.5 16.4 12 21 12 21z';
@@ -229,31 +235,44 @@ function drawDivider(doc, cx, y, lineWidth, heartSize) {
   drawHeart(doc, cx, y, heartSize);
 }
 
-async function drawCoverPage(doc, invitation, fonts) {
+// Photo des mariés (celle de la couverture de l'invitation) : lue une seule fois pour la couverture et
+// la page de clôture. Absente ou illisible : null, et ces deux pages restent simplement centrées.
+async function loadCoverPhoto(invitation) {
+  const coverUrl = Array.isArray(invitation.media) ? invitation.media.find((m) => m.type === 'cover')?.url : null;
+  if (!coverUrl) return null;
+  try {
+    return await fetchMediaBytes(coverUrl);
+  } catch {
+    return null;
+  }
+}
+
+// Photo pleine hauteur sur 42 % de la largeur, d'un côté, fondue vers le fond sombre comme sur l'écran.
+// Renvoie false (rien de dessiné) si le fichier n'est pas une image lisible par pdfkit.
+function drawSidePhoto(doc, bytes, side) {
+  const photoW = PAGE.width * 0.42;
+  const photoX = side === 'right' ? PAGE.width - photoW : 0;
+  try {
+    doc.save();
+    doc.rect(photoX, 0, photoW, PAGE.height).clip();
+    doc.image(bytes, photoX, 0, { cover: [photoW, PAGE.height], align: 'center', valign: 'top' });
+    doc.restore();
+  } catch {
+    doc.restore();
+    return false;
+  }
+  doc.save().opacity(0.28).rect(photoX, 0, photoW, PAGE.height).fill(INK).restore();
+  const fadeW = photoW * 0.58;
+  const fade = side === 'right' ? doc.linearGradient(photoX, 0, photoX + fadeW, 0) : doc.linearGradient(photoW, 0, photoW - fadeW, 0);
+  fade.stop(0, '#111111', 1).stop(1, '#111111', 0);
+  doc.rect(side === 'right' ? photoX - 1 : photoW - fadeW, 0, fadeW + 1, PAGE.height).fill(fade);
+  return true;
+}
+
+function drawCoverPage(doc, invitation, fonts, coverBytes) {
   drawBackground(doc);
 
-  // Photo des mariés : à droite, fondue vers le fond sombre comme sur l'écran. Absente ou illisible :
-  // la couverture reste simplement centrée, sans photo.
-  let hasPhoto = false;
-  const coverUrl = Array.isArray(invitation.media) ? invitation.media.find((m) => m.type === 'cover')?.url : null;
-  if (coverUrl) {
-    try {
-      const bytes = await fetchMediaBytes(coverUrl);
-      const photoW = PAGE.width * 0.42;
-      const photoX = PAGE.width - photoW;
-      doc.save();
-      doc.rect(photoX, 0, photoW, PAGE.height).clip();
-      doc.image(bytes, photoX, 0, { cover: [photoW, PAGE.height], align: 'center', valign: 'top' });
-      doc.restore();
-      doc.save().opacity(0.28).rect(photoX, 0, photoW, PAGE.height).fill(INK).restore();
-      const fade = doc.linearGradient(photoX, 0, photoX + photoW * 0.58, 0);
-      fade.stop(0, '#111111', 1).stop(1, '#111111', 0);
-      doc.rect(photoX - 1, 0, photoW * 0.58 + 1, PAGE.height).fill(fade);
-      hasPhoto = true;
-    } catch {
-      hasPhoto = false;
-    }
-  }
+  const hasPhoto = coverBytes ? drawSidePhoto(doc, coverBytes, 'right') : false;
 
   drawBokeh(doc);
   drawCornerBranches(doc);
@@ -307,6 +326,57 @@ async function drawCoverPage(doc, invitation, fonts) {
     doc.fillColor(IVORY).opacity(0.78).font(fonts.Serif).fontSize(11).text(dateText, textX, y, { width: textW, align: 'center', characterSpacing: 1 });
     doc.opacity(1);
   }
+}
+
+// Dernière page : un remerciement, avec la photo des mariés cette fois à gauche (la couverture en miroir).
+function drawClosingPage(doc, invitation, fonts, coverBytes, count) {
+  doc.addPage();
+  drawBackground(doc);
+  drawBokeh(doc);
+  const hasPhoto = coverBytes ? drawSidePhoto(doc, coverBytes, 'left') : false;
+  drawCornerBranches(doc, hasPhoto);
+
+  const zoneX = hasPhoto ? PAGE.width * 0.42 : 0;
+  const zoneW = hasPhoto ? PAGE.width * 0.58 - 40 : PAGE.width;
+  const zoneCx = zoneX + zoneW / 2;
+  const textW = zoneW - 90;
+  const textX = zoneCx - textW / 2;
+  const title = textForPrint(invitation.namesLine || invitation.title, "Livre d'or");
+  const dateText = invitation.eventDate
+    ? new Date(invitation.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+  const lines = [
+    { text: 'AVEC TOUT NOTRE AMOUR', font: fonts.SerifItalic, size: 12, color: GOLD, gap: 14, spacing: 4 },
+    { text: 'Merci', font: fonts.Script, size: fonts.hasScript ? 92 : 56, color: '#F6D98E', gap: 18 },
+    { divider: true, gap: 22 },
+    { text: "d'avoir partagé notre bonheur", font: fonts.SerifItalic, size: 17, color: IVORY, gap: 20 },
+    { text: title, font: fonts.SerifBold, size: 21, color: GOLD_BRIGHT, gap: 16, spacing: 1 },
+    {
+      text: `${count} mot${count > 1 ? 's' : ''} d'amour réunis${dateText ? ` · ${dateText}` : ''}`,
+      font: fonts.Serif,
+      size: 10.5,
+      color: IVORY,
+      opacity: 0.72,
+      spacing: 1,
+    },
+  ];
+  const heights = lines.map((line) => {
+    if (line.divider) return 12;
+    doc.font(line.font).fontSize(line.size);
+    return doc.heightOfString(line.text, { width: textW, align: 'center', characterSpacing: line.spacing || 0 });
+  });
+  const total = heights.reduce((sum, h) => sum + h, 0) + lines.slice(0, -1).reduce((sum, line) => sum + line.gap, 0);
+  let y = (PAGE.height - total) / 2;
+  lines.forEach((line, i) => {
+    if (line.divider) {
+      drawDivider(doc, zoneCx, y + 6, Math.min(120, textW / 3), 12);
+    } else {
+      doc.fillColor(line.color).opacity(line.opacity ?? 1).font(line.font).fontSize(line.size)
+        .text(line.text, textX, y, { width: textW, align: 'center', characterSpacing: line.spacing || 0 });
+      doc.opacity(1);
+    }
+    y += heights[i] + (line.gap || 0);
+  });
 }
 
 // ----- Blocs de texte : latin (mise en page de pdfkit) ou arabe (droite à gauche) -----
@@ -531,8 +601,9 @@ async function buildGuestbookPdf(invitation, entries) {
   const done = new Promise((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
   const fonts = registerFonts(doc);
 
+  const coverBytes = await loadCoverPhoto(invitation);
   doc.addPage();
-  await drawCoverPage(doc, invitation, fonts);
+  drawCoverPage(doc, invitation, fonts, coverBytes);
   doc.outline.addItem(invitation.namesLine || invitation.title, { pageNumber: 0 });
 
   for (let i = 0; i < entries.length; i += 1) {
@@ -562,6 +633,8 @@ async function buildGuestbookPdf(invitation, entries) {
     // lecteur PDF avec sa propre police système, jamais dessiné avec les polices embarquées
     // — il échappe donc à la limite WinAnsi qui s'applique au texte imprimé, et peut afficher un
     // nom complet même avec des caractères non latins.
+    drawClosingPage(doc, invitation, fonts, coverBytes, entries.length);
+    doc.outline.addItem('Merci', { pageNumber: entries.length + 1 });
     const guestsFolder = doc.outline.addItem('Invités (A → Z)', { expanded: true });
     const bySortedName = entries
       .map((entry, i) => ({ entry, pageNumber: i + 1 }))
