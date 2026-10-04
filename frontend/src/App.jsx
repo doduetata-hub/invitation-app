@@ -29,6 +29,7 @@ const ClientAccessPage = lazy(() => import('./public/ClientAccessPage'));
 const CheckinAccessPage = lazy(() => import('./public/CheckinAccessPage'));
 const GuestbookQrPage = lazy(() => import('./public/GuestbookQrPage'));
 const GuestbookDisplayPage = lazy(() => import('./public/GuestbookDisplayPage'));
+const SouvenirPage = lazy(() => import('./public/SouvenirPage'));
 
 function PageFallback() {
   return <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>Chargement...</div>;
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/gerer/:token" element={<ClientAccessPage />} />
             <Route path="/checkin/:token" element={<CheckinAccessPage />} />
             <Route path="/guestbook/:slug/display" element={<GuestbookDisplayPage />} />
+            <Route path="/souvenir/:token" element={<SouvenirPage />} />
             <Route path="/guestbook/:token" element={<GuestbookQrPage />} />
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
