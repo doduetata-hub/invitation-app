@@ -17,7 +17,11 @@ const env = require('../config/env');
 // version imprimée, les caractères hors de ce répertoire :
 // jamais dans la donnée elle-même, qui reste intacte partout ailleurs (base, administration,
 // mode écran, où le navigateur affiche nativement emojis et toute écriture).
-const WINANSI_SAFE_CHAR = /^[\u0000-\u007E\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]$/u;
+// Caractères de contrôle (U+0000-U+001F : retour chariot, tabulation...) exclus, ainsi que le trait
+// d'union conditionnel U+00AD : ces polices n'ont pas de glyphe pour eux, ils sortiraient en petit
+// rectangle vertical (le « \r » des fins de ligne Windows en est la cause la plus courante). Les sauts
+// de ligne sont traités à part, voir textForPrint.
+const WINANSI_SAFE_CHAR = /^[\u0020-\u007E\u00A0-\u00AC\u00AE-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]$/u;
 
 // Écriture arabe : conservée seulement quand la police arabe est embarquée (voir registerFonts,
 // option arabic de textForPrint) — fontkit assure alors la liaison des lettres. La ponctuation
@@ -28,12 +32,24 @@ const ARABIC_FIRST_LETTER = /^[^\p{L}]*[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/u;
 const isArabicText = (text) => ARABIC_FIRST_LETTER.test(text || '');
 
 function textForPrint(text, fallback = '(message avec des caractères non imprimables — consultez le livre d\'or numérique)', { arabic = false } = {}) {
+  // Fins de ligne Windows (\r\n) ou anciennes (\r), séparateurs Unicode de ligne et de paragraphe :
+  // un seul saut de ligne ; tabulations : une espace.
+  const normalized = String(text || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u2028\u2029\u0085]/g, '\n')
+    .replace(/[\t\u000B\u000C]/g, ' ');
   // Itère par point de code Unicode (pas par unité UTF-16) : un emoji composé de deux unités
   // "surrogate pairs" ne doit pas être coupé en deux caractères invalides au milieu.
-  const kept = [...String(text || '')]
-    .filter((ch) => WINANSI_SAFE_CHAR.test(ch) || (arabic && ARABIC_CHAR.test(ch)))
+  const kept = [...normalized]
+    .filter((ch) => ch === '\n' || WINANSI_SAFE_CHAR.test(ch) || (arabic && ARABIC_CHAR.test(ch)))
     .join('');
-  const cleaned = kept.replace(/[ \t]{2,}/g, ' ').trim();
+  // Espaces autour des sauts de ligne retirés (une ligne ne commence pas par une espace), pas plus d'une
+  // ligne vide d'affilée.
+  const cleaned = kept
+    .replace(/[ \t]*\n[ \t]*/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
   return cleaned || fallback;
 }
 
