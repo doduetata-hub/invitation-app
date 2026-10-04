@@ -287,6 +287,26 @@ async function detectMissingPhotoFocus(req, res) {
   res.json({ processed, failed, remaining });
 }
 
+// Fin du livre d'or : plus aucun nouveau message, liste d'invités figée, page de clôture à l'écran
+// (voir guestbookClosedAt dans le schéma). Idempotent : clore un livre d'or déjà clos garde sa date.
+// Les messages déjà reçus restent modérables (approuver / rejeter) comme avant.
+async function closeGuestbook(req, res) {
+  const existing = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!existing) return res.status(404).json({ error: 'Invitation introuvable' });
+  if (existing.guestbookClosedAt) return res.json({ guestbookClosedAt: existing.guestbookClosedAt });
+
+  const invitation = await prisma.invitation.update({ where: { id: existing.id }, data: { guestbookClosedAt: new Date() } });
+  res.json({ guestbookClosedAt: invitation.guestbookClosedAt });
+}
+
+async function reopenGuestbook(req, res) {
+  const existing = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!existing) return res.status(404).json({ error: 'Invitation introuvable' });
+
+  await prisma.invitation.update({ where: { id: existing.id }, data: { guestbookClosedAt: null } });
+  res.json({ guestbookClosedAt: null });
+}
+
 async function updateSettings(req, res) {
   try {
     const invitation = await prisma.invitation.update({
@@ -390,6 +410,9 @@ module.exports = {
   resolvePendingPhoto,
   setPhotoFocus,
   detectMissingPhotoFocus,
+  closeGuestbook,
+  reopenGuestbook,
+  fetchEntriesForExport,
   updateSettings,
   listQrTokens,
   createQrToken,

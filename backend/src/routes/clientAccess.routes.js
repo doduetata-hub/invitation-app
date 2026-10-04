@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const {
+  requireGuestListOpen,
   getByToken,
   createGuest,
   importGuests,
@@ -28,11 +29,11 @@ const clientAccessLimiter = rateLimit({
 router.use(clientAccessLimiter);
 
 router.get('/:token', getByToken);
-router.post('/:token/guests', createGuest);
+router.post('/:token/guests', requireGuestListOpen, createGuest);
 router.get('/:token/guests/import-template', downloadImportTemplate);
-router.post('/:token/guests/import', uploadSpreadsheet.single('file'), importGuests);
-router.patch('/:token/guests/:guestId', updateGuest);
-router.delete('/:token/guests/:guestId', removeGuest);
+router.post('/:token/guests/import', requireGuestListOpen, uploadSpreadsheet.single('file'), importGuests);
+router.patch('/:token/guests/:guestId', requireGuestListOpen, updateGuest);
+router.delete('/:token/guests/:guestId', requireGuestListOpen, removeGuest);
 router.get('/:token/guests/:guestId/qrcode', getGuestQrCode);
 
 router.get('/:token/checkin/lookup', lookupGuestByCode);

@@ -22,6 +22,20 @@ function computeStats(guests) {
   return { totalGuests: guests.length, confirmed, declined, pending, totalPersons };
 }
 
+// Livre d'or clos : la liste d'invités est figée (ni création, ni import, ni modification, ni
+// suppression) ; la consultation, les QR codes et le pointage des arrivées restent possibles. Placé en
+// middleware sur ces seules routes (voir clientAccess.routes.js).
+async function requireGuestListOpen(req, res, next) {
+  const invitation = await findInvitationByToken(req.params.token);
+  if (invitation?.guestbookClosedAt) {
+    return res.status(403).json({
+      error: "Le livre d'or est clos : la liste des invités n'est plus modifiable.",
+      code: 'GUESTBOOK_CLOSED',
+    });
+  }
+  next();
+}
+
 async function getByToken(req, res) {
   const invitation = await findInvitationByToken(req.params.token);
   if (!invitation) {
@@ -35,7 +49,7 @@ async function getByToken(req, res) {
   });
 
   res.json({
-    invitation: { title: invitation.title, namesLine: invitation.namesLine, slug: invitation.slug },
+    invitation: { title: invitation.title, namesLine: invitation.namesLine, slug: invitation.slug, guestbookClosedAt: invitation.guestbookClosedAt },
     guests,
     stats: computeStats(guests),
   });
@@ -263,6 +277,7 @@ async function undoCheckInGuest(req, res) {
 }
 
 module.exports = {
+  requireGuestListOpen,
   getByToken,
   createGuest,
   importGuests,

@@ -102,6 +102,11 @@ model Invitation {
   // proches) pour supprimer cette friction : le message passe directement en APPROVED.
   guestbookAutoApprove Boolean @default(false) @map("guestbook_auto_approve")
 
+  // Fin du livre d'or : date à laquelle l'admin a clos les messages. Renseignée, plus aucun nouveau
+  // message n'est accepté (QR, invitation numérique), la liste d'invités du lien client est figée et
+  // l'écran de la salle affiche sa page de clôture après le dernier message. Vide = livre d'or ouvert.
+  guestbookClosedAt DateTime? @map("guestbook_closed_at")
+
   // Par defaut, un invite peut rouvrir et corriger sa reponse RSVP (presence/nombre/boisson/
   // message) a tout moment depuis son lien -- le nom, lui, reste toujours impose par l'admin
   // (voir submitRsvp). Active ici pour figer les reponses au-dela d'un certain moment (jour J
@@ -120,6 +125,10 @@ model Invitation {
   // Volontairement séparé de clientAccessToken pour qu'elle ne puisse jamais créer/modifier/
   // supprimer des invités — seulement rechercher/scanner et pointer les arrivées.
   checkinAccessToken String? @unique @map("checkin_access_token")
+
+  // Lien secret « Souvenir » à envoyer aux mariés : revoir le livre d'or, le télécharger en vidéo et en
+  // PDF. Indépendant des deux autres tokens (il ne donne aucun pouvoir sur les invités), révocable.
+  souvenirToken String? @unique @map("souvenir_token")
 
   status InvitationStatus @default(DRAFT)
 

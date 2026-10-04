@@ -12,6 +12,8 @@ const {
   revokeClientAccessToken,
   regenerateCheckinAccessToken,
   revokeCheckinAccessToken,
+  regenerateSouvenirToken,
+  revokeSouvenirToken,
 } = require('../controllers/invitations.controller');
 const { listForInvitation, create: createEvent } = require('../controllers/events.controller');
 const {
@@ -46,6 +48,8 @@ const {
   listQrTokens,
   createQrToken,
   detectMissingPhotoFocus,
+  closeGuestbook,
+  reopenGuestbook,
 } = require('../controllers/guestbook.controller');
 const { upload, uploadAudio, uploadSpreadsheet } = require('../middleware/upload');
 
@@ -107,11 +111,16 @@ router.patch('/:id/guestbook/settings', updateGuestbookSettings);
 router.get('/:id/guestbook/qr-tokens', listQrTokens);
 router.post('/:id/guestbook/qr-tokens', createQrToken);
 router.post('/:id/guestbook/photo-focus/detect', detectMissingPhotoFocus);
+router.post('/:id/guestbook/close', closeGuestbook);
+router.post('/:id/guestbook/reopen', reopenGuestbook);
 
 router.post('/:id/client-access-token', regenerateClientAccessToken);
 router.delete('/:id/client-access-token', revokeClientAccessToken);
 
 router.post('/:id/checkin-access-token', regenerateCheckinAccessToken);
 router.delete('/:id/checkin-access-token', revokeCheckinAccessToken);
+
+router.post('/:id/souvenir-token', regenerateSouvenirToken);
+router.delete('/:id/souvenir-token', revokeSouvenirToken);
 
 module.exports = router;

@@ -23,5 +23,6 @@ async function generateUniqueAccessToken(field) {
 
 const generateUniqueClientAccessToken = () => generateUniqueAccessToken('clientAccessToken');
 const generateUniqueCheckinAccessToken = () => generateUniqueAccessToken('checkinAccessToken');
+const generateUniqueSouvenirToken = () => generateUniqueAccessToken('souvenirToken');
 
-module.exports = { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken };
+module.exports = { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken, generateUniqueSouvenirToken };

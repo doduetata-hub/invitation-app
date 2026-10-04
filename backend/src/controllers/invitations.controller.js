@@ -1,6 +1,6 @@
 const prisma = require('../db/prismaClient');
 const { generateUniqueSlug } = require('../services/slug.service');
-const { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken } = require('../services/clientAccessToken.service');
+const { generateUniqueClientAccessToken, generateUniqueCheckinAccessToken, generateUniqueSouvenirToken } = require('../services/clientAccessToken.service');
 // Chemin explicite (pas juste "../services/storage") : la résolution implicite d'un
 // index.js de dossier n'est pas toujours tracée correctement par l'empaquetage des
 // fonctions serverless Vercel, qui a fini par exclure ce module du bundle déployé.
@@ -292,6 +292,31 @@ async function revokeClientAccessToken(req, res) {
 
 // Lien distinct, à déléguer à la personne qui filtre l'entrée jour J : elle ne peut jamais
 // créer/modifier/supprimer un invité avec ce token, seulement scanner/rechercher et pointer.
+// Lien « Souvenir » des mariés (voir souvenir.controller.js) : (re)générer remplace le lien précédent,
+// qui cesse aussitôt de fonctionner ; révoquer le supprime.
+async function regenerateSouvenirToken(req, res) {
+  const existing = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+  if (!existing) {
+    return res.status(404).json({ error: 'Invitation introuvable' });
+  }
+
+  const souvenirToken = await generateUniqueSouvenirToken();
+  const invitation = await prisma.invitation.update({ where: { id: req.params.id }, data: { souvenirToken } });
+  res.json({ souvenirToken: invitation.souvenirToken });
+}
+
+async function revokeSouvenirToken(req, res) {
+  try {
+    await prisma.invitation.update({ where: { id: req.params.id }, data: { souvenirToken: null } });
+    res.status(204).send();
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Invitation introuvable' });
+    }
+    throw err;
+  }
+}
+
 async function regenerateCheckinAccessToken(req, res) {
   const existing = await prisma.invitation.findUnique({ where: { id: req.params.id } });
   if (!existing) {
@@ -333,5 +358,7 @@ module.exports = {
   regenerateClientAccessToken,
   revokeClientAccessToken,
   regenerateCheckinAccessToken,
+  regenerateSouvenirToken,
+  revokeSouvenirToken,
   revokeCheckinAccessToken,
 };

@@ -34,6 +34,14 @@ function badRequest(message) {
 // créée par l'appelant : cette fonction la rattache, ou la supprime si elle ne peut pas l'être
 // (entrée figée, message vidé, écriture en base échouée) — jamais de fichier laissé orphelin.
 async function syncGuestbookEntry(rsvp, autoApprove, { newPhoto = null, removePhoto = false } = {}) {
+  // Livre d'or clos : la réponse RSVP s'enregistre comme d'habitude, mais son message n'entre plus au
+  // livre d'or (et une photo jointe n'est pas conservée).
+  const invitationRow = await prisma.invitation.findUnique({ where: { id: rsvp.invitationId }, select: { guestbookClosedAt: true } });
+  if (invitationRow?.guestbookClosedAt) {
+    await deleteGuestbookPhoto(newPhoto).catch(() => {});
+    return prisma.guestbookEntry.findUnique({ where: { rsvpId: rsvp.id } });
+  }
+
   const message = rsvp.message?.trim();
   const existing = await prisma.guestbookEntry.findUnique({
     where: { rsvpId: rsvp.id },
@@ -198,6 +206,7 @@ async function getInvitationBySlug(req, res) {
     contactPhone: invitation.client.phone,
     contactWhatsapp: invitation.client.whatsapp,
     rsvpEditLocked: invitation.rsvpEditLocked,
+    guestbookClosed: Boolean(invitation.guestbookClosedAt),
     guest: guestInfo,
   });
 }
