@@ -16,16 +16,15 @@ injectStylesOnce(
   'guestbook-display',
   `
   .gb-display { position: fixed; inset: 0; overflow: hidden; overflow: clip; background: radial-gradient(circle at 50% 20%, #201a10 0%, #111111 55%, #0a0908 100%); font-family: 'Cormorant Garamond', Georgia, serif; }
-  /* 50% 22% : même cadrage que LuxuryGoldCoverSection pour cette photo (remonte le point de
-     recadrage, sinon "cover" + position centrée coupe le haut des visages sur un plan large).
-     La photo du couple reste volontairement très sombre (opacity/brightness bas) : un simple
-     décor discret derrière le message, jamais un élément qu'on éclaircit pour le mettre en avant. */
-  .gb-photo-bg { position: absolute; inset: 0; background-size: cover; background-position: 50% 22%; opacity: 0.22; filter: saturate(0.7) brightness(0.75); animation: gbBgDrift 48s ease-in-out infinite alternate; }
+  /* Intro et écran « Prêt » : la photo des mariés devient une lumière ambiante chaude, floue et dorée
+     (même fond que la page Souvenir), pas un décor sombre et terne. 50% 22% : même cadrage que
+     LuxuryGoldCoverSection pour cette photo. inset négatif : le flou ne laisse pas de bord clair. */
+  .gb-photo-bg { position: absolute; inset: -8%; background-size: cover; background-position: 50% 22%; opacity: 0.55; filter: blur(22px) saturate(1.25) brightness(0.55); animation: gbBgDrift 48s ease-in-out infinite alternate; }
   /* Dérive de cadrage extrêmement lente (imperceptible seconde par seconde, sensible sur la durée
      d'une soirée) : un très léger mouvement, jamais un zoom, pour que l'arrière-plan ne soit
      jamais totalement figé sans pour autant attirer l'œil. */
   @keyframes gbBgDrift { from { transform: scale(1.02) translate(0, 0); } to { transform: scale(1.06) translate(-0.6%, -0.4%); } }
-  .gb-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,9,8,0.55) 0%, rgba(10,9,8,0.75) 60%, rgba(10,9,8,0.92) 100%); }
+  .gb-overlay { position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, rgba(54,42,22,0.45) 0%, rgba(11,10,8,0.88) 62%), linear-gradient(180deg, rgba(11,10,8,0.15) 0%, rgba(11,10,8,0.85) 100%); }
   /* Halo doré diffus, très en dessous de l'overlay sombre : une lumière ambiante à peine
      perceptible plutôt qu'un vrai projecteur — la photo du couple doit rester sombre et discrète. */
   .gb-mist { position: absolute; inset: -10%; background: radial-gradient(ellipse at 50% 38%, rgba(216,181,109,0.10) 0%, rgba(216,181,109,0.04) 38%, transparent 72%); animation: gbMistBreathe 22s ease-in-out infinite; pointer-events: none; }
@@ -43,9 +42,10 @@ injectStylesOnce(
      du milieu atteint le plafond pile à 1920px), puis continue de grossir linéairement au-delà
      — sans ce plafond relevé, tout restait bloqué à sa taille 1080p en pixels, donc paraissait
      deux fois plus petit à l'écran une fois monté en 4K (3840px = 2x1920px). */
-  .gb-intro-line { font-size: clamp(1.4rem, 1.83vw, 4.4rem); color: #F7F1E5; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
-  .gb-intro-names { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 5vw, 12rem); color: #D6B56D; margin: 0; }
-  .gb-intro-title { font-family: 'Playfair Display', serif; font-size: clamp(2.6rem, 3.75vw, 9rem); letter-spacing: 0.2em; text-transform: uppercase; color: #F7F1E5; margin: 0; }
+  .gb-intro-line { font-size: clamp(1.5rem, 2vw, 4.8rem); font-style: italic; font-weight: 500; color: #F2D28C; letter-spacing: 0.06em; text-shadow: 0 0 24px rgba(226,170,80,0.35); margin: 0; }
+  .gb-intro-names, .gb-intro-title { padding: 0.16em 0.14em 0.2em; margin: -0.16em -0.14em -0.2em; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; line-height: 1.1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px rgba(226,170,80,0.38)); }
+  .gb-intro-names { font-size: clamp(3.4rem, 7.2vw, 17rem); }
+  .gb-intro-title { font-size: clamp(4.4rem, 10vw, 24rem); }
 
   /* ===== Mode "Livre d'Or" (maquette) ==================================================
      Titre en script doré ; liste de témoignages SANS bulle : avatar rond à anneau doré, nom, heure
@@ -58,10 +58,10 @@ injectStylesOnce(
   /* Décor propre à ce mode (classe .gb-live posée pendant la boucle seulement) : la photo des mariés
      passe à droite, teintée sépia, fondue vers le noir ; le voile plein écran de l'intro est remplacé
      par de simples ombres en haut et en bas. */
-  .gb-live { background: radial-gradient(ellipse at 24% 18%, #1b140c 0%, #0c0a07 52%, #060504 100%); }
-  .gb-live .gb-photo-bg { inset: 0 0 0 auto; width: 38%; background-position: 62% 16%; opacity: 0.92; filter: sepia(0.5) saturate(1.2) brightness(0.8) contrast(1.06); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 52%); mask-image: linear-gradient(90deg, transparent 0%, #000 52%); animation: none; }
+  .gb-live { background: radial-gradient(ellipse at 20% 10%, rgba(74,55,28,0.55) 0%, transparent 58%), radial-gradient(ellipse at 24% 18%, #1d150b 0%, #0c0a07 52%, #060504 100%); }
+  .gb-live .gb-photo-bg { inset: 0 0 0 auto; width: 38%; background-position: 62% 16%; opacity: 0.92; filter: sepia(0.42) saturate(1.3) brightness(0.92) contrast(1.06); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 52%); mask-image: linear-gradient(90deg, transparent 0%, #000 52%); animation: none; }
   .gb-live .gb-overlay { background: linear-gradient(0deg, rgba(6,5,4,0.7) 0%, rgba(6,5,4,0) 24%), linear-gradient(180deg, rgba(6,5,4,0.35) 0%, rgba(6,5,4,0) 20%); }
-  .gb-live .gb-glow-a { left: 32%; opacity: 0.5; }
+  .gb-live .gb-glow-a { left: 32%; opacity: 0.8; }
 
   .gb-bokeh { position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(240,196,110,0.7) 0%, rgba(240,196,110,0.28) 50%, transparent 72%); filter: blur(calc(var(--u) * 0.5)); transform-origin: center; animation: gbBokeh 9s ease-in-out infinite alternate; }
   @keyframes gbBokeh { from { opacity: 0.5; transform: scale(0.94); } to { opacity: 1; transform: scale(1.07); } }
@@ -162,13 +162,48 @@ injectStylesOnce(
   .gb-closing-names { margin: 0 0 calc(var(--u) * 1.4); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 3); letter-spacing: 0.05em; color: #F2D28C; animation-delay: 2300ms; }
   .gb-closing-count { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: calc(var(--u) * 1.4); letter-spacing: 0.08em; color: #EDE3CF; opacity: 0.8; animation-delay: 2700ms; }
 
+  /* Écran en hauteur (téléphone, tablette verticale) : on utilise toute la hauteur. La photo des mariés
+     occupe le haut de l'écran (visages dégagés) et se fond vers le noir ; le titre se pose sur ce
+     fondu ; les messages occupent tout le reste ; le pied de page tient sur deux lignes (jamais de
+     texte l'un sur l'autre). Dans chaque message, l'avatar et le nom sont sur une ligne, et le texte
+     s'étale ensuite sur TOUTE la largeur. */
   @media (max-aspect-ratio: 1/1) {
     .gb-display { --u: 2.6vw; }
-    .gb-closing-photo { width: 100%; opacity: 0.28; -webkit-mask-image: none; mask-image: none; }
-    .gb-closing-text { left: 4vw; right: 4vw; }
-    .gb-thread { left: 4vw; right: 4vw; }
-    .gb-msg, .gb-mbody, .gb-msg:not(.gb-has-photo) .gb-mbody { max-width: 100%; }
-    .gb-live .gb-photo-bg { width: 100%; opacity: 0.25; }
+    .gb-ready-portrait { width: calc(var(--u) * 21); }
+    .gb-closing-photo { width: 100%; height: 50%; bottom: auto; background-position: 50% 14%; -webkit-mask-image: linear-gradient(180deg, #000 42%, transparent 100%); mask-image: linear-gradient(180deg, #000 42%, transparent 100%); }
+    .gb-closing-text { left: 4vw; right: 4vw; top: 41%; bottom: 7%; justify-content: flex-start; }
+    .gb-closing-merci { font-size: calc(var(--u) * 13); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.75)) drop-shadow(0 0 calc(var(--u) * 1) rgba(226,170,80,0.4)); }
+    .gb-closing-eyebrow { color: #E9C47A; text-shadow: 0 1px 6px rgba(0,0,0,0.85); }
+    .gb-closing-line { font-size: calc(var(--u) * 2.4); }
+    .gb-closing-names { font-size: calc(var(--u) * 3); }
+
+    .gb-live .gb-photo-bg { inset: 0 0 auto 0; width: 100%; height: 43%; background-position: 50% 14%; opacity: 1; filter: sepia(0.35) saturate(1.2) brightness(0.9) contrast(1.05); -webkit-mask-image: linear-gradient(180deg, #000 38%, transparent 100%); mask-image: linear-gradient(180deg, #000 38%, transparent 100%); }
+    .gb-live .gb-overlay { background: linear-gradient(180deg, rgba(6,5,4,0.4) 0%, rgba(6,5,4,0) 20%); }
+    .gb-live .gb-glow-a { left: 50%; top: -20vw; }
+    .gb-leaf-tl { width: calc(var(--u) * 7); }
+    .gb-leaf-bl, .gb-leaf-br { display: none; }
+
+    .gb-title { top: 30%; }
+    .gb-title-script { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.75)) drop-shadow(0 0 calc(var(--u) * 0.7) rgba(226,170,80,0.35)); }
+    .gb-title-sub { text-shadow: 0 1px 6px rgba(0,0,0,0.9); }
+    .gb-thread { left: 5.5vw; right: 5.5vw; top: calc(30% + var(--u) * 10.4); bottom: calc(var(--u) * 9.4); gap: calc(var(--u) * 2.6); }
+    .gb-thread-empty { justify-content: center; padding-left: 0; text-align: center; }
+
+    .gb-msg { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: calc(var(--u) * 1.8); row-gap: calc(var(--u) * 0.9); align-items: center; width: 100%; max-width: 100%; }
+    .gb-mcol { display: contents; }
+    .gb-bphoto { grid-column: 1; grid-row: 1; width: calc(var(--u) * 6.6); height: calc(var(--u) * 6.6); }
+    .gb-mhead { grid-column: 2; grid-row: 1; min-width: 0; }
+    .gb-msg:not(.gb-has-photo) .gb-mhead { grid-column: 1 / -1; }
+    .gb-mbody, .gb-msg:not(.gb-has-photo) .gb-mbody { grid-column: 1 / -1; grid-row: 2; max-width: 100%; margin-top: 0; }
+    .gb-btext { font-size: calc(var(--u) * 1.95); }
+    .gb-btext.gb-rtl { font-size: calc(var(--u) * 2.5); }
+
+    .gb-foot-center { bottom: calc(var(--u) * 4.6); }
+    .gb-foot-center .gb-divider { display: none; }
+    .gb-foot-script { font-size: calc(var(--u) * 2.6); }
+    .gb-foot-music { left: 6vw; bottom: calc(var(--u) * 1.5); font-size: calc(var(--u) * 1.3); }
+    .gb-foot-count { right: 6vw; bottom: calc(var(--u) * 1.5); font-size: calc(var(--u) * 1.3); }
+    .gb-dots { display: none; }
   }
 
   .gb-fade-rise { animation: gbFadeRise 900ms ease both; }
@@ -176,8 +211,8 @@ injectStylesOnce(
 
   /* Premier écran, avant même l'intro : capte l'attention de la salle tout de suite, pour que
      personne ne rate le début du diaporama en train de discuter/manger. */
-  .gb-countdown-caption { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.25em; font-size: clamp(0.85rem, 0.92vw, 2.2rem); color: #F7F1E5; opacity: 0.8; margin: 0 0 1.5vh; }
-  .gb-countdown-number { font-family: 'Playfair Display', serif; font-size: clamp(6rem, 10.83vw, 26rem); color: #D6B56D; margin: 0; line-height: 1; text-shadow: 0 0 60px rgba(216,181,109,0.5); }
+  .gb-countdown-caption { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; text-transform: uppercase; letter-spacing: 0.3em; font-size: clamp(0.95rem, 1.1vw, 2.6rem); color: #D9AE62; margin: 0 0 1.5vh; }
+  .gb-countdown-number { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: clamp(6rem, 10.83vw, 26rem); margin: 0; line-height: 1; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 28px rgba(226,170,80,0.45)); }
   .gb-countdown-pop { animation: gbCountdownPop 1000ms ease both; }
   @keyframes gbCountdownPop { 0% { opacity: 0; transform: scale(1.5); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
 
@@ -193,13 +228,22 @@ injectStylesOnce(
 
   /* Écran "Prêt" du mode régie (voir ?regie=1) : un seul gros bouton, impossible à manquer. */
   .gb-start-btn {
-    font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.2em;
-    font-size: clamp(1rem, 1.3vw, 2.4rem); padding: 1.1em 2.6em; margin-top: 4vh;
-    border-radius: 999px; border: 1px solid #D6B56D; background: rgba(216,181,109,0.14);
-    color: #F7F1E5; cursor: pointer; backdrop-filter: blur(4px);
+    font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; letter-spacing: 0.04em;
+    font-size: clamp(1rem, 1.25vw, 2.4rem); padding: 1em 2.4em; margin-top: 3.2vh;
+    border-radius: 999px; border: 0; color: #1a1409; cursor: pointer;
+    background: linear-gradient(145deg, #FBE5A6 0%, #E7BE68 50%, #C98F3A 100%);
+    box-shadow: 0 10px 30px rgba(226,170,80,0.35); transition: transform 200ms ease, box-shadow 200ms ease;
   }
-  .gb-start-btn:hover, .gb-start-btn:focus-visible { background: rgba(216,181,109,0.3); outline: none; }
-  .gb-ready-hint { font-family: 'Inter', sans-serif; font-size: clamp(0.8rem, 0.9vw, 1.6rem); color: #F7F1E5; opacity: 0.55; margin: 2.5vh 0 0; }
+  .gb-start-btn:hover, .gb-start-btn:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(226,170,80,0.5); outline: none; }
+  .gb-ready-hint { font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(0.8rem, 0.9vw, 1.6rem); line-height: 1.6; color: #B6A580; margin: 2.2vh 0 0; }
+
+  /* Écran « Prêt » : portrait du couple en arche dorée, titre en script, noms, bouton (même langage
+     visuel que l'accueil Souvenir). */
+  .gb-ready-portrait { position: relative; margin: 0 0 calc(var(--u) * 2.4); width: calc(var(--u) * 17); aspect-ratio: 4 / 5.1; padding: 3px; border-radius: 999px 999px 18px 18px; background: linear-gradient(160deg, #FFF1C6 0%, #D9AE62 45%, #8E5F22 100%); box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 60px rgba(226,170,80,0.22); }
+  .gb-ready-portrait::before { content: ''; position: absolute; inset: -9px; border-radius: 999px 999px 26px 26px; border: 1px solid rgba(217,174,98,0.4); pointer-events: none; }
+  .gb-ready-portrait img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; border-radius: 999px 999px 15px 15px; background: #1a1610; }
+  .gb-ready-title { padding: 0.16em 0.14em 0.2em; margin: -0.16em -0.14em -0.2em; font-family: 'Great Vibes', 'Dancing Script', cursive; font-weight: 400; font-size: calc(var(--u) * 8); line-height: 1.05; background: linear-gradient(180deg, #FFF1C6 0%, #F2CB78 46%, #C98F3A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px rgba(226,170,80,0.38)); }
+  .gb-ready-names { margin: calc(var(--u) * 1.3) 0 0; font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; font-size: calc(var(--u) * 2.3); letter-spacing: 0.04em; color: #F2D28C; }
 
   @media (prefers-reduced-motion: reduce) {
     .gb-glow, .gb-particle, .gb-photo-bg, .gb-mist { animation: none !important; }
@@ -987,7 +1031,13 @@ export default function GuestbookDisplayPage() {
 
       {phase === 'ready' && (
         <div className="gb-intro">
-          <p className="gb-countdown-caption gb-fade-rise">Livre d'or — {data.namesLine || data.title}</p>
+          {data.coverUrl && (
+            <figure className="gb-ready-portrait gb-fade-rise">
+              <img src={data.coverUrl} alt="" />
+            </figure>
+          )}
+          <h1 className="gb-ready-title gb-fade-rise">Livre d’Or</h1>
+          <p className="gb-ready-names gb-fade-rise">{data.namesLine || data.title}</p>
           <button type="button" className="gb-start-btn" onClick={startFromReady} autoFocus>
             ▶ Lancer le livre d'or
           </button>
