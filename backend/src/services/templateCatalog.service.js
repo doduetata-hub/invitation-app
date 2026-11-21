@@ -5,7 +5,10 @@
 //
 // Propriétés voulues : jamais de modification ni de suppression d'une ligne existante (nom, catégorie, désactivation par l'administrateur conservés) ;
 // idempotent ; un échec (droits, base) est journalisé et n'empêche jamais la liste de s'afficher ; une seule tentative réussie par instance.
-const REQUIRED_TEMPLATES = [{ key: 'royal-editorial', name: 'Royal Editorial', category: 'mariage' }];
+const REQUIRED_TEMPLATES = [
+  { key: 'royal-editorial', name: 'Royal Editorial', category: 'mariage' },
+  { key: 'noir-gala', name: 'Noir Gala', category: 'mariage' },
+];
 
 let done = false;
 

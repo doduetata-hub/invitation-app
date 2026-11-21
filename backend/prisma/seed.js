@@ -33,6 +33,7 @@ async function main() {
     { key: 'professionnel', name: 'Événement professionnel', category: 'professionnel' },
     { key: 'luxury-wedding-gold', name: 'Luxury Wedding Gold', category: 'mariage' },
     { key: 'royal-editorial', name: 'Royal Editorial', category: 'mariage' },
+    { key: 'noir-gala', name: 'Noir Gala', category: 'mariage' },
   ];
 
   for (const t of templates) {

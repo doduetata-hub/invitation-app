@@ -26,8 +26,10 @@ const fakePrisma = (rows, opts = {}) => ({
 });
 const mk = (rows, opts) => { const p = fakePrisma(rows, opts); p.invitationTemplate.parent = p; return p; };
 
-test('le catalogue contient royal-editorial, comme le seed et le registre du frontend', () => {
-  assert.deepEqual(REQUIRED_TEMPLATES.map((t) => t.key), ['royal-editorial']);
+test('le catalogue contient royal-editorial et noir-gala, comme le seed et le registre du frontend', () => {
+  assert.deepEqual(REQUIRED_TEMPLATES.map((t) => t.key), ['royal-editorial', 'noir-gala']);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'prisma', 'seed.js'), 'utf8'), /key: 'noir-gala', name: 'Noir Gala', category: 'mariage'/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', '..', 'frontend', 'src', 'public', 'templates', 'registry.js'), 'utf8'), /noirGala/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'prisma', 'seed.js'), 'utf8'), /key: 'royal-editorial', name: 'Royal Editorial', category: 'mariage'/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', '..', 'frontend', 'src', 'public', 'templates', 'registry.js'), 'utf8'), /royalEditorial/);
 });
@@ -35,15 +37,18 @@ test('ligne absente : créée une fois (skipDuplicates) ; deuxième appel sans e
   resetForTests();
   const rows = [{ key: 'mariage-elegant', name: 'Mariage Élégant', category: 'mariage', isActive: true }];
   const p = mk(rows);
-  assert.deepEqual(await ensureCodeTemplates(p), { created: 1, skipped: false });
-  assert.deepEqual(rows.map((r) => r.key), ['mariage-elegant', 'royal-editorial']);
+  assert.deepEqual(await ensureCodeTemplates(p), { created: 2, skipped: false });
+  assert.deepEqual(rows.map((r) => r.key), ['mariage-elegant', 'royal-editorial', 'noir-gala']);
   assert.deepEqual(await ensureCodeTemplates(p), { created: 0, skipped: true });
   assert.equal(p.calls.length, 1);
   assert.equal(p.calls[0].skipDuplicates, true);
 });
 test('ligne déjà présente (même renommée ou désactivée) : AUCUNE modification', async () => {
   resetForTests();
-  const rows = [{ key: 'royal-editorial', name: 'Nom choisi par l\'admin', category: 'autre', isActive: false }];
+  const rows = [
+    { key: 'royal-editorial', name: 'Nom choisi par l\'admin', category: 'autre', isActive: false },
+    { key: 'noir-gala', name: 'Noir Gala', category: 'mariage', isActive: true },
+  ];
   const before = JSON.stringify(rows);
   const r = await ensureCodeTemplates(mk(rows));
   assert.equal(r.created, 0);
@@ -57,5 +62,5 @@ test('échec de la base : journalisé, jamais propagé ; nouvelle tentative poss
   assert.equal(r.error, true);
   assert.equal(rows.length, 0);
   const r2 = await ensureCodeTemplates(mk(rows));
-  assert.equal(r2.created, 1);
+  assert.equal(r2.created, 2);
 });
