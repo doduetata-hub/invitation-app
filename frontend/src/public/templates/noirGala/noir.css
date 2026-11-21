@@ -200,3 +200,14 @@
   .ng-gal__row { justify-content: center; }
   .ng-gal__row li { flex-basis: 300px; }
 }
+
+/* Écran plus large que haut : la photo (portrait) occupe la moitié droite, le texte la moitié gauche — aucun visage sous les noms. */
+@media (min-aspect-ratio: 1/1) {
+  .ng-cover__bg:not(.ng-cover__bg--mono) { left: auto; right: 0; width: 56%; object-position: 50% 10%; transform-origin: 50% 10%; }
+  .ng-cover__veil { background: linear-gradient(90deg, var(--ng-ink) 0%, var(--ng-ink) 40%, rgba(10,9,8,0.25) 62%, rgba(10,9,8,0.15) 100%), linear-gradient(180deg, rgba(10,9,8,0.4) 0%, rgba(10,9,8,0) 25%, rgba(10,9,8,0) 70%, rgba(10,9,8,0.7) 100%); }
+  .ng-cover__inner { margin: 0; max-width: 46%; padding-left: clamp(40px, 6vw, 96px); padding-right: 24px; align-items: flex-start; text-align: left; }
+  .ng-cover__center { padding-top: 0; margin: auto 0; }
+  .ng-names, .ng-date { align-items: flex-start; }
+  .ng-name { font-size: clamp(3.4rem, 6vw, 6.4rem); }
+  .ng-scroll { margin-left: 0; }
+}
