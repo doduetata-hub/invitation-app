@@ -90,9 +90,9 @@ Règles du mode `build` :
 - Sur le projet de production identifié, la présence d'une variable de préproduction (les quatre ci-dessus ou
   `STAGING_OP_AUTHORIZATION`) est **refusée** (`E_TEST_CONFIG_ON_PRODUCTION`).
 - Toujours refusés : toute variable `VITE_*` définie par vous (même vide), et tout fichier `.env`, `.env.local`, `.env.production` ou
-  `.env.production.local` dans `frontend/`. Seules exceptions : les variables `VITE_VERCEL_*` (liste fermée : `URL`, `ENV`,
-  `TARGET_ENV`, `REGION`, `BRANCH_URL`, `PROJECT_PRODUCTION_URL`, `DEPLOYMENT_ID`, `PROJECT_ID`, `GIT_*`) que Vercel injecte
-  lui-même au build quand il détecte Vite ; en cas de refus, le journal indique les NOMS (jamais les valeurs) fautifs.
+  `.env.production.local` dans `frontend/`. Seule exception : l'espace de noms `VITE_VERCEL_*` (par exemple `VITE_VERCEL_URL`,
+  `VITE_VERCEL_ENV`, `VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG`), que Vercel injecte lui-même au build quand il détecte Vite ;
+  en cas de refus, le journal indique les NOMS (jamais les valeurs) des variables fautives.
 
 Cible de test : `backend/scripts/staging-targets.json` (livré **vide** : toute vérification complète est refusée
 tant qu'une cible relue n'y figure pas). Une cible déclare `id`, `dbHost`, `dbPort`, `poolHost`, `poolPort`,

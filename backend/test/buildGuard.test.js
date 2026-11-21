@@ -481,11 +481,12 @@ test('le code du frontend n\'utilise que VITE_API_BASE_URL (aucune autre VITE_* 
 // ───────────────────────── vercel.json : le build ne touche plus la base ─────────────────────────
 test('variables « framework » injectées par Vercel (VITE_VERCEL_*, liste fermée) : tolérées ; toute autre VITE_* refusée, avec ses NOMS (jamais ses valeurs)', () => {
   const platform = { VITE_VERCEL_URL: 'x.vercel.app', VITE_VERCEL_ENV: 'production', VITE_VERCEL_TARGET_ENV: 'production', VITE_VERCEL_PROJECT_ID: 'prj_Zk3Ak9Qm2Lx8Tn4Vb7Rc1Dw5Hs',
-    VITE_VERCEL_GIT_COMMIT_REF: 'main', VITE_VERCEL_GIT_COMMIT_SHA: 'abc', VITE_VERCEL_PROJECT_PRODUCTION_URL: 'p.vercel.app', VITE_VERCEL_REGION: 'iad1' };
+    VITE_VERCEL_GIT_COMMIT_REF: 'main', VITE_VERCEL_GIT_COMMIT_SHA: 'abc', VITE_VERCEL_PROJECT_PRODUCTION_URL: 'p.vercel.app', VITE_VERCEL_REGION: 'iad1',
+    VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG: '{"a":1}' };
   const prod = { ...PRODUCTION, VERCEL_PROJECT_ID: PROD_ID, ...platform };
   assert.deepEqual(build(prod, { prodId: PROD_ID, targets: [] }), { ok: true, neutral: true });
   assert.equal(build({ ...PREVIEW, ...GOOD, ...platform }).ok, true); // configuration de test complète + variables de plateforme : acceptée
-  for (const bad of ['VITE_API_BASE_URL', 'VITE_VERCEL_CUSTOM', 'VITE_VERCEL_URL_X', 'VITE_VERCEL_GIT', 'vite_vercel_url', 'VITE_SECRET', 'VITE_VERCEL_ENVX', 'VITE_']) {
+  for (const bad of ['VITE_API_BASE_URL', 'VITE_SECRET', 'vite_vercel_url', 'Vite_Vercel_Url', 'VITE_VERCEL', 'VITE_VERCEL_', 'VITE_VERCELX', 'VITE_VERCEL_url', 'VITE_', 'VITE_X_VERCEL_URL']) {
     const r = build({ ...prod, [bad]: 'https://prod.example.invalid/api' }, { prodId: PROD_ID, targets: [] });
     assert.equal(r.code, 'E_VITE_ENV', bad);
     assert.deepEqual(r.names, [bad]);

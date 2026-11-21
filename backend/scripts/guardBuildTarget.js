@@ -252,8 +252,9 @@ function normTarget(t) {
   return o;
 }
 
-// Noms EXACTS des variables système de Vercel réexposées avec le préfixe du preset Vite (liste de @vercel/build-utils : getPrefixedEnvVars).
-const VITE_PLATFORM_RE = /^VITE_(?:VERCEL_(?:URL|ENV|TARGET_ENV|REGION|BRANCH_URL|PROJECT_PRODUCTION_URL|DEPLOYMENT_ID|PROJECT_ID)|VERCEL_GIT_[A-Z0-9_]+)$/;
+// Espace de noms des variables système de Vercel réexposées avec le préfixe du preset Vite : « VERCEL_* » devient « VITE_VERCEL_* »
+// (documentation « Framework environment variables » ; constaté au build : VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG). Aucune n'est définie par l'utilisateur.
+const VITE_PLATFORM_RE = /^VITE_VERCEL_[A-Z0-9_]+$/;
 const MODES = ['build', 'preflight', 'migrate', 'seed'];
 const OPS = ['migrate', 'seed'];
 const FRONTEND_ENV_FILES = ['.env', '.env.local', '.env.production', '.env.production.local'];
@@ -285,9 +286,9 @@ function evaluate(env, rawTargets, { mode, fileExists = fs.existsSync, productio
   if (OPS.includes(mode) && BACKEND_ENV_FILES.some((f) => fileExists(f))) return fail('E_DOTENV_PRESENT');
 
   // --- frontend : aucune VITE_* (définie, même vide), aucun .env du frontend. Le frontend utilise « /api » (même origine). ---
-  // Exception unique : les variables « framework » que VERCEL ELLE-MÊME injecte au build quand le preset détecté est Vite (VITE_VERCEL_URL,
-  // VITE_VERCEL_ENV, VITE_VERCEL_GIT_COMMIT_REF…), liste fermée. Elles ne portent aucune URL ni aucun secret de production définis par
-  // l'utilisateur, et le frontend ne lit que VITE_API_BASE_URL. Toute AUTRE variable VITE_* (même vide) reste refusée.
+  // Exception unique : l'espace de noms VITE_VERCEL_* que VERCEL ELLE-MÊME injecte au build quand le preset détecté est Vite (VITE_VERCEL_URL,
+  // VITE_VERCEL_ENV, VITE_VERCEL_GIT_COMMIT_REF, VITE_VERCEL_OBSERVABILITY_CLIENT_CONFIG…). Elles ne portent aucune URL ni aucun secret de
+  // production définis par l'utilisateur, et le frontend ne lit que VITE_API_BASE_URL. Toute AUTRE variable VITE_* (même vide) reste refusée.
   const viteKeys = Object.keys(env).filter((k) => /^VITE_/i.test(k) && env[k] !== undefined && !VITE_PLATFORM_RE.test(k));
   if (viteKeys.length) return { ...fail('E_VITE_ENV'), names: viteKeys.sort() };
   if (FRONTEND_ENV_FILES.some((f) => fileExists(path.join(FRONTEND_DIR, f)))) return fail('E_VITE_FILE');
