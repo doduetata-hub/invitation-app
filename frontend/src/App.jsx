@@ -19,6 +19,7 @@ import PublicInvitationPage from './public/PublicInvitationPage';
 const InvitationEditorPage = lazy(() => import('./admin/pages/InvitationEditorPage'));
 const TemplatesLibraryPage = lazy(() => import('./admin/pages/TemplatesLibraryPage'));
 const TemplatePreviewPage = lazy(() => import('./admin/pages/TemplatePreviewPage'));
+const PreviewFramePage = lazy(() => import('./admin/pages/PreviewFramePage'));
 const GuestsPage = lazy(() => import('./admin/pages/GuestsPage'));
 const CheckInPage = lazy(() => import('./admin/pages/CheckInPage'));
 const GuestbookPage = lazy(() => import('./admin/pages/GuestbookPage'));
@@ -48,6 +49,8 @@ export default function App() {
             <Route path="/guestbook/:slug/display" element={<GuestbookDisplayPage />} />
             <Route path="/souvenir/:token" element={<SouvenirPage />} />
             <Route path="/guestbook/:token" element={<GuestbookQrPage />} />
+            {/* Page d'aperçu chargée dans un iframe par l'éditeur : ne charge aucune donnée, reçoit l'invitation par postMessage (même origine). */}
+            <Route path="/admin/preview-frame" element={<PreviewFramePage />} />
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/admin/reset-password" element={<ResetPasswordPage />} />

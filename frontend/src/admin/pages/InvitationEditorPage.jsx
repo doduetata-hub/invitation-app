@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import { STATUS_LABELS, STATUS_OPTIONS, PAYMENT_LABELS, PAYMENT_OPTIONS } from '../../shared/constants/invitations';
@@ -9,7 +9,7 @@ import MediaUploader from '../components/MediaUploader';
 import MusicUploader from '../components/MusicUploader';
 import PaymentsSection from '../components/PaymentsSection';
 import InvitationTabs from '../components/InvitationTabs';
-import InvitationPage from '../../public/InvitationPage';
+import { PREVIEW_MESSAGE, PREVIEW_READY } from '../previewMessages';
 import { getTemplate } from '../../public/templates/registry';
 
 const emptyForm = {
@@ -252,6 +252,26 @@ export default function InvitationEditorPage() {
       contactWhatsapp: invitation?.client?.whatsapp,
     };
   }, [form, themeDraft, selectedTemplate, invitation]);
+
+  // Aperçu dans un <iframe> (page /admin/preview-frame) : le cadre a sa propre largeur de fenêtre, donc les règles @media / vw des templates
+  // s'y appliquent comme sur un vrai téléphone. L'invitation lui est envoyée par postMessage (même origine) à chaque modification.
+  const previewFrameRef = useRef(null);
+  const [frameReadyTick, setFrameReadyTick] = useState(0);
+  const previewPayload = useMemo(() => (previewInvitation ? JSON.stringify(previewInvitation) : null), [previewInvitation]);
+  useEffect(() => {
+    const onMessage = (event) => {
+      const frameWindow = previewFrameRef.current && previewFrameRef.current.contentWindow;
+      if (event.origin !== window.location.origin || !frameWindow || event.source !== frameWindow) return;
+      if (event.data && event.data.type === PREVIEW_READY) setFrameReadyTick((n) => n + 1);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+  useEffect(() => {
+    const frameWindow = previewFrameRef.current && previewFrameRef.current.contentWindow;
+    if (!frameWindow || !previewPayload) return;
+    frameWindow.postMessage({ type: PREVIEW_MESSAGE, invitation: JSON.parse(previewPayload) }, window.location.origin);
+  }, [previewPayload, frameReadyTick]);
 
   if (loading) return <p className="admin-muted">Chargement...</p>;
 
@@ -556,9 +576,12 @@ export default function InvitationEditorPage() {
               </button>
             ))}
           </div>
-          <div className={`preview-frame preview-frame--${previewMode}`}>
-            <InvitationPage invitation={previewInvitation} />
-          </div>
+          <iframe
+            ref={previewFrameRef}
+            title="Aperçu de l'invitation"
+            src="/admin/preview-frame"
+            className={`preview-frame preview-frame--${previewMode}`}
+          />
         </div>
       )}
     </div>
