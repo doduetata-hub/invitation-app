@@ -208,10 +208,14 @@ L'autorisation de migrate ne vaut pas pour seed, et inversement. Les deux opéra
 `DIRECT_DATABASE_URL`.
 
 **Production** : le garde-fou n'a **pas** de mode de production. Aucune migration ni aucun seed n'est donc lancé
-sur la production par le dépôt actuel. Si une migration devient nécessaire, ou pour ajouter la ligne du template
-`royal-editorial` (le seed est ce qui crée les 10 templates), il faut une procédure séparée, relue et autorisée :
-sauvegarde, `npx prisma migrate status` (lecture seule côté données, nécessite l'URL directe), puis opération
-explicite. À définir avant de la lancer.
+sur la production par le dépôt actuel. Si une migration devient nécessaire, il faut une procédure séparée, relue et
+autorisée : sauvegarde, `npx prisma migrate status` (lecture seule côté données, nécessite l'URL directe), puis
+opération explicite. À définir avant de la lancer.
+
+**Templates fournis par le code** : le seed n'étant plus lancé au build, `backend/src/services/templateCatalog.service.js`
+ajoute la ligne `royal-editorial` (**ajout seul** : `createMany` avec `skipDuplicates`, aucune ligne existante n'est
+modifiée ni supprimée) la première fois qu'un administrateur connecté ouvre la liste des templates (`GET /api/templates`).
+Pour un futur template, l'ajouter à `REQUIRED_TEMPLATES` dans ce fichier (et au seed).
 
 **Précautions pour le seed** (`backend/prisma/seed.js`) : il crée le compte admin s'il n'existe pas et ne réécrit
 pas son mot de passe sauf si `RESET_ADMIN_PASSWORD=true` ; il crée ou met à jour (nom et catégorie) les 10
