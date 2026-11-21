@@ -23,14 +23,36 @@ const SHARE_LIMIT = 600;
 const WINDOW_MS = 15 * 60 * 1000;
 const SLUG_RE = /^[A-Za-z0-9._~-]{1,120}$/;
 
+const PATH_SLUG_RE = /^\/i\/([^/]+)\/?$/;
+
+// Slug unique et cohérent, ou null. Chemin « /i/<slug> » : le chemin fait foi ; un paramètre `slug` présent et DIFFÉRENT -> refus ;
+// un `slug` multiple (tableau) -> refus. Chemin « /api/share » : `?slug=` obligatoire (appel direct ou URL réécrite).
+function resolveSlug(req) {
+  const q = req.query.slug;
+  if (q !== undefined && typeof q !== 'string') return null;
+  const m = PATH_SLUG_RE.exec(req.path);
+  if (m) {
+    let p;
+    try { p = decodeURIComponent(m[1]); } catch { return null; }
+    if (q !== undefined && q !== p) return null;
+    return SLUG_RE.test(p) ? p : null;
+  }
+  return typeof q === 'string' && SLUG_RE.test(q) ? q : null;
+}
+
 function createShareApp({ limit = SHARE_LIMIT } = {}) {
   const app = express();
   app.set('trust proxy', 1); // un seul saut : l'edge Vercel (comme backend/src/app.js)
   app.disable('x-powered-by');
   app.use(rateLimit({ windowMs: WINDOW_MS, limit, standardHeaders: true, legacyHeaders: false }));
 
-  app.get('/api/share', async (req, res) => {
-    const slug = typeof req.query.slug === 'string' ? req.query.slug : '';
+  // Sur Vercel, la fonction peut recevoir l'URL d'ORIGINE (« /i/<slug> ») ou l'URL réécrite (« /api/share?slug=… ») : les deux sont gérées,
+  // le slug du CHEMIN d'origine faisant toujours foi (constaté en ligne : req.url = « /i/<slug> »).
+  // (Gestionnaire générique plutôt que route à paramètres : un « % » mal formé doit donner 404, pas la 400 d'Express.)
+  app.use(async (req, res, next) => {
+    const isSharePath = req.method === 'GET' && (req.path === '/api/share' || req.path === '/api/share/' || PATH_SLUG_RE.test(req.path));
+    if (!isSharePath) return next();
+    const slug = resolveSlug(req) || '';
     if (!SLUG_RE.test(slug)) {
       res.status(404).type('html').send('<!doctype html><html><head><meta charset="utf-8"><title>Invitation introuvable</title></head><body>Invitation introuvable.</body></html>');
       return;

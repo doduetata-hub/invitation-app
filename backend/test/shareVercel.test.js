@@ -66,6 +66,28 @@ test('autres chemins : 404 ; erreur de base : 500 sans détail', async () => {
     assert.doesNotMatch(r.body, /secret/);
   });
 });
+test('URL d\'ORIGINE « /i/<slug> » reçue par la fonction sur Vercel : le chemin fait foi ; discordance, doublon ou slug invalide -> 404', async () => {
+  row = { ...base, media: [{ url: 'https://pub-x.r2.dev/c.jpg', width: 1600, height: 2000 }] };
+  await withServer(async (s) => {
+    for (const url of ['/i/awa-et-paul', '/i/awa-et-paul/', '/i/awa-et-paul?guest=abc', '/i/awa-et-paul?slug=awa-et-paul', '/i/awa-et-paul/?slug=awa-et-paul&guest=x']) {
+      lastWhere = undefined;
+      const r = await get(s, url);
+      assert.equal(r.code, 200, url);
+      assert.match(r.body, /og:title/, url);
+      assert.equal(lastWhere.slug, 'awa-et-paul', url);
+    }
+    lastWhere = undefined;
+    for (const url of ['/i/awa-et-paul?slug=autre', '/i/awa-et-paul?slug=a&slug=b', '/i/awa%2Fet', '/i/%E0%A4%A', `/i/${'a'.repeat(121)}`, '/i/', '/i', '/i/a/b']) {
+      assert.equal((await get(s, url)).code, 404, url);
+    }
+    assert.equal(lastWhere, undefined); // aucune requête en base pour les cas invalides ou discordants
+    // brouillon et inexistant par le chemin d'origine : 404 comme par la requête
+    row = { ...base, status: 'DRAFT', media: [] };
+    assert.equal((await get(s, '/i/awa-et-paul')).code, 404);
+    row = null;
+    assert.equal((await get(s, '/i/inconnu')).code, 404);
+  });
+});
 test('limiteur dédié : 429 au-delà de la limite', async () => {
   row = null;
   await withServer(async (s) => {
