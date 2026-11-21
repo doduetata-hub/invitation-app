@@ -1,14 +1,30 @@
 {
-  "buildCommand": "cd backend && DATABASE_URL=\"$DIRECT_DATABASE_URL\" npx prisma migrate deploy && DATABASE_URL=\"$DIRECT_DATABASE_URL\" node prisma/seed.js && cd ../frontend && npm run build",
+  "buildCommand": "cd backend && node scripts/guardBuildTarget.js --mode=build && cd ../frontend && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd backend && npm install && npm install --no-save --os=linux --cpu=x64 --libc=glibc sharp && cd ../frontend && npm install",
+  "installCommand": "cd backend && npm install && npm install --no-save --os=linux --cpu=x64 --libc=glibc sharp && cd ../frontend && npm ci --omit=dev",
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
       "includeFiles": "backend/{src,node_modules/pdfkit}/**"
+    },
+    "api/share.js": {
+      "maxDuration": 15,
+      "includeFiles": "backend/src/**"
     }
   },
   "rewrites": [
+    {
+      "source": "/i/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|discordbot|slackbot|linkedinbot).*"
+        }
+      ],
+      "missing": [{ "type": "query", "key": "slug" }],
+      "destination": "/api/share?slug=:slug"
+    },
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

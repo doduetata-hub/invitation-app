@@ -9,10 +9,31 @@ dist/
 *.log
 deploy/backups/
 
-# Jamais committé (comme frontend/package-lock.json) : un lockfile généré sur cette machine ou
+# Lockfile BACKEND jamais committé (le lockfile frontend, lui, est versionné : complet, toutes plateformes) : un lockfile généré sur cette machine ou
 # dans le conteneur Docker (Alpine/musl) fige les binaires natifs optionnels de "sharp" pour CE
 # libc précis, absents pour le glibc que Vercel utilise réellement au runtime — sharp plante
 # alors au chargement (module natif introuvable) sur TOUTES les routes, même sans rapport avec
-# les images. Laisser npm install résoudre la bonne variante à chaque build.
+# les images ; celui généré ici est en outre incomplet (entrées sans « resolved » ni « integrity »). Laisser npm install résoudre la bonne variante à chaque build.
 backend/package-lock.json
-frontend/package-lock.json
+
+# Secrets et configuration locale : toute variante de .env est ignorée (ex. .env.vercel.local, copie du modèle
+# avec les vraies valeurs) ; seuls les MODÈLES de configuration (*.example) restent versionnables.
+.env.*
+!.env.example
+!.env.*.example
+
+# Dossier de liaison du CLI Vercel (identifiants de projet et d'organisation) : jamais versionné.
+.vercel/
+
+# Sorties GÉNÉRÉES des tests (captures, rapports, journaux) : jamais versionnées. Les SOURCES de test restent suivies :
+# frontend/e2e/{tests,lib,harness,diagnostics,scripts,unit,fixtures/img}, frontend/playwright.config.js, backend/test, backend/testing.
+# (Les photographies d'essai restent protégées par frontend/e2e/fixtures/photos/.gitignore, inchangé.)
+/frontend/e2e/.output*/
+/frontend/playwright-report/
+/frontend/test-results/
+/frontend/blob-report/
+
+# Captures générées à la racine (captures-livre-or-conversation/, captures-souvenir/…), SAUF la référence de l'état initial,
+# qui reste versionnable.
+/captures-*/
+!/captures-reference-etat-initial/

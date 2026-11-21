@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { api } from '../../shared/api/client';
+import { thumbSrc } from './thumbSrc';
 
 export default function MediaUploader({ invitationId, type, media, onChange }) {
   const [uploading, setUploading] = useState(false);
@@ -75,7 +76,7 @@ export default function MediaUploader({ invitationId, type, media, onChange }) {
             {m.mimeType?.startsWith('video/') ? (
               <video src={m.url} style={styles.thumb} muted playsInline />
             ) : (
-              <div style={{ ...styles.thumb, backgroundImage: `url(${m.url})` }} />
+              <div style={{ ...styles.thumb, backgroundImage: `url(${thumbSrc(m, type)})` }} />
             )}
             <button type="button" onClick={() => handleDelete(m.id)} style={styles.deleteButton}>✕</button>
           </div>

@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const prisma = require('../db/prismaClient');
 // Chemin explicite : voir le commentaire équivalent dans invitations.controller.js.
 const storage = require('../services/storage/index.js');
-const { processImage } = require('../services/image.service');
+const { prepareImage, storeImageMedia, deleteMediaFiles } = require('../services/mediaFiles.service');
 const { ALLOWED_VIDEO_TYPES } = require('../middleware/upload');
 const env = require('../config/env');
 
@@ -32,44 +32,39 @@ async function upload(req, res) {
     return res.status(400).json({ error: 'La couverture doit être une image, pas une vidéo' });
   }
 
-  let buffer;
-  let ext;
-  let mimeType;
-
+  let media;
   if (isVideo) {
     // Pas de transcodage/compression vidéo (nécessiterait ffmpeg) : le fichier est stocké tel quel,
     // sous réserve de la limite de taille (60 Mo) déjà appliquée par le middleware d'upload.
-    buffer = req.file.buffer;
-    ext = VIDEO_EXTENSIONS[req.file.mimetype] || 'mp4';
-    mimeType = req.file.mimetype;
+    const ext = VIDEO_EXTENSIONS[req.file.mimetype] || 'mp4';
+    const url = await storage.save(req.file.buffer, `${crypto.randomUUID()}.${ext}`);
+    const count = await prisma.media.count({ where: { invitationId: req.params.id, type } });
+    try {
+      media = await prisma.media.create({ data: { invitationId: req.params.id, type, url, mimeType: req.file.mimetype, order: count } });
+    } catch (err) {
+      await storage.remove(url);
+      throw err;
+    }
   } else {
-    const processed = await processImage(req.file.buffer, {
-      maxWidth: type === 'cover' ? 1600 : 1200,
-      mimetype: req.file.mimetype,
-    });
-    buffer = processed.buffer;
-    ext = processed.ext;
-    mimeType = processed.contentType;
+    // Tout est traité en mémoire AVANT la première écriture : une image invalide (400) n'écrit rien.
+    const prepared = await prepareImage(req.file.buffer, { type, mimetype: req.file.mimetype });
+    media = await replaceCoverAndStore({ invitationId: req.params.id, type, prepared });
   }
-
-  const filename = `${crypto.randomUUID()}.${ext}`;
-  const url = await storage.save(buffer, filename);
-
-  if (type === 'cover') {
-    const existingCovers = await prisma.media.findMany({
-      where: { invitationId: req.params.id, type: 'cover' },
-    });
-    await Promise.all(existingCovers.map((m) => storage.remove(m.url)));
-    await prisma.media.deleteMany({ where: { invitationId: req.params.id, type: 'cover' } });
-  }
-
-  const count = await prisma.media.count({ where: { invitationId: req.params.id, type } });
-
-  const media = await prisma.media.create({
-    data: { invitationId: req.params.id, type, url, mimeType, order: count },
-  });
 
   res.status(201).json(media);
+}
+
+// Crée la ligne (et les fichiers) de la nouvelle image ; pour une couverture, l'ancienne n'est retirée qu'APRÈS le succès de la nouvelle
+// (avant : supprimée d'abord, donc une couverture perdue si l'enregistrement de la nouvelle échouait).
+async function replaceCoverAndStore({ invitationId, type, prepared }) {
+  const previousCovers = type === 'cover' ? await prisma.media.findMany({ where: { invitationId, type: 'cover' } }) : [];
+  const count = type === 'cover' ? 0 : await prisma.media.count({ where: { invitationId, type } });
+  const media = await storeImageMedia({ invitationId, type, order: count, prepared });
+  for (const old of previousCovers) {
+    await prisma.media.delete({ where: { id: old.id } }).catch(() => {});
+    await deleteMediaFiles(old);
+  }
+  return media;
 }
 
 // Les fonctions serverless Vercel refusent toute requête entrante au-delà de 4,5 Mo — bien
@@ -102,6 +97,11 @@ async function finalizeMedia(req, res) {
   if (!rawKey || !mimeType) {
     return res.status(400).json({ error: 'rawKey et mimeType requis' });
   }
+  // Seul un dépôt brut émis par presignMedia est accepté : sans ce contrôle, un appel pouvait faire supprimer n'importe quel fichier du
+  // stockage (la finalisation efface la clé reçue), y compris une photo encore utilisée par une autre invitation.
+  if (!/^raw-[0-9a-f-]{36}$/.test(rawKey)) {
+    return res.status(400).json({ error: 'rawKey invalide' });
+  }
 
   const type = MEDIA_TYPES.includes(req.body?.type) ? req.body.type : 'gallery';
   const isVideo = ALLOWED_VIDEO_TYPES.includes(mimeType);
@@ -113,41 +113,24 @@ async function finalizeMedia(req, res) {
 
   const rawBuffer = await storage.fetchByKey(rawKey);
 
-  let buffer;
-  let ext;
-  let finalMimeType;
-
+  let media;
   if (isVideo) {
-    buffer = rawBuffer;
-    ext = VIDEO_EXTENSIONS[mimeType] || 'mp4';
-    finalMimeType = mimeType;
+    const ext = VIDEO_EXTENSIONS[mimeType] || 'mp4';
+    const url = await storage.save(rawBuffer, `${crypto.randomUUID()}.${ext}`);
+    const count = await prisma.media.count({ where: { invitationId: req.params.id, type } });
+    try {
+      media = await prisma.media.create({ data: { invitationId: req.params.id, type, url, mimeType, order: count } });
+    } catch (err) {
+      await storage.remove(url);
+      throw err;
+    }
   } else {
-    const processed = await processImage(rawBuffer, {
-      maxWidth: type === 'cover' ? 1600 : 1200,
-      mimetype: mimeType,
-    });
-    buffer = processed.buffer;
-    ext = processed.ext;
-    finalMimeType = processed.contentType;
+    const prepared = await prepareImage(rawBuffer, { type, mimetype: mimeType });
+    media = await replaceCoverAndStore({ invitationId: req.params.id, type, prepared });
   }
 
-  const filename = `${crypto.randomUUID()}.${ext}`;
-  const url = await storage.save(buffer, filename);
+  // Le dépôt brut n'est supprimé qu'une fois l'image traitée ET enregistrée (si le traitement échoue, il reste de quoi réessayer).
   await storage.remove(storage.publicUrl(rawKey));
-
-  if (type === 'cover') {
-    const existingCovers = await prisma.media.findMany({
-      where: { invitationId: req.params.id, type: 'cover' },
-    });
-    await Promise.all(existingCovers.map((m) => storage.remove(m.url)));
-    await prisma.media.deleteMany({ where: { invitationId: req.params.id, type: 'cover' } });
-  }
-
-  const count = await prisma.media.count({ where: { invitationId: req.params.id, type } });
-
-  const media = await prisma.media.create({
-    data: { invitationId: req.params.id, type, url, mimeType: finalMimeType, order: count },
-  });
 
   res.status(201).json(media);
 }
@@ -158,8 +141,10 @@ async function remove(req, res) {
     return res.status(404).json({ error: 'Media introuvable' });
   }
 
-  await storage.remove(media.url);
+  // Ligne d'abord, fichiers ensuite (image ET variante, sauf fichier encore référencé ailleurs) : une défaillance du stockage
+  // laisse au pire un fichier orphelin, jamais une photo affichée dont le fichier a disparu.
   await prisma.media.delete({ where: { id: req.params.id } });
+  await deleteMediaFiles(media);
 
   res.status(204).send();
 }

@@ -40,8 +40,26 @@ async function processImage(buffer, { maxWidth = 1600, quality = 82, mimetype } 
     image = image.resize({ width: maxWidth });
   }
 
-  const outputBuffer = await image.rotate().jpeg({ quality, mozjpeg: true }).toBuffer();
-  return { buffer: outputBuffer, ext: 'jpg', contentType: 'image/jpeg' };
+  // resolveWithObject : on récupère aussi les dimensions FINALES (orientation EXIF appliquée), enregistrées en base pour que
+  // l'invitation réserve la bonne place à la photo avant son chargement.
+  const { data, info } = await image.rotate().jpeg({ quality, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+  return { buffer: data, ext: 'jpg', contentType: 'image/jpeg', width: info.width, height: info.height };
+}
+
+// Variante légère de la galerie (affichée sur les tuiles, mobile et ordinateur) : même image, même proportions, largeur maximale
+// 800 px, jamais agrandie. Retourne null quand l'image est déjà aussi étroite (aucune variante utile : on ne duplique pas un fichier).
+// À partir d'une image déjà traitée par processImage (orientation appliquée, métadonnées retirées) : aucun recadrage possible.
+const GALLERY_VARIANT_WIDTH = 800;
+const GALLERY_VARIANT_QUALITY = 78;
+
+async function makeGalleryVariant(buffer, { width = GALLERY_VARIANT_WIDTH, quality = GALLERY_VARIANT_QUALITY } = {}) {
+  const metadata = await sharp(buffer).metadata();
+  if (!metadata.width || !metadata.height || metadata.width <= width) return null;
+  const { data, info } = await sharp(buffer)
+    .resize({ width, withoutEnlargement: true })
+    .jpeg({ quality, mozjpeg: true })
+    .toBuffer({ resolveWithObject: true });
+  return { buffer: data, ext: 'jpg', contentType: 'image/jpeg', width: info.width, height: info.height };
 }
 
 // Photos du livre d'or, envoyées par des invités anonymes : contrairement à processImage (réservé
@@ -93,4 +111,4 @@ async function processGuestbookPhoto(buffer, { mimetype } = {}) {
   return { display, thumb, contentType: 'image/jpeg', ext: 'jpg' };
 }
 
-module.exports = { processImage, processGuestbookPhoto };
+module.exports = { processImage, processGuestbookPhoto, makeGalleryVariant, GALLERY_VARIANT_WIDTH };

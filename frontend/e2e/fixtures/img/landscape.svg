@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1000" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a3b3b"/><stop offset="1" stop-color="#e8b86d"/></linearGradient>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#g)"/>
+  <circle cx="380" cy="340" r="140" fill="#fff3d6" fill-opacity=".8"/><rect x="0" y="720" width="1500" height="280" fill="#2a1313" fill-opacity=".5"/>
+  <text x="50%" y="96%" text-anchor="middle" font-family="sans-serif" font-size="41" fill="#ffffff" fill-opacity=".7">landscape 1500x1000</text>
+</svg>

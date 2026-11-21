@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="800" viewBox="0 0 2400 800">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#244a5a"/><stop offset="1" stop-color="#e4c58a"/></linearGradient>
+  </defs>
+  <rect width="2400" height="800" fill="url(#g)"/>
+  <path d="M0 800 L400 420 L760 640 L1200 300 L1700 620 L2100 380 L2400 560 V800 Z" fill="#102530" fill-opacity=".55"/><circle cx="1900" cy="200" r="90" fill="#fff0c8"/>
+  <text x="50%" y="96%" text-anchor="middle" font-family="sans-serif" font-size="33" fill="#ffffff" fill-opacity=".7">panorama 2400x800</text>
+</svg>

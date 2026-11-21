@@ -1,0 +1,38 @@
+# Le CLI Vercel ne lit PAS .gitignore : sans ce fichier, `vercel deploy` enverrait .env, les uploads, dist, etc.
+# (node_modules, .git, .vercel, .env.local sont déjà exclus par défaut par le CLI.)
+# Motifs ancrés à la racine (/) pour ne jamais toucher backend/src/services/storage/ (code applicatif).
+
+# Secrets et configuration locale
+/.env
+/.env.*
+/backend/.env
+/backend/.env.*
+/frontend/.env
+/frontend/.env.*
+/.claude
+
+# Tests, rapports et captures (≈ 880 Mo, inutiles au build et aux fonctions)
+/frontend/e2e
+/frontend/playwright-report
+/frontend/test-results
+/frontend/playwright.config.js
+/captures-*
+/backend/testing
+/backend/test
+
+# Lockfile BACKEND généré sur cette machine : volontairement jamais commité (voir .gitignore) car il fige les
+# binaires natifs de « sharp » pour le mauvais système ; Vercel doit résoudre la bonne variante à l'install.
+# Le lockfile FRONTEND n'est PAS exclu : il est envoyé (installation « npm ci --omit=dev »).
+/backend/package-lock.json
+
+# Données et sorties locales
+/backend/uploads
+/storage
+/frontend/dist
+/deploy/backups
+*.log
+
+# Déploiement VPS/Docker (non utilisé sur Vercel)
+/nginx
+/docker-compose.yml
+/docker-compose.prod.yml

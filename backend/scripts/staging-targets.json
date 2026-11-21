@@ -1,0 +1,4 @@
+{
+  "_doc": "Cibles de TEST autorisées (build Vercel, migrations et seed explicites). Vide par défaut : toute vérification complète est refusée tant qu'une cible n'est pas ajoutée ICI (relue/commitée), autorisée par STAGING_DB_AUTHORIZATION=ALLOW_MIGRATE_SEED_ON:<id>, et accompagnée des listes de production obligatoires (PRODUCTION_DB_HOSTS, PRODUCTION_R2_TARGETS, PRODUCTION_JWT_SHA256). Format d'une cible : { \"id\": \"wa-test-1\", \"dbHost\": \"<hôte exact de DIRECT_DATABASE_URL>\", \"dbPort\": 5432, \"poolHost\": \"<hôte exact de DATABASE_URL (pooler)>\", \"poolPort\": 5432, \"dbName\": \"<nom de la base>\", \"publicHost\": \"<hôte exact de PUBLIC_BASE_URL>\", \"storageDriver\": \"s3\", \"s3Endpoint\": \"https://<hôte de S3_ENDPOINT>\", \"s3Bucket\": \"<bucket de test>\", \"s3PublicBaseUrl\": \"https://<hôte public des médias>\" }. Sans pooler, poolHost/poolPort = dbHost/dbPort. Ne jamais y mettre une ressource de production.",
+  "targets": []
+}

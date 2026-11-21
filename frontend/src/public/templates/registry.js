@@ -7,6 +7,7 @@ import bapteme from './bapteme.jsx';
 import fiancailles from './fiancailles.jsx';
 import professionnel from './professionnel.jsx';
 import luxuryWeddingGold from './luxuryWeddingGold/index.jsx';
+import royalEditorial from './royalEditorial/index.jsx';
 import generic from './generic.jsx';
 
 const TEMPLATES = {
@@ -19,6 +20,7 @@ const TEMPLATES = {
   [fiancailles.key]: fiancailles,
   [professionnel.key]: professionnel,
   [luxuryWeddingGold.key]: luxuryWeddingGold,
+  [royalEditorial.key]: royalEditorial,
   [generic.key]: generic,
 };
 
