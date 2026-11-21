@@ -252,6 +252,8 @@ function normTarget(t) {
   return o;
 }
 
+// Noms EXACTS des variables système de Vercel réexposées avec le préfixe du preset Vite (liste de @vercel/build-utils : getPrefixedEnvVars).
+const VITE_PLATFORM_RE = /^VITE_(?:VERCEL_(?:URL|ENV|TARGET_ENV|REGION|BRANCH_URL|PROJECT_PRODUCTION_URL|DEPLOYMENT_ID|PROJECT_ID)|VERCEL_GIT_[A-Z0-9_]+)$/;
 const MODES = ['build', 'preflight', 'migrate', 'seed'];
 const OPS = ['migrate', 'seed'];
 const FRONTEND_ENV_FILES = ['.env', '.env.local', '.env.production', '.env.production.local'];
@@ -283,7 +285,11 @@ function evaluate(env, rawTargets, { mode, fileExists = fs.existsSync, productio
   if (OPS.includes(mode) && BACKEND_ENV_FILES.some((f) => fileExists(f))) return fail('E_DOTENV_PRESENT');
 
   // --- frontend : aucune VITE_* (définie, même vide), aucun .env du frontend. Le frontend utilise « /api » (même origine). ---
-  if (Object.keys(env).some((k) => /^VITE_/i.test(k) && env[k] !== undefined)) return fail('E_VITE_ENV');
+  // Exception unique : les variables « framework » que VERCEL ELLE-MÊME injecte au build quand le preset détecté est Vite (VITE_VERCEL_URL,
+  // VITE_VERCEL_ENV, VITE_VERCEL_GIT_COMMIT_REF…), liste fermée. Elles ne portent aucune URL ni aucun secret de production définis par
+  // l'utilisateur, et le frontend ne lit que VITE_API_BASE_URL. Toute AUTRE variable VITE_* (même vide) reste refusée.
+  const viteKeys = Object.keys(env).filter((k) => /^VITE_/i.test(k) && env[k] !== undefined && !VITE_PLATFORM_RE.test(k));
+  if (viteKeys.length) return { ...fail('E_VITE_ENV'), names: viteKeys.sort() };
   if (FRONTEND_ENV_FILES.some((f) => fileExists(path.join(FRONTEND_DIR, f)))) return fail('E_VITE_FILE');
 
   // --- build : « neutre » réservé au projet de production IDENTIFIÉ ; Preview ne l'obtient jamais ---
@@ -420,7 +426,9 @@ function main(argv = process.argv.slice(2), env = process.env, deps = {}) {
     productionProjectId: loadProductionProjectId(deps.productionProjectFile || path.join(__dirname, 'production-project.json')),
   });
   if (!result.ok) {
-    logErr(`[build-guard] REFUSÉ (${result.code}) : ${result.message}. Arrêt avant toute opération.`);
+    // Pour E_VITE_ENV seulement : les NOMS (jamais les valeurs) des variables VITE_* fautives, afin de les retrouver dans Vercel.
+    const names = result.code === 'E_VITE_ENV' && Array.isArray(result.names) ? ` Variables concernées (noms seulement) : ${result.names.join(', ')}.` : '';
+    logErr(`[build-guard] REFUSÉ (${result.code}) : ${result.message}.${names} Arrêt avant toute opération.`);
     return exit(1);
   }
   if (result.neutral) {

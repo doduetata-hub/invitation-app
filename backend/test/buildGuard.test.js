@@ -479,6 +479,25 @@ test('le code du frontend n\'utilise que VITE_API_BASE_URL (aucune autre VITE_* 
 });
 
 // ───────────────────────── vercel.json : le build ne touche plus la base ─────────────────────────
+test('variables « framework » injectées par Vercel (VITE_VERCEL_*, liste fermée) : tolérées ; toute autre VITE_* refusée, avec ses NOMS (jamais ses valeurs)', () => {
+  const platform = { VITE_VERCEL_URL: 'x.vercel.app', VITE_VERCEL_ENV: 'production', VITE_VERCEL_TARGET_ENV: 'production', VITE_VERCEL_PROJECT_ID: 'prj_Zk3Ak9Qm2Lx8Tn4Vb7Rc1Dw5Hs',
+    VITE_VERCEL_GIT_COMMIT_REF: 'main', VITE_VERCEL_GIT_COMMIT_SHA: 'abc', VITE_VERCEL_PROJECT_PRODUCTION_URL: 'p.vercel.app', VITE_VERCEL_REGION: 'iad1' };
+  const prod = { ...PRODUCTION, VERCEL_PROJECT_ID: PROD_ID, ...platform };
+  assert.deepEqual(build(prod, { prodId: PROD_ID, targets: [] }), { ok: true, neutral: true });
+  assert.equal(build({ ...PREVIEW, ...GOOD, ...platform }).ok, true); // configuration de test complète + variables de plateforme : acceptée
+  for (const bad of ['VITE_API_BASE_URL', 'VITE_VERCEL_CUSTOM', 'VITE_VERCEL_URL_X', 'VITE_VERCEL_GIT', 'vite_vercel_url', 'VITE_SECRET', 'VITE_VERCEL_ENVX', 'VITE_']) {
+    const r = build({ ...prod, [bad]: 'https://prod.example.invalid/api' }, { prodId: PROD_ID, targets: [] });
+    assert.equal(r.code, 'E_VITE_ENV', bad);
+    assert.deepEqual(r.names, [bad]);
+    assert.ok(!JSON.stringify(r).includes('prod.example.invalid')); // jamais la valeur
+  }
+  // main() : affiche les noms des variables fautives, pas leurs valeurs
+  const out = [];
+  const code = main(['--mode=build'], { ...PRODUCTION, VERCEL_PROJECT_ID: PROD_ID, VITE_API_BASE_URL: 'SECRETVALEUR' }, { productionProjectFile: path.join(os.tmpdir(), 'inexistant.json'), targetsFile: path.join(os.tmpdir(), 'inexistant2.json'), fileExists: NOFILE, exit: (c) => c, log: (m) => out.push(m), logErr: (m) => out.push(m) });
+  assert.equal(code, 1);
+  assert.match(out.join('\n'), /E_VITE_ENV.*VITE_API_BASE_URL/);
+  assert.ok(!out.join('\n').includes('SECRETVALEUR'));
+});
 test('vercel.json : le build applicatif n\'exécute NI migration NI seed ; le garde-fou (--mode=build) précède le build du frontend', () => {
   const cmd = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'vercel.json'), 'utf8')).buildCommand;
   assert.doesNotMatch(cmd, /prisma|migrate|seed|DIRECT_DATABASE_URL/);
