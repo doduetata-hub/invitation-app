@@ -37,8 +37,8 @@ const tokens = {
   colorText: '#f3ecdf', // ivoire
   colorTextMuted: '#b9ae9c',
   colorAccent: '#e6cf98', // or clair
-  fontHeading: "'Noir Serif', 'Libre Baskerville', Georgia, 'Times New Roman', serif",
-  fontBody: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+  fontHeading: "'Noir Display', 'Bodoni 72', Didot, 'Bodoni MT', Georgia, 'Times New Roman', serif",
+  fontBody: "'Noir Sans', 'Jost', 'Century Gothic', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
   radius: '0px',
 };
 

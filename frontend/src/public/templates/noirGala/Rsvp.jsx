@@ -10,8 +10,7 @@ export default function Rsvp(props) {
     <section className="ng-rsvp" aria-label="Confirmer sa présence">
       <div className="ng-rsvp__in">
         <Reveal>
-          <p className="ng-kicker ng-kicker--ink">R.S.V.P.</p>
-          <h2 className="ng-h2 ng-h2--ink">Votre réponse</h2>
+          <h2 className="ng-script ng-script--lg ng-script--ink">Votre réponse</h2>
           <p className="ng-rsvp__sub">{who ? `${who} souhaitent connaître votre présence.` : 'Merci de nous faire part de votre présence.'}</p>
         </Reveal>
         <div className="ng-rsvp__form">

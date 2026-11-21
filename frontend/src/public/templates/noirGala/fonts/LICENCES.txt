@@ -1,0 +1,5 @@
+Polices servies avec le template Noir Gala (SIL Open Font License 1.1, utilisation libre, y compris sur le web) :
+- Bodoni Moda (Indestructible Type, Owen Earl) - https://fonts.google.com/specimen/Bodoni+Moda
+- Jost (Owen Earl) - https://fonts.google.com/specimen/Jost
+- Pinyon Script (Nicole Fally) - https://fonts.google.com/specimen/Pinyon+Script
+Sous-ensemble « latin » (français complet : accents, œ, guillemets).

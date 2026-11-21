@@ -1,5 +1,5 @@
 // Utilitaires propres à Noir Gala.
-export { splitNames, initials, mediaOf, isVideo } from '../royalEditorial/utils';
+export { splitNames, nameScale, initials, mediaOf, isVideo } from '../royalEditorial/utils';
 
 const COLORS = [
   [/noir/i, '#0b0a09'], [/blanc|ivoire|cr[èe]me/i, '#f3ecdf'], [/dor[ée]|\bor\b/i, '#c8a45a'], [/argent/i, '#b8b8b8'],
