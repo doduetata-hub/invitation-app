@@ -185,10 +185,13 @@ test('non-régression : migrate et seed refusés en environnement Vercel, quelle
   assert.equal(evaluate(migrateOnly, TARGETS, { mode: 'migrate', fileExists: NOFILE }).ok, true);
   assert.equal(evaluate(seedOnly, TARGETS, { mode: 'seed', fileExists: NOFILE }).ok, true);
 });
-test('production-project.json livré : FERMÉ (null) ; le garde-fou le lit comme non configuré', () => {
+test('production-project.json livré : identifiant valide du projet de production (jamais fictif) ; le garde-fou le lit', () => {
   const file = path.join(__dirname, '..', 'scripts', 'production-project.json');
-  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).productionProjectId, null);
-  assert.equal(loadProductionProjectId(file), null);
+  const shipped = JSON.parse(fs.readFileSync(file, 'utf8')).productionProjectId;
+  assert.match(shipped, /^prj_[A-Za-z0-9]{10,64}$/);
+  assert.equal(loadProductionProjectId(file), shipped); // valide : ni fictif, ni d'exemple
+  assert.notEqual(shipped, PROD_ID); // l'identifiant de test des tests n'est jamais l'identifiant livré
+  assert.notEqual(shipped, OTHER_ID);
   assert.equal(loadProductionProjectId(path.join(os.tmpdir(), 'inexistant-guard.json')), null);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-pp-'));
   const f = path.join(dir, 'p.json');
@@ -512,12 +515,18 @@ test('exécutable réel : cibles livrées vides -> exit 1 ; journaux sans secret
   assert.match(run(['--mode=build'], baseEnv).stderr, /E_NOT_VERCEL/);
   assert.match(run([], { ...baseEnv, ...GOOD }).stderr, /E_NO_MODE/);
   assert.match(run(['--mode=migrate'], { ...baseEnv, ...GOOD, STAGING_OP_AUTHORIZATION: 'ALLOW_MIGRATE_ON:wa-test-1' }).stderr, /E_TARGETS_EMPTY/); // aucune opération sans cible
-  // fichier d'identification LIVRÉ (null) : le build de production, même avec un identifiant plausible, est REFUSÉ (fermé par défaut)
-  const closed = run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'production', VERCEL_PROJECT_ID: PROD_ID });
-  assert.equal(closed.status, 1);
-  assert.match(closed.stderr, /E_PROD_ID_NOT_CONFIGURED/);
-  assert.match(run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'preview' }).stderr, /E_PREVIEW_NEEDS_ISOLATION/);
-  assert.ok(!`${closed.stdout}${closed.stderr}`.includes(PROD_ID));
+  // fichier d'identification LIVRÉ (identifiant du projet de production) : un AUTRE identifiant est refusé, l'identifiant livré est accepté
+  const shipped = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'scripts', 'production-project.json'), 'utf8')).productionProjectId;
+  const other = run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'production', VERCEL_PROJECT_ID: PROD_ID });
+  assert.equal(other.status, 1);
+  assert.match(other.stderr, /E_PROJECT_MISMATCH/);
+  const ok = run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'production', VERCEL_PROJECT_ID: shipped });
+  assert.equal(ok.status, 0);
+  assert.match(ok.stdout, /build applicatif seul/);
+  assert.equal(run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'production' }).status, 1); // identifiant absent
+  assert.equal(run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'production', VERCEL_PROJECT_ID: shipped, VITE_API_BASE_URL: '/api' }).status, 1);
+  assert.match(run(['--mode=build'], { ...baseEnv, VERCEL: '1', VERCEL_ENV: 'preview', VERCEL_PROJECT_ID: shipped }).stderr, /E_PREVIEW_NEEDS_ISOLATION/);
+  for (const r of [other, ok]) assert.ok(!`${r.stdout}${r.stderr}`.includes(PROD_ID) && !`${r.stdout}${r.stderr}`.includes(shipped));
 });
 test('main() : build neutre accepté uniquement avec un fichier d\'identification valide ET un identifiant égal ; journaux sans identifiant', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-main-'));

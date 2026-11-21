@@ -1,4 +1,4 @@
 {
   "_doc": "Identifiant du projet Vercel de PRODUCTION, seul autorisé à faire un build « neutre » (sans variables de test). FERMÉ PAR DÉFAUT : tant que productionProjectId vaut null (ou n'est pas un identifiant « prj_… » valide), tout build de production est refusé (E_PROD_ID_NOT_CONFIGURED). À renseigner UNIQUEMENT par le propriétaire, avec le vrai identifiant lu dans Vercel (Project Settings > General > Project ID), après relecture. Ne jamais y mettre un identifiant d'exemple, fictif ou celui du projet de test : VERCEL_ENV=production ne prouve pas l'identité du projet, seul VERCEL_PROJECT_ID égal à cette valeur la prouve.",
-  "productionProjectId": null
+  "productionProjectId": "prj_7qgQTIZzH5iW4fDmsRyqf95EJCMu"
 }
