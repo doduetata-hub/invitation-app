@@ -1,0 +1,3 @@
+Cormorant Garamond (variable, latin) - Copyright 2015 The Cormorant Project Authors - SIL Open Font License 1.1 (https://openfontlicense.org)
+Manrope (variable, latin)            - Copyright 2018 The Manrope Project Authors   - SIL Open Font License 1.1
+Fichiers issus des paquets @fontsource-variable (jsDelivr). Auto-hebergees : aucune requete vers un service tiers au chargement de la page.
