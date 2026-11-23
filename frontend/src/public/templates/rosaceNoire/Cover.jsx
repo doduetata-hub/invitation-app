@@ -34,11 +34,14 @@ function Hero({ invitation }) {
   return (
     <header className="nv-hero" id="top" aria-label={namesLine ? `Invitation de ${namesLine}` : 'Invitation'}>
       <div className="nv-hero__glow" aria-hidden="true" />
-      <div className="nv-hero__stage nv-rise" style={{ '--i': 0 }}>
+      <div className="nv-hero__stage">
+        {/* Ouverture : l'onde de choc (trois anneaux), l'iris du portrait et l'éclair de lumière sont purement décoratifs. */}
+        <span className="nv-boom" aria-hidden="true"><i style={{ '--k': 0 }} /><i style={{ '--k': 1 }} /><i style={{ '--k': 2 }} /></span>
         <RingText parts={ring} />
         <div className="nv-hero__portrait">
           {cover ? <Pic m={cover} eager sizes="(min-width: 700px) 420px, 80vw" alt={namesLine || ''} focal="50% 22%" /> : <span className="nv-mono" aria-hidden="true">{ini.f}{ini.s && <i>&amp;</i>}{ini.s}</span>}
         </div>
+        <span className="nv-hero__flash" aria-hidden="true" />
       </div>
       <p className="nv-eyebrow nv-rise" style={{ '--i': 1 }}>Une promesse · Une foi · Une vie</p>
       <h1 className="nv-names" style={{ '--len': longest }}>

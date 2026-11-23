@@ -20,10 +20,12 @@ export function RingText({ parts }) {
   const reps = Math.max(1, Math.round(target / unit.length));
   const text = unit.repeat(reps);
   return (
-    <svg className="nv-ringtext" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+    <div className="nv-ringwrap" aria-hidden="true">
+    <svg className="nv-ringtext" viewBox="0 0 200 200" focusable="false">
       <defs><path id={`nv-circ-${id}`} d={`M100 100 m-${R} 0 a${R} ${R} 0 1 1 ${2 * R} 0 a${R} ${R} 0 1 1 -${2 * R} 0`} /></defs>
       <text className="nv-ringtext__t"><textPath href={`#nv-circ-${id}`} textLength={circ - 1} lengthAdjust="spacing">{text}</textPath></text>
     </svg>
+    </div>
   );
 }
 
