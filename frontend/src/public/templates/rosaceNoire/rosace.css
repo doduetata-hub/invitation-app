@@ -51,12 +51,13 @@
 /* ---------- COUVERTURE : la rosace ---------- */
 .nv-hero { position: relative; container-type: inline-size; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100svh; padding: 64px 28px 76px; overflow: hidden; text-align: center; background: var(--ink); color: #f8f3e9; }
 .nv-hero__glow { position: absolute; left: 50%; top: -12%; width: 150vw; height: 95%; transform: translateX(-50%); pointer-events: none; background: radial-gradient(closest-side, rgba(182, 154, 104, 0.3), rgba(182, 154, 104, 0) 72%); animation: nv-breathe 8s ease-in-out infinite; }
-.nv-hero__stage { position: relative; width: min(76vw, 40svh, 420px); min-width: 230px; aspect-ratio: 1; margin-bottom: 26px; }
+.nv-hero__stage { position: relative; width: min(76vw, 40svh, 420px); min-width: 230px; aspect-ratio: 1; margin-bottom: 26px; animation: nv-pulse 1400ms cubic-bezier(.2, .8, .2, 1) 0.3s both; }
+.nv-ringwrap { position: absolute; inset: 0; animation: nv-ringin 2200ms cubic-bezier(.16, 1, .3, 1) 0.55s both; }
 .nv-ringtext { position: absolute; inset: 0; width: 100%; height: 100%; animation: nv-spin 120s linear infinite; }
 .nv-ringtext__t { font-family: var(--sans); font-size: 6.2px; font-weight: 700; letter-spacing: 0.12em; fill: var(--gold); }
 .nv-hero__stage::before { content: ''; position: absolute; inset: 8%; border-radius: 50%; border: 1px solid rgba(182, 154, 104, 0.35); }
-.nv-hero__portrait { position: absolute; inset: 13%; overflow: hidden; border-radius: 50%; background: #0c0c0a; border: 1px solid var(--gold); box-shadow: 0 0 0 6px var(--ink), 0 0 0 7px rgba(182, 154, 104, 0.55), 0 28px 70px rgba(0, 0, 0, 0.6); }
-.nv-hero__portrait img { width: 100%; height: 100%; object-fit: cover; }
+.nv-hero__portrait { animation: nv-iris 1300ms cubic-bezier(.16, 1, .3, 1) 0.3s both; position: absolute; inset: 13%; overflow: hidden; border-radius: 50%; background: #0c0c0a; border: 1px solid var(--gold); box-shadow: 0 0 0 6px var(--ink), 0 0 0 7px rgba(182, 154, 104, 0.55), 0 28px 70px rgba(0, 0, 0, 0.6); }
+.nv-hero__portrait img { width: 100%; height: 100%; object-fit: cover; animation: nv-imgin 1500ms cubic-bezier(.16, 1, .3, 1) 0.3s both; }
 .nv-mono { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--display); font-style: italic; font-size: 5rem; color: var(--gold); }
 .nv-mono i { font-size: 0.6em; padding: 0 0.1em; }
 .nv-hero .nv-eyebrow { color: #e1c99e; }
@@ -65,8 +66,8 @@
 /* Les noms se lèvent chacun derrière un masque (le haut et le bas du masque sont élargis pour ne couper ni l'accent circonflexe ni la queue du « g »). */
 .nv-n1, .nv-n2 { display: block; overflow: hidden; overflow-wrap: anywhere; padding: 0.22em 0 0.28em; margin: -0.22em 0 -0.28em; }
 .nv-n2 { margin-top: calc(-0.22em + 2px); }
-.nv-line { display: block; animation: nv-line 1300ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 170ms + 350ms); }
-@keyframes nv-line { from { transform: translateY(110%); } to { transform: none; } }
+.nv-line { display: block; animation: nv-line 1300ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 170ms + 1150ms); }
+@keyframes nv-line { from { transform: translateY(160%); } to { transform: none; } }
 .nv-n2 i { font-style: italic; font-size: 0.62em; letter-spacing: 0; color: var(--gold-hi); margin-right: 0.12em; }
 .nv-hero .nv-rule { margin: 20px auto 18px; }
 .nv-herodate { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: #e7ddcc; text-wrap: balance; }
@@ -240,6 +241,21 @@ html:has(.nv-root) button[aria-label$='la musique'] { width: 46px !important; he
 .nv-order__dots { transform-origin: left center; }
 .re-reveal.is-armed .nv-order__dots { transform: scaleX(0); }
 .re-reveal.is-shown .nv-order__dots { transform: scaleX(1); transition: transform 1000ms cubic-bezier(.2, .7, .2, 1) 0.25s; }
+
+/* ---------- Ouverture : le « boum » (≈ 2,5 s, une seule fois, sans bloquer la lecture) ----------
+   0,3 s le portrait s'ouvre en iris et l'image se pose ; 0,45 s éclair de lumière + trois ondes de choc ; 0,55 s l'inscription arrive en tournant ;
+   puis le texte se lève (eyebrow, noms, date, bouton). */
+.nv-boom { position: absolute; inset: 0; pointer-events: none; }
+.nv-boom i { position: absolute; left: 50%; top: 50%; width: 100%; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--gold-hi); box-shadow: 0 0 22px rgba(216, 192, 142, 0.35); opacity: 0; animation: nv-shock 1700ms cubic-bezier(.1, .7, .2, 1) calc(0.45s + var(--k, 0) * 0.16s) both; }
+.nv-hero__flash { position: absolute; inset: -34%; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgba(255, 244, 214, 0.95), rgba(216, 192, 142, 0.38) 42%, rgba(216, 192, 142, 0) 70%); opacity: 0; animation: nv-flash 1200ms ease-out 0.42s both; }
+@keyframes nv-iris { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(72% at 50% 50%); } }
+@keyframes nv-imgin { from { transform: scale(1.4); filter: brightness(2.4) saturate(0.6); } to { transform: none; filter: none; } }
+@keyframes nv-pulse { 0% { transform: scale(0.9); } 40% { transform: scale(1.045); } 100% { transform: none; } }
+@keyframes nv-shock { from { transform: translate(-50%, -50%) scale(0.25); opacity: 0.9; } to { transform: translate(-50%, -50%) scale(2.7); opacity: 0; } }
+@keyframes nv-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes nv-ringin { from { opacity: 0; transform: scale(1.35) rotate(-110deg); } to { opacity: 1; transform: none; } }
+/* le texte attend le boum */
+.nv-hero .nv-rise { animation-delay: calc(var(--i, 0) * 120ms + 900ms); }
 
 @keyframes nv-spin { to { transform: rotate(360deg); } }
 @keyframes nv-breathe { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
