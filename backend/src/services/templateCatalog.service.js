@@ -8,7 +8,6 @@
 const REQUIRED_TEMPLATES = [
   { key: 'royal-editorial', name: 'Royal Editorial', category: 'mariage' },
   { key: 'noir-gala', name: 'Noir Gala', category: 'mariage' },
-  { key: 'black-gold-eternal', name: 'Black & Gold Eternal', category: 'mariage' },
 ];
 
 let done = false;

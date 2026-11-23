@@ -9,7 +9,6 @@ import professionnel from './professionnel.jsx';
 import luxuryWeddingGold from './luxuryWeddingGold/index.jsx';
 import royalEditorial from './royalEditorial/index.jsx';
 import noirGala from './noirGala/index.jsx';
-import blackGoldEternal from './blackGoldEternal/index.jsx';
 import generic from './generic.jsx';
 
 const TEMPLATES = {
@@ -24,7 +23,6 @@ const TEMPLATES = {
   [luxuryWeddingGold.key]: luxuryWeddingGold,
   [royalEditorial.key]: royalEditorial,
   [noirGala.key]: noirGala,
-  [blackGoldEternal.key]: blackGoldEternal,
   [generic.key]: generic,
 };
 
