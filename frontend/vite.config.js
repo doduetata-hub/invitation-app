@@ -17,7 +17,10 @@ export default defineConfig({
     strictPort: true,
     watch: {
       usePolling: true,
-      interval: 300,
+      // Sous Docker Desktop (Windows), surveiller les fichiers toutes les 300 ms épuise le processeur et ralentit chaque page :
+      // on espace les vérifications et on ignore les dossiers générés qui ne servent pas au rechargement.
+      interval: 1500,
+      ignored: ['**/dist/**', '**/playwright-report/**', '**/test-results/**', '**/e2e/**', '**/.git/**'],
     },
   },
 });

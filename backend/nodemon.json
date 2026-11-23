@@ -1,4 +1,7 @@
 {
   "legacyWatch": true,
-  "delay": 300
+  "pollingInterval": 2000,
+  "delay": 300,
+  "watch": ["src", "prisma/schema.prisma"],
+  "ignore": ["node_modules", "uploads", "test", "testing", "scripts"]
 }
