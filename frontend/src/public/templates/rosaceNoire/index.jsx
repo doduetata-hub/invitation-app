@@ -3,6 +3,8 @@ import { lazy, Suspense } from 'react';
 // ROSACE NOIRE — mariage religieux, noir & noir : un portrait dans une rosace dont l'inscription tourne, des noms géants, un déroulé
 // façon feuillet de célébration, des tirages qui s'empilent, deux alliances pour le dress code et un billet QR. Clé stable : 'rosace-noire'.
 // Ce fichier est minuscule : CSS, polices et sections sont chargés à la demande dans un chunk séparé.
+import { TEXT_GROUPS } from './texts';
+
 const loadChunk = () => import('./sections.jsx');
 const FrameLazy = lazy(() => loadChunk().then((m) => ({ default: m.Frame })));
 const lazySection = (name) => lazy(() => loadChunk().then((m) => ({ default: m[name] })));
@@ -47,6 +49,8 @@ export default {
   key: 'rosace-noire',
   name: 'Rosace Noire',
   tokens,
+  // Textes que l'organisateur peut personnaliser dans l'administration (voir texts.js).
+  texts: TEXT_GROUPS,
   // Charge les polices du template pour les autres pages de l'invitation (ex. livre d'or par QR code) qui reprennent son identité.
   loadAssets: () => import('./fonts.css'),
   Wrapper,

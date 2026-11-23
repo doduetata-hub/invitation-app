@@ -4,6 +4,7 @@ import { api } from '../../shared/api/client';
 import { STATUS_LABELS, STATUS_OPTIONS, PAYMENT_LABELS, PAYMENT_OPTIONS } from '../../shared/constants/invitations';
 import ProgramEditor from '../components/ProgramEditor';
 import ThemeEditor from '../components/ThemeEditor';
+import TextsEditor from '../components/TextsEditor';
 import SectionsToggle from '../components/SectionsToggle';
 import MediaUploader from '../components/MediaUploader';
 import MusicUploader from '../components/MusicUploader';
@@ -238,6 +239,8 @@ export default function InvitationEditorPage() {
     () => getTemplate(selectedTemplate?.key).tokens,
     [selectedTemplate?.key]
   );
+  // Textes fixes du template que l'organisateur peut personnaliser (undefined si le template n'en propose pas).
+  const templateTexts = useMemo(() => getTemplate(selectedTemplate?.key).texts, [selectedTemplate?.key]);
 
   const previewInvitation = useMemo(() => {
     if (!selectedTemplate) return null;
@@ -405,6 +408,12 @@ export default function InvitationEditorPage() {
             <ThemeEditor templateTokens={templateTokens} theme={themeDraft} onChange={handleThemeChange} />
             <h3 style={{ marginTop: '1.25rem' }}>Sections affichées</h3>
             <SectionsToggle theme={themeDraft} onChange={handleThemeChange} />
+            {templateTexts && (
+              <>
+                <h3 style={{ marginTop: '1.25rem' }}>Textes de l'invitation</h3>
+                <TextsEditor groups={templateTexts} theme={themeDraft} onChange={handleThemeChange} />
+              </>
+            )}
             <p className="design-hint">
               Les changements de design ci-dessus sont appliqués dans l'aperçu immédiatement ; cliquez sur « Enregistrer » pour les sauvegarder.
             </p>

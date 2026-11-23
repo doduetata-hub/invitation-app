@@ -1,4 +1,6 @@
 import Reveal from '../soireeKit/Reveal';
+import { TwoLines } from './Ornaments';
+import { getText } from './texts';
 
 // Ordre de la cérémonie, présenté comme le feuillet d'une célébration : intitulé, points de conduite, heure.
 // Les moments viennent uniquement du programme enregistré dans l'administration.
@@ -8,8 +10,8 @@ export default function Program({ invitation }) {
   return (
     <section className="nv-prog" aria-label="Programme">
       <Reveal>
-        <p className="nv-eyebrow">Ordre de la célébration</p>
-        <h2 className="nv-h2 nv-h2--light">Le déroulé<br /><em>de la journée.</em></h2>
+        <p className="nv-eyebrow">{getText(invitation, 'progEyebrow')}</p>
+        <h2 className="nv-h2 nv-h2--light"><TwoLines a={getText(invitation, 'progTitle1')} b={getText(invitation, 'progTitle2')} /></h2>
       </Reveal>
       <ol className="nv-order">
         {events.map((ev, i) => (

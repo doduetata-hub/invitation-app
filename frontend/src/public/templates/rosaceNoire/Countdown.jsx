@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Reveal from '../soireeKit/Reveal';
 import { getEventTimestamp, formatEventDate } from '../../../shared/utils/eventDateTime';
 import { pad2 } from '../soireeKit/utils';
+import { TwoLines } from './Ornaments';
+import { getText } from './texts';
 
 function parts(target) {
   const diff = Math.max(0, target - Date.now());
@@ -54,8 +56,8 @@ export default function Countdown({ invitation }) {
   return (
     <section className="nv-count" aria-label="Compte à rebours">
       <Reveal>
-        <p className="nv-eyebrow nv-eyebrow--ink">{finished ? 'Merci' : 'Le grand jour approche'}</p>
-        <h2 className="nv-h2">{finished ? <>Une journée<br /><em>bénie.</em></> : <>Un rendez-vous<br /><em>avec l'amour.</em></>}</h2>
+        <p className="nv-eyebrow nv-eyebrow--ink">{finished ? 'Merci' : getText(invitation, 'countEyebrow')}</p>
+        <h2 className="nv-h2">{finished ? <>Une journée<br /><em>bénie.</em></> : <TwoLines a={getText(invitation, 'countTitle1')} b={getText(invitation, 'countTitle2')} />}</h2>
         {finished ? (
           <p className="nv-count__done">{longAgo ? `Nous avons célébré cette union le ${long}.` : "C'est aujourd'hui !"}</p>
         ) : (

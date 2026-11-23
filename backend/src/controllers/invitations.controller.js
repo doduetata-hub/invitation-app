@@ -22,7 +22,7 @@ function validateTheme(theme) {
   if (theme == null) return null;
   if (typeof theme !== 'object' || Array.isArray(theme)) badRequest('Theme invalide');
 
-  const { colors, fonts, sectionsOrder, disabledSections } = theme;
+  const { colors, fonts, sectionsOrder, disabledSections, texts } = theme;
 
   if (colors !== undefined && (typeof colors !== 'object' || Array.isArray(colors))) {
     badRequest('theme.colors invalide');
@@ -41,7 +41,26 @@ function validateTheme(theme) {
     }
   }
 
-  return { colors, fonts, sectionsOrder, disabledSections };
+  return { colors, fonts, sectionsOrder, disabledSections, texts: validateTexts(texts) };
+}
+
+// Textes personnalisés d'une invitation (theme.texts) : { clé: texte }. Les clés sont définies par chaque template ; on ne vérifie ici que la
+// forme (quelques dizaines de textes courts) pour qu'aucun contenu volumineux ou inattendu ne soit enregistré.
+const MAX_TEXTS = 80;
+const MAX_TEXT_LENGTH = 600;
+function validateTexts(texts) {
+  if (texts === undefined || texts === null) return undefined;
+  if (typeof texts !== 'object' || Array.isArray(texts)) badRequest('theme.texts invalide');
+  const entries = Object.entries(texts);
+  if (entries.length > MAX_TEXTS) badRequest('theme.texts : trop de textes');
+  const clean = {};
+  for (const [key, value] of entries) {
+    if (!/^[A-Za-z0-9]{1,40}$/.test(key)) badRequest('theme.texts : clé invalide');
+    if (typeof value !== 'string') badRequest('theme.texts : les textes doivent être du texte');
+    if (value.length > MAX_TEXT_LENGTH) badRequest(`theme.texts : « ${key} » dépasse ${MAX_TEXT_LENGTH} caractères`);
+    if (value.trim()) clean[key] = value.trim();
+  }
+  return clean;
 }
 
 function toInvitationInput(body) {
@@ -348,6 +367,7 @@ async function revokeCheckinAccessToken(req, res) {
 }
 
 module.exports = {
+  validateTheme,
   list,
   getById,
   create,

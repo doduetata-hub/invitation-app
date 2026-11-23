@@ -3,6 +3,8 @@ import Reveal from '../soireeKit/Reveal';
 import RsvpSection from '../../sections/RsvpSection';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { splitNames, initials, isDisabled, pad2 } from '../soireeKit/utils';
+import { TwoLines } from './Ornaments';
+import { getText } from './texts';
 
 // Billet d'accès : QR code PERSONNEL de l'invité (celui de l'application), son nom, sa table et ses places. N'apparaît que si l'invité
 // a ouvert son lien personnalisé (sans lien, l'application ne peut pas émettre de QR code).
@@ -36,12 +38,12 @@ function Ticket({ invitation, slug }) {
   return (
     <section className="nv-ticketsec" id="billet" aria-label="Votre billet d'accès">
       <Reveal>
-        <p className="nv-eyebrow nv-eyebrow--ink">Votre accès personnel</p>
-        <h2 className="nv-h2">Le billet<br /><em>des mariés.</em></h2>
-        <p className="nv-ticketsec__p">Présentez ce QR code à l'accueil le jour de la cérémonie.</p>
+        <p className="nv-eyebrow nv-eyebrow--ink">{getText(invitation, 'ticketEyebrow')}</p>
+        <h2 className="nv-h2"><TwoLines a={getText(invitation, 'ticketTitle1')} b={getText(invitation, 'ticketTitle2')} /></h2>
+        <p className="nv-ticketsec__p">{getText(invitation, 'ticketText')}</p>
       </Reveal>
       <Reveal className="nv-ticket" delay={80}>
-        <div className="nv-ticket__top"><span>Accès cérémonie</span>{valid && <span>{pad2(d.getUTCDate())} · {pad2(d.getUTCMonth() + 1)} · {d.getUTCFullYear()}</span>}</div>
+        <div className="nv-ticket__top"><span>{getText(invitation, 'ticketTop')}</span>{valid && <span>{pad2(d.getUTCDate())} · {pad2(d.getUTCMonth() + 1)} · {d.getUTCFullYear()}</span>}</div>
         {namesLine && <h3 className="nv-ticket__names">{namesLine}</h3>}
         <p className="nv-ticket__meta">{[title || 'Mariage religieux', eventTime].filter(Boolean).join(' · ')}{venueName && <><br />{venueName}</>}</p>
         <div className="nv-ticket__body">
@@ -74,10 +76,10 @@ function Closing({ invitation }) {
     <footer className="nv-closing" aria-label="Remerciements">
       <Reveal>
         <p className="nv-mono2 nv-mono2--light" aria-hidden="true">{ini.f}{ini.s ? ' & ' : ''}{ini.s}</p>
-        <p className="nv-closing__t">Merci de partager avec nous ce jour béni. Votre présence et vos prières rendront ce moment encore plus précieux.</p>
+        <p className="nv-closing__t">{getText(invitation, 'closingText')}</p>
         <span className="nv-rule" aria-hidden="true" />
         <p className="nv-closing__names">{[namesLine, date].filter(Boolean).join(' · ')}</p>
-        <p className="nv-eyebrow">Que Dieu bénisse cette union.</p>
+        <p className="nv-eyebrow">{getText(invitation, 'closingBless')}</p>
         {contactOn && (
           <div className="nv-row">
             {contactWhatsapp && <a className="nv-btn" href={`https://wa.me/${contactWhatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">Écrire aux organisateurs<span className="nv-sr"> (WhatsApp, nouvel onglet)</span></a>}
@@ -99,9 +101,9 @@ export default function Finale(props) {
     <>
       <section className="nv-rsvp" id="rsvp-card" aria-label="Confirmer sa présence">
         <Reveal>
-          <p className="nv-eyebrow nv-eyebrow--ink">Votre présence compte</p>
-          <h2 className="nv-h2">Confirmez<br /><em>votre venue.</em></h2>
-          <p className="nv-rsvp__sub">{who ? `${who} seront heureux de vous compter parmi eux.` : 'Merci de confirmer votre présence.'}</p>
+          <p className="nv-eyebrow nv-eyebrow--ink">{getText(invitation, 'rsvpEyebrow')}</p>
+          <h2 className="nv-h2"><TwoLines a={getText(invitation, 'rsvpTitle1')} b={getText(invitation, 'rsvpTitle2')} /></h2>
+          <p className="nv-rsvp__sub">{who ? getText(invitation, 'rsvpSub').replace('{noms}', who) : 'Merci de confirmer votre présence.'}</p>
         </Reveal>
         <Reveal className="nv-rsvp__form" delay={80}><RsvpSection {...props} /></Reveal>
       </section>

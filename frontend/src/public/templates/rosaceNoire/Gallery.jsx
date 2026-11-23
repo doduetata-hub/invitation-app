@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Reveal from '../soireeKit/Reveal';
 import Pic from '../soireeKit/Pic';
 import { mediaOf, isVideo, focalOf, pad2 } from '../soireeKit/utils';
+import { TwoLines } from './Ornaments';
+import { getText } from './texts';
 
 const FIRST = 9;
 
@@ -42,8 +44,8 @@ export default function Gallery({ invitation }) {
   return (
     <section className="nv-gal" aria-label="Galerie">
       <Reveal>
-        <p className="nv-eyebrow nv-eyebrow--ink">Quelques instants à deux</p>
-        <h2 className="nv-h2">Notre histoire,<br /><em>en images.</em></h2>
+        <p className="nv-eyebrow nv-eyebrow--ink">{getText(invitation, 'galEyebrow')}</p>
+        <h2 className="nv-h2"><TwoLines a={getText(invitation, 'galTitle1')} b={getText(invitation, 'galTitle2')} /></h2>
       </Reveal>
       <ul className="nv-stack">
         {shown.map((m, i) => (

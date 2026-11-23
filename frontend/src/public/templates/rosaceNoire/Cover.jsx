@@ -3,7 +3,8 @@ import Pic from '../soireeKit/Pic';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { buildMapsUrl } from '../../utils/mapsUrl';
 import { splitNames, initials, mediaOf, pick, upFirst } from '../soireeKit/utils';
-import { RingText, DressRings } from './Ornaments';
+import { RingText, DressRings, TwoLines } from './Ornaments';
+import { getText } from './texts';
 
 const DEFAULT_TEXT = "C'est avec une immense joie que nous vous convions à la célébration de notre mariage religieux. Votre présence et vos prières seront notre plus beau cadeau pour bénir cette union devant Dieu.";
 // Matthieu 19:6, version Louis Segond 1910 (domaine public). Remplacé par le message personnel de l'invitation s'il existe.
@@ -22,6 +23,7 @@ function dressWords(text) {
 }
 
 function Hero({ invitation }) {
+  const tx = (k) => getText(invitation, k);
   const { title, namesLine, eventDate } = invitation;
   const { cover } = mediaOf(invitation);
   const names = splitNames(namesLine);
@@ -43,7 +45,7 @@ function Hero({ invitation }) {
         </div>
         <span className="nv-hero__flash" aria-hidden="true" />
       </div>
-      <p className="nv-eyebrow nv-rise" style={{ '--i': 1 }}>Une promesse · Une foi · Une vie</p>
+      <p className="nv-eyebrow nv-rise" style={{ '--i': 1 }}>{tx('heroEyebrow')}</p>
       <h1 className="nv-names" style={{ '--len': longest }}>
         <span className="nv-n1"><span className="nv-line" style={{ '--i': 0 }}>{names.first || title}</span></span>
         {names.second && (
@@ -56,7 +58,7 @@ function Hero({ invitation }) {
       <span className="nv-rule nv-rise" style={{ '--i': 4 }} aria-hidden="true" />
       <p className="nv-herodate nv-rise" style={{ '--i': 4 }}>{[label, dateLong].filter(Boolean).join(' · ')}</p>
       <a className="nv-open nv-rise" style={{ '--i': 5 }} href="#invitation">
-        <span className="nv-open__t">Découvrir l'invitation</span>
+        <span className="nv-open__t">{tx('openLabel')}</span>
         <span className="nv-open__line" aria-hidden="true"><i /></span>
       </a>
     </header>
@@ -64,6 +66,7 @@ function Hero({ invitation }) {
 }
 
 function Intro({ invitation }) {
+  const tx = (k) => getText(invitation, k);
   const { namesLine, invitationText, guest } = invitation;
   const names = splitNames(namesLine);
   const ini = initials(names);
@@ -72,11 +75,11 @@ function Intro({ invitation }) {
       <Reveal>
         <p className="nv-mono2" aria-hidden="true">{ini.f}{ini.s ? ' & ' : ''}{ini.s}</p>
         {guest?.name && <p className="nv-eyebrow nv-eyebrow--ink">Cher(e) {guest.name}</p>}
-        <p className="nv-eyebrow nv-eyebrow--ink">Avec la bénédiction de Dieu</p>
-        <h2 className="nv-h1">Vous êtes<br /><em>invités.</em></h2>
+        <p className="nv-eyebrow nv-eyebrow--ink">{tx('introEyebrow')}</p>
+        <h2 className="nv-h1"><TwoLines a={tx('introTitle1')} b={tx('introTitle2')} /></h2>
         <p className="nv-lede">{invitationText || DEFAULT_TEXT}</p>
         <span className="nv-rule nv-rule--ink" aria-hidden="true" />
-        <p className="nv-eyebrow nv-eyebrow--ink">Deux cœurs · Une seule promesse</p>
+        <p className="nv-eyebrow nv-eyebrow--ink">{tx('introFooter')}</p>
       </Reveal>
     </section>
   );
@@ -91,7 +94,7 @@ function Feature({ invitation }) {
     <section className="nv-feature" aria-label="Portrait du couple">
       <Pic m={photo} sizes="(min-width: 800px) 1100px, 100vw" focal="50% 26%" alt={invitation.namesLine ? `${invitation.namesLine}` : ''} />
       <div className="nv-feature__cap">
-        <p className="nv-eyebrow">Le début d'une nouvelle histoire</p>
+        <p className="nv-eyebrow">{getText(invitation, 'featureEyebrow')}</p>
         {invitation.namesLine && <p className="nv-feature__names">{invitation.namesLine}</p>}
       </div>
     </section>
@@ -116,6 +119,7 @@ function Verse({ invitation }) {
 }
 
 function Details({ invitation }) {
+  const tx = (k) => getText(invitation, k);
   const { eventDate, eventTime, venueName, address } = invitation;
   const valid = eventDate && !Number.isNaN(new Date(eventDate).getTime());
   const maps = buildMapsUrl(invitation);
@@ -123,18 +127,18 @@ function Details({ invitation }) {
   return (
     <section className="nv-details" aria-label="Les détails">
       <Reveal>
-        <p className="nv-eyebrow nv-eyebrow--ink">À retenir</p>
-        <h2 className="nv-h2">Les détails<br /><em>de la cérémonie.</em></h2>
+        <p className="nv-eyebrow nv-eyebrow--ink">{tx('detailsEyebrow')}</p>
+        <h2 className="nv-h2"><TwoLines a={tx('detailsTitle1')} b={tx('detailsTitle2')} /></h2>
         <dl className="nv-dl">
-          {valid && <div><dt>Date</dt><dd><strong>{upFirst(formatEventDate(eventDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</strong></dd></div>}
-          {eventTime && <div><dt>Accueil</dt><dd><strong>{eventTime}</strong></dd></div>}
+          {valid && <div><dt>{tx('labelDate')}</dt><dd><strong>{upFirst(formatEventDate(eventDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</strong></dd></div>}
+          {eventTime && <div><dt>{tx('labelTime')}</dt><dd><strong>{eventTime}</strong></dd></div>}
           {(venueName || address) && (
             <div>
-              <dt>Lieu</dt>
+              <dt>{tx('labelPlace')}</dt>
               <dd>
                 {venueName && <strong>{venueName}</strong>}
                 {address && <><br />{address}</>}
-                {maps && <><br /><a className="nv-link" href={maps} target="_blank" rel="noopener noreferrer">Ouvrir l'itinéraire ↗<span className="nv-sr"> (nouvel onglet)</span></a></>}
+                {maps && <><br /><a className="nv-link" href={maps} target="_blank" rel="noopener noreferrer">{tx('routeLink')} ↗<span className="nv-sr"> (nouvel onglet)</span></a></>}
               </dd>
             </div>
           )}
@@ -144,16 +148,17 @@ function Details({ invitation }) {
   );
 }
 
-function Dress({ dressCode }) {
+function Dress({ dressCode, invitation }) {
+  const tx = (k) => getText(invitation, k);
   const { words, text } = dressWords(dressCode);
   if (!text) return null;
   return (
     <section className="nv-dress" aria-label="Dress code">
       <Reveal>
-        <p className="nv-eyebrow">Élégance &amp; harmonie</p>
-        <h2 className="nv-h2 nv-h2--light">Dress code</h2>
+        <p className="nv-eyebrow">{tx('dressEyebrow')}</p>
+        <h2 className="nv-h2 nv-h2--light">{tx('dressTitle')}</h2>
         {words ? <DressRings words={words} /> : <p className="nv-dress__chip">{text}</p>}
-        <p className="nv-dress__p">Pour célébrer cette journée dans une belle harmonie, nous vous invitons à respecter le code vestimentaire.</p>
+        <p className="nv-dress__p">{tx('dressText')}</p>
       </Reveal>
     </section>
   );
@@ -167,7 +172,7 @@ export default function Cover({ invitation }) {
       <Feature invitation={invitation} />
       <Verse invitation={invitation} />
       <Details invitation={invitation} />
-      <Dress dressCode={invitation.dressCode} />
+      <Dress dressCode={invitation.dressCode} invitation={invitation} />
     </div>
   );
 }

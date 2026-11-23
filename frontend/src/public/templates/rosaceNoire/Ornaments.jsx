@@ -29,6 +29,11 @@ export function RingText({ parts }) {
   );
 }
 
+/** Titre sur deux lignes : la seconde, en italique, est facultative (champ vide = une seule ligne). */
+export function TwoLines({ a, b }) {
+  return <>{a}{b && <><br /><em>{b}</em></>}</>;
+}
+
 /** Deux alliances entrelacées : le dress code « noir & noir » prend la forme des anneaux. */
 export function DressRings({ words }) {
   const [a, b] = [words[0], words[1] || words[0]];

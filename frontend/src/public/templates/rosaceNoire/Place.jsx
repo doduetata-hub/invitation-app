@@ -1,5 +1,7 @@
 import Reveal from '../soireeKit/Reveal';
 import { buildMapsQuery, buildMapsEmbedUrl } from '../../utils/mapsUrl';
+import { TwoLines } from './Ornaments';
+import { getText } from './texts';
 
 // Carte du lieu (système de cartographie existant : coordonnées GPS ou adresse enregistrées) et itinéraire.
 export default function Place({ invitation }) {
@@ -11,8 +13,8 @@ export default function Place({ invitation }) {
   return (
     <section className="nv-place" aria-label="Plan d'accès">
       <Reveal>
-        <p className="nv-eyebrow nv-eyebrow--ink">Comment nous rejoindre</p>
-        <h2 className="nv-h2">Le lieu<br /><em>de la célébration.</em></h2>
+        <p className="nv-eyebrow nv-eyebrow--ink">{getText(invitation, 'placeEyebrow')}</p>
+        <h2 className="nv-h2"><TwoLines a={getText(invitation, 'placeTitle1')} b={getText(invitation, 'placeTitle2')} /></h2>
         {venueName && <p className="nv-place__n">{venueName}</p>}
         {address && <p className="nv-place__a">{address}</p>}
       </Reveal>
