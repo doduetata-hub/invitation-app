@@ -52,7 +52,10 @@ function Hero({ invitation }) {
       </h1>
       <span className="nv-rule nv-rise" style={{ '--i': 4 }} aria-hidden="true" />
       <p className="nv-herodate nv-rise" style={{ '--i': 4 }}>{[label, dateLong].filter(Boolean).join(' · ')}</p>
-      <a className="nv-open nv-rise" style={{ '--i': 5 }} href="#invitation">Découvrir l'invitation <span aria-hidden="true">↓</span></a>
+      <a className="nv-open nv-rise" style={{ '--i': 5 }} href="#invitation">
+        <span className="nv-open__t">Découvrir l'invitation</span>
+        <span className="nv-open__line" aria-hidden="true"><i /></span>
+      </a>
     </header>
   );
 }

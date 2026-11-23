@@ -67,10 +67,14 @@
 .nv-n2 i { font-style: italic; font-size: 0.62em; letter-spacing: 0; color: var(--gold-hi); margin-right: 0.12em; }
 .nv-hero .nv-rule { margin: 20px auto 18px; }
 .nv-herodate { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: #e7ddcc; text-wrap: balance; }
-.nv-open { margin-top: 28px; display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 24px; border: 1px solid var(--gold); color: #fff; text-decoration: none; font-weight: 700; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; transition: background-color 200ms ease, color 200ms ease; }
-.nv-root .nv-open { color: #fff; }
-.nv-open:hover { background: var(--gold); color: #171713; }
-.nv-root .nv-open:hover { color: #171713; }
+.nv-open { margin-top: 22px; display: flex; flex-direction: column; align-items: center; gap: 14px; min-height: 48px; padding: 10px 18px 0; text-decoration: none; font-weight: 700; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; color: #f5f1e9; transition: color 200ms ease; }
+.nv-root .nv-open { color: #f5f1e9; }
+.nv-open:hover, .nv-root .nv-open:hover { color: var(--gold-hi); }
+.nv-open__t { padding-left: 0.3em; }
+/* Un fil d'or qui mène le regard vers l'invitation, avec une goutte de lumière qui descend le long du fil */
+.nv-open__line { position: relative; display: block; width: 1px; height: 58px; background: linear-gradient(var(--gold), rgba(182, 154, 104, 0)); }
+.nv-open__line i { position: absolute; left: -2px; top: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--gold-hi); box-shadow: 0 0 10px 2px rgba(216, 192, 142, 0.7); animation: nv-drip 2.6s ease-in-out infinite; }
+@keyframes nv-drip { 0% { transform: translateY(0); opacity: 0; } 18% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(56px); opacity: 0; } }
 
 /* ---------- Invitation ---------- */
 .nv-intro { padding: 88px 18px 76px; text-align: center; background: var(--paper); }
@@ -226,6 +230,7 @@ html:has(.nv-root) button[aria-label$='la musique'] { width: 46px !important; he
 .nv-rise { animation: nv-rise 1000ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 120ms); }
 
 @media (prefers-reduced-motion: reduce) {
+  .nv-open__line i { animation: none !important; opacity: 1; transform: translateY(26px); }
   .nv-root *, .nv-root *::before, .nv-root *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .re-reveal.is-armed { opacity: 1 !important; transform: none !important; }
 }
