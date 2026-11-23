@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Reveal from '../royalEditorial/Reveal';
 import { mediaOf, isVideo } from './utils';
-import Pic from './Pic';
 
-// Galerie : arches défilantes (aimantées, une à une sur mobile) + visionneuse plein écran au toucher.
+// Galerie : défilement horizontal aimanté (une photo à la fois sur mobile) + visionneuse plein écran.
 export default function Gallery({ invitation }) {
   const { gallery } = mediaOf(invitation);
   const [open, setOpen] = useState(null);
@@ -24,18 +23,19 @@ export default function Gallery({ invitation }) {
   const cur = open === null ? null : gallery[open];
 
   return (
-    <section className="ng-gal" aria-label="Galerie">
-      <Reveal className="ng-gal__head">
-        <h2 className="ng-script ng-foil ng-script--lg">Nos souvenirs</h2>
-        <p className="ng-label">Faites glisser pour parcourir</p>
+    <section className="ng-band ng-gal" aria-label="Galerie">
+      <Reveal>
+        <p className="ng-kicker">Souvenirs</p>
+        <h2 className="ng-h2 ng-h2--solo">Galerie</h2>
       </Reveal>
       <ul className="ng-gal__row">
         {gallery.map((m, i) => (
           <li key={m.id || i}>
-            <button type="button" className="ng-gal__b ng-arch" onClick={() => setOpen(i)} aria-label={`Agrandir : ${alt(i)}`}>
+            <button type="button" className="ng-gal__b" onClick={() => setOpen(i)} aria-label={`Agrandir : ${alt(i)}`}>
               {isVideo(m)
                 ? <video src={m.url} muted playsInline preload="metadata" aria-hidden="true" tabIndex={-1} />
-                : <Pic m={m} sizes="(min-width: 700px) 300px, 72vw" />}
+                : <img src={m.thumbUrl || m.url} alt="" loading="lazy" decoding="async" />}
+              <span className="ng-gal__n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
             </button>
           </li>
         ))}

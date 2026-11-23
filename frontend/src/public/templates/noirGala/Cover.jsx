@@ -1,23 +1,18 @@
 import Reveal from '../royalEditorial/Reveal';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
-import { splitNames, nameScale, initials, mediaOf, parseDressCode, pad2 } from './utils';
-import { Sprig, TornEdge } from './ornaments';
-import Pic from './Pic';
+import { splitNames, initials, mediaOf, parseDressCode, pad2 } from './utils';
 
-const upFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-
-// Couverture plein écran (photo sous voile noir, bord déchiré, noms décalés) puis faire-part : message, collage en arches, dress code.
+// Couverture plein écran : photo (ou monogramme) sous voile noir, noms monumentaux, date en trois blocs, cadre doré.
 export default function Cover({ invitation }) {
-  const { title, namesLine, eventDate, eventTime, venueName, invitationText, personalMessage, dressCode } = invitation;
-  const { cover, gallery } = mediaOf(invitation);
+  const { title, namesLine, eventDate, eventTime, invitationText, personalMessage, dressCode } = invitation;
+  const { cover } = mediaOf(invitation);
   const names = splitNames(namesLine);
   const ini = initials(names);
   const d = eventDate ? new Date(eventDate) : null;
   const valid = d && !Number.isNaN(d.getTime());
-  const weekday = valid ? upFirst(formatEventDate(eventDate, { weekday: 'long' })) : null;
+  const weekday = valid ? formatEventDate(eventDate, { weekday: 'long' }) : null;
   const dress = parseDressCode(dressCode);
   const intro = invitationText || (names.first ? 'Ont la joie de vous convier à la célébration de leur union.' : '');
-  const photos = gallery.filter((m) => !(m.mimeType || '').startsWith('video/'));
 
   return (
     <div>
@@ -30,32 +25,32 @@ export default function Cover({ invitation }) {
           </div>
         )}
         <div className="ng-cover__veil" aria-hidden="true" />
+        <div className="ng-cover__grain" aria-hidden="true" />
         <div className="ng-cover__frame" aria-hidden="true" />
-        <TornEdge />
 
         <div className="ng-cover__inner">
-          <p className="ng-script ng-script--sm ng-rise" style={{ '--i': 0 }}>{title || 'Invitation'}</p>
+          <p className="ng-kicker ng-rise" style={{ '--i': 0 }}>{title || 'Invitation'}</p>
           <div className="ng-cover__center">
-            <h1 className={`ng-names ng-names--${nameScale(names)}`}>
-              <span className="ng-name ng-name--a ng-rise" style={{ '--i': 1 }}>{names.first || title}</span>
+            <h1 className="ng-names">
+              <span className="ng-name ng-rise" style={{ '--i': 1 }}>{names.first || title}</span>
               {names.second && (
                 <>
                   <span className="ng-amp ng-rise" style={{ '--i': 2 }} aria-hidden="true">&amp;</span>
                   <span className="ng-sr"> et </span>
-                  <span className="ng-name ng-name--b ng-rise" style={{ '--i': 3 }}>{names.second}</span>
+                  <span className="ng-name ng-rise" style={{ '--i': 3 }}>{names.second}</span>
                 </>
               )}
             </h1>
             {valid && (
               <div className="ng-date ng-rise" style={{ '--i': 4 }}>
-                <span className="ng-script ng-date__wd">{weekday}</span>
+                <span className="ng-date__wd">{weekday}</span>
                 <span className="ng-date__row" aria-hidden="true">
                   <b>{pad2(d.getUTCDate())}</b><i />
                   <b>{pad2(d.getUTCMonth() + 1)}</b><i />
-                  <b>{d.getUTCFullYear()}</b>
+                  <b>{pad2(d.getUTCFullYear() % 100)}</b>
                 </span>
                 <span className="ng-sr">{formatEventDate(eventDate, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                {(eventTime || venueName) && <span className="ng-date__meta">{[eventTime && `à ${eventTime}`, venueName].filter(Boolean).join(' — ')}</span>}
+                {eventTime && <span className="ng-date__time">à {eventTime}</span>}
               </div>
             )}
           </div>
@@ -63,33 +58,22 @@ export default function Cover({ invitation }) {
         </div>
       </header>
 
-      <section className="ng-intro" aria-label="Invitation">
-        <Sprig className="ng-sprig--tl" flip />
-        <Sprig className="ng-sprig--br" flip />
-        <div className="ng-intro__in">
-          <Reveal><h2 className="ng-script ng-foil ng-script--lg">Vous êtes invités</h2></Reveal>
-          {intro && <Reveal delay={90}><p className="ng-lede">{intro}</p></Reveal>}
-          {personalMessage && <Reveal delay={160}><p className="ng-quote">{personalMessage}</p></Reveal>}
-
-          {photos.length >= 2 && (
-            <Reveal className="ng-duo" delay={80}>
-              <figure className="ng-arch ng-duo__a"><Pic m={photos[0]} sizes="(min-width: 700px) 280px, 52vw" /></figure>
-              <figure className="ng-arch ng-duo__b"><Pic m={photos[1]} sizes="(min-width: 700px) 240px, 44vw" /></figure>
-            </Reveal>
-          )}
-
-          {dress && (
-            <Reveal className="ng-dress" delay={120}>
-              <h3 className="ng-script ng-script--md">Dress code</h3>
-              {dress.swatches.length > 0 && (
-                <span className="ng-rings" aria-hidden="true">
-                  {[dress.swatches[0], dress.swatches[1] || dress.swatches[0]].map((c, i) => <i key={i} style={{ '--c': c }} />)}
-                </span>
-              )}
-              <p className="ng-dress__txt">{upFirst(dress.text)}</p>
-            </Reveal>
-          )}
-        </div>
+      <section className="ng-band ng-intro" aria-label="Invitation">
+        <Reveal><span className="ng-orn" aria-hidden="true" /></Reveal>
+        <Reveal delay={80}><p className="ng-kicker">Vous êtes cordialement invités</p></Reveal>
+        {intro && <Reveal delay={140}><p className="ng-lede">{intro}</p></Reveal>}
+        {personalMessage && <Reveal delay={200}><p className="ng-quote">{personalMessage}</p></Reveal>}
+        {dress && (
+          <Reveal className="ng-dress" delay={260}>
+            <span className="ng-kicker">Dress code</span>
+            {dress.swatches.length > 0 && (
+              <span className="ng-dress__sw" aria-hidden="true">
+                {dress.swatches.map((c, i) => <i key={i} style={{ background: c }} />)}
+              </span>
+            )}
+            <span className="ng-dress__txt">{dress.text}</span>
+          </Reveal>
+        )}
       </section>
     </div>
   );
