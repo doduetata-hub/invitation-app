@@ -7,6 +7,10 @@ import bapteme from './bapteme.jsx';
 import fiancailles from './fiancailles.jsx';
 import professionnel from './professionnel.jsx';
 import luxuryWeddingGold from './luxuryWeddingGold/index.jsx';
+import soireeIvoire from './soireeIvoire/index.jsx';
+import mariageCoutumier from './mariageCoutumier/index.jsx';
+import soireeGala from './soireeGala/index.jsx';
+import rosaceNoire from './rosaceNoire/index.jsx';
 import generic from './generic.jsx';
 
 const TEMPLATES = {
@@ -19,6 +23,10 @@ const TEMPLATES = {
   [fiancailles.key]: fiancailles,
   [professionnel.key]: professionnel,
   [luxuryWeddingGold.key]: luxuryWeddingGold,
+  [soireeIvoire.key]: soireeIvoire,
+  [mariageCoutumier.key]: mariageCoutumier,
+  [soireeGala.key]: soireeGala,
+  [rosaceNoire.key]: rosaceNoire,
   [generic.key]: generic,
 };
 

@@ -1,0 +1,255 @@
+/* ROSACE NOIRE — mariage religieux, noir & noir. Typographie et palette de l'invitation de référence (Playfair Display + DM Sans, encre #171713,
+   papier #f5f1e9, or champagne #b69a68) mises en scène autrement : un portrait dans une rosace dont l'inscription tourne, des noms géants,
+   un feuillet de célébration à points de conduite, des tirages qui s'empilent, deux alliances pour le dress code, un billet QR.
+   Contrastes (WCAG AA) : ivoire/encre 16:1 · or/encre 7:1 · encre/papier 15:1 · or foncé (#7d6540)/papier 5:1 · encre/or 7:1. */
+
+.nv-root {
+  --ink: #171713; --ink2: #201f1b; --paper: #f5f1e9; --cream: #eae3d7; --white: #fffdf8;
+  --gold: #b69a68; --gold-hi: #d8c08e; --gold-ink: #6b5532; --muted: #625e56; --line: rgba(25, 25, 22, 0.16);
+  --display: var(--font-heading); --sans: var(--font-body);
+  position: relative; overflow-x: clip; background: var(--paper); color: var(--ink);
+  font-family: var(--sans); font-weight: 400; font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%; text-rendering: optimizeLegibility; font-variant-numeric: lining-nums;
+}
+@supports not (overflow: clip) { .nv-root { overflow-x: hidden; } }
+.nv-root *, .nv-root *::before, .nv-root *::after { box-sizing: border-box; }
+.nv-root img, .nv-root video { display: block; max-width: 100%; }
+:where(.nv-root) :where(h1, h2, h3, p, ol, ul, dl, dd, figure, blockquote) { margin: 0; padding: 0; }
+:where(.nv-root) :where(ol, ul) { list-style: none; }
+.nv-root a { color: inherit; }
+.nv-root :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.nv-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.nv-root section { position: relative; }
+@media (prefers-reduced-motion: no-preference) { html:has(.nv-root) { scroll-behavior: smooth; } }
+
+.re-reveal.is-armed { opacity: 0; transform: translateY(18px); }
+.re-reveal.is-shown { opacity: 1; transform: none; transition: opacity 900ms ease, transform 900ms cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0ms); }
+
+/* ---------- Typographie ---------- */
+.nv-eyebrow { font-family: var(--sans); font-weight: 700; font-size: 0.7rem; line-height: 1.5; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); }
+.nv-eyebrow--ink { color: var(--gold-ink); }
+.nv-h1, .nv-h2 { font-family: var(--display); font-weight: 400; letter-spacing: -0.03em; text-wrap: balance; }
+.nv-h1 { margin: 16px auto 20px; font-size: clamp(2.7rem, 12.5vw, 4.6rem); line-height: 1.02; }
+.nv-h2 { margin: 12px auto 0; font-size: clamp(2.1rem, 9.2vw, 3.4rem); line-height: 1.08; }
+.nv-h2--light { color: #f5f1e9; }
+.nv-h1 em, .nv-h2 em { font-style: italic; font-weight: 400; }
+.nv-rule { display: block; width: 54px; height: 1px; margin: 24px auto; background: var(--gold); }
+.nv-rule--ink { background: var(--gold-ink); }
+.nv-center { display: flex; justify-content: center; margin-top: 30px; }
+
+.nv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 24px; border: 1px solid var(--gold); background: var(--gold); color: #171713; text-decoration: none; cursor: pointer;
+  font-family: var(--sans); font-weight: 700; font-size: 0.68rem; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; transition: background-color 200ms ease, color 200ms ease; }
+.nv-root .nv-btn { color: #171713; }
+.nv-btn:hover:not(:disabled) { background: var(--gold-hi); }
+.nv-btn:disabled { opacity: 0.6; cursor: wait; }
+.nv-root .nv-btn--ghost { background: transparent; border-color: var(--gold-ink); color: var(--ink); }
+.nv-btn--ghost:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+.nv-root .nv-btn--line { background: transparent; border-color: rgba(182, 154, 104, 0.6); color: #f5f1e9; }
+.nv-btn--line:hover { background: var(--gold); color: #171713; }
+.nv-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+
+/* ---------- COUVERTURE : la rosace ---------- */
+.nv-hero { position: relative; container-type: inline-size; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100svh; padding: 64px 28px 76px; overflow: hidden; text-align: center; background: var(--ink); color: #f8f3e9; }
+.nv-hero::after { content: ''; position: absolute; inset: 15px; border: 1px solid rgba(232, 213, 177, 0.5); pointer-events: none; }
+.nv-hero__glow { position: absolute; left: 50%; top: -12%; width: 150vw; height: 95%; transform: translateX(-50%); pointer-events: none; background: radial-gradient(closest-side, rgba(182, 154, 104, 0.3), rgba(182, 154, 104, 0) 72%); animation: nv-breathe 8s ease-in-out infinite; }
+.nv-hero__stage { position: relative; width: min(76vw, 40svh, 420px); min-width: 230px; aspect-ratio: 1; margin-bottom: 26px; }
+.nv-ringtext { position: absolute; inset: 0; width: 100%; height: 100%; animation: nv-spin 120s linear infinite; }
+.nv-ringtext__t { font-family: var(--sans); font-size: 6.2px; font-weight: 700; letter-spacing: 0.12em; fill: var(--gold); }
+.nv-hero__stage::before { content: ''; position: absolute; inset: 8%; border-radius: 50%; border: 1px solid rgba(182, 154, 104, 0.35); }
+.nv-hero__portrait { position: absolute; inset: 13%; overflow: hidden; border-radius: 50%; background: #0c0c0a; border: 1px solid var(--gold); box-shadow: 0 0 0 6px var(--ink), 0 0 0 7px rgba(182, 154, 104, 0.55), 0 28px 70px rgba(0, 0, 0, 0.6); }
+.nv-hero__portrait img { width: 100%; height: 100%; object-fit: cover; }
+.nv-mono { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--display); font-style: italic; font-size: 5rem; color: var(--gold); }
+.nv-mono i { font-size: 0.6em; padding: 0 0.1em; }
+.nv-hero__cross { position: absolute; left: 50%; top: 7%; width: 20px; padding: 3px 5px; transform: translateX(-50%); background: var(--ink); color: var(--gold-hi); }
+.nv-hero .nv-eyebrow { color: #e1c99e; }
+.nv-names { width: 100%; margin: 20px 0 0; font-family: var(--display); font-weight: 400; font-size: clamp(3rem, 15vw, 5.2rem); line-height: 0.94; letter-spacing: -0.055em; color: #f8f3e9; }
+@supports (width: 1cqw) { .nv-names { font-size: clamp(2.8rem, calc((100cqw - 64px) / (var(--len) * 0.5)), 6.4rem); } }
+.nv-n1, .nv-n2 { display: block; overflow-wrap: anywhere; }
+.nv-n2 { margin-top: 2px; }
+.nv-n2 i { font-style: italic; font-size: 0.62em; letter-spacing: 0; color: var(--gold-hi); margin-right: 0.12em; }
+.nv-hero .nv-rule { margin: 20px auto 18px; }
+.nv-herodate { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: #e7ddcc; text-wrap: balance; }
+.nv-open { margin-top: 28px; display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 24px; border: 1px solid var(--gold); color: #fff; text-decoration: none; font-weight: 700; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; transition: background-color 200ms ease, color 200ms ease; }
+.nv-root .nv-open { color: #fff; }
+.nv-open:hover { background: var(--gold); color: #171713; }
+.nv-root .nv-open:hover { color: #171713; }
+
+/* ---------- Invitation ---------- */
+.nv-intro { padding: 88px 18px 76px; text-align: center; background: var(--paper); }
+.nv-intro > div { max-width: 640px; margin: 0 auto; }
+.nv-mono2 { font-family: var(--display); font-style: italic; font-size: 2.75rem; line-height: 1.2; color: var(--gold-ink); margin-bottom: 8px; }
+.nv-mono2--light { color: var(--gold); }
+.nv-lede { max-width: 570px; margin: 0 auto; font-size: 0.95rem; line-height: 1.95; color: var(--muted); text-wrap: pretty; }
+.nv-intro .nv-eyebrow + .nv-eyebrow { margin-top: 4px; }
+
+.nv-feature { position: relative; background: #1b1b18; color: #fff; }
+.nv-feature img { width: 100%; height: min(120vw, 760px); object-fit: cover; opacity: 0.9; }
+.nv-feature__cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 56px 24px 30px; text-align: center; background: linear-gradient(transparent, rgba(0, 0, 0, 0.78)); }
+.nv-feature__cap .nv-eyebrow { color: #e4cfa8; }
+.nv-feature__names { margin-top: 6px; font-family: var(--display); font-style: italic; font-size: clamp(1.9rem, 8vw, 2.8rem); line-height: 1.15; letter-spacing: -0.02em; }
+
+.nv-verse { padding: 96px 24px 88px; text-align: center; background: var(--ink); color: #f5f1e9; }
+.nv-verse > div { max-width: 640px; margin: 0 auto; }
+.nv-verse__mark { display: block; font-family: var(--display); font-style: italic; font-size: 6.5rem; line-height: 0.6; height: 3.4rem; color: var(--gold); }
+.nv-verse__t { margin: 8px auto 22px; font-family: var(--display); font-style: italic; font-weight: 400; font-size: clamp(1.7rem, 7.4vw, 2.9rem); line-height: 1.22; letter-spacing: -0.02em; text-wrap: balance; }
+
+.nv-details { padding: 82px 18px; background: var(--cream); }
+.nv-details > div { max-width: 600px; margin: 0 auto; text-align: center; }
+.nv-dl { margin-top: 34px; border-top: 1px solid var(--line); text-align: left; }
+.nv-dl > div { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+.nv-dl dt { padding-top: 4px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-ink); }
+.nv-dl dd { font-size: 0.95rem; line-height: 1.7; overflow-wrap: anywhere; }
+.nv-dl strong { font-weight: 600; }
+.nv-link { font-size: 0.78rem; color: var(--gold-ink); }
+
+.nv-dress { padding: 88px 18px; text-align: center; background: var(--ink); color: #f5f1e9; }
+.nv-dress > div { max-width: 600px; margin: 0 auto; }
+.nv-dressrings { display: block; width: min(100%, 440px); height: auto; margin: 30px auto 6px; overflow: visible; }
+.nv-dressrings__c { fill: #0c0c0a; stroke: var(--gold); stroke-width: 1.2; }
+.nv-dressrings__lens { fill: rgba(182, 154, 104, 0.14); stroke: none; }
+.nv-dressrings__w { font-family: var(--sans); font-size: 15px; font-weight: 700; letter-spacing: 0.28em; fill: #f5f1e9; }
+.nv-dressrings__amp { font-family: var(--display); font-style: italic; font-size: 38px; fill: var(--gold-hi); }
+.nv-dress__chip { display: inline-flex; margin: 26px 0 4px; padding: 14px 22px; border: 1px solid rgba(255, 255, 255, 0.28); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; }
+.nv-dress__p { max-width: 460px; margin: 22px auto 0; font-size: 0.84rem; line-height: 1.85; color: #bcb6aa; }
+
+/* ---------- Compte à rebours ---------- */
+.nv-count { padding: 92px 18px 84px; text-align: center; background: var(--paper); }
+.nv-count > div { max-width: 640px; margin: 0 auto; }
+.nv-clock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 38px auto 0; }
+.nv-clock li { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 16px 2px 6px; border-top: 1px solid var(--gold); }
+.nv-clock b { font-family: var(--display); font-weight: 400; font-size: clamp(2.2rem, 11.5vw, 4.4rem); line-height: 1; letter-spacing: -0.04em; font-variant-numeric: lining-nums tabular-nums; }
+.nv-clock span { margin-top: 8px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.nv-count__done { margin-top: 22px; font-family: var(--display); font-style: italic; font-size: 1.5rem; text-wrap: balance; }
+
+/* ---------- Programme : feuillet de célébration ---------- */
+.nv-prog { padding: 92px 22px 96px; background: var(--ink); color: #f5f1e9; }
+.nv-prog > div { max-width: 600px; margin: 0 auto; text-align: center; }
+.nv-order { max-width: 600px; margin: 40px auto 0; border-top: 1px solid rgba(182, 154, 104, 0.4); }
+.nv-order li { padding: 20px 0 18px; border-bottom: 1px solid rgba(245, 241, 233, 0.12); }
+.nv-order__row { display: flex; align-items: baseline; gap: 10px; }
+.nv-order__t { font-family: var(--display); font-size: clamp(1.15rem, 5vw, 1.5rem); line-height: 1.25; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.nv-order__dots { flex: 1; min-width: 16px; align-self: flex-end; margin-bottom: 7px; border-bottom: 1px dotted rgba(182, 154, 104, 0.7); }
+.nv-order__time { font-weight: 700; font-size: 0.82rem; letter-spacing: 0.1em; color: var(--gold); white-space: nowrap; }
+.nv-order__sub { margin-top: 4px; font-style: italic; font-size: 0.86rem; line-height: 1.5; color: #bdb6a8; }
+
+/* ---------- Galerie : pile de tirages ---------- */
+.nv-gal { padding: 92px 18px 96px; text-align: center; background: var(--paper); }
+.nv-stack { max-width: 520px; margin: 44px auto 0; text-align: left; }
+.nv-stack li { position: sticky; top: 76px; height: min(76svh, 640px); margin-bottom: 26px; }
+.nv-card { position: relative; display: block; width: 100%; height: 100%; padding: 8px; border: 0; background: var(--white); box-shadow: 0 16px 44px rgba(45, 35, 20, 0.22); cursor: zoom-in; }
+.nv-stack li:nth-child(odd) .nv-card { transform: rotate(-0.9deg); }
+.nv-stack li:nth-child(even) .nv-card { transform: rotate(0.9deg); }
+.nv-card img, .nv-card video { width: 100%; height: 100%; object-fit: cover; }
+.nv-card::after { content: attr(data-n); position: absolute; right: 18px; bottom: 16px; padding: 4px 8px; background: rgba(23, 23, 19, 0.6); color: #f5f1e9; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; }
+.nv-lb { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(10, 10, 8, 0.96); }
+.nv-lb img, .nv-lb video { max-width: 100vw; max-height: 86vh; object-fit: contain; }
+.nv-lb__x, .nv-lb__a { position: absolute; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; border: 1px solid rgba(182, 154, 104, 0.6); border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: var(--gold-hi); font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.nv-lb__x { top: 14px; right: 14px; }
+.nv-lb__a { top: 50%; transform: translateY(-50%); }
+.nv-lb__a--p { left: 8px; }
+.nv-lb__a--n { right: 8px; }
+.nv-lb__c { position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.2em; color: #cfc6b3; }
+
+/* ---------- Lieu ---------- */
+.nv-place { padding: 92px 18px 84px; text-align: center; background: var(--cream); }
+.nv-place > div:first-child { max-width: 600px; margin: 0 auto; }
+.nv-place__n { margin-top: 22px; font-family: var(--display); font-size: clamp(1.5rem, 6vw, 2rem); line-height: 1.2; text-wrap: balance; }
+.nv-place__a { margin-top: 4px; color: var(--muted); font-size: 0.92rem; text-wrap: balance; }
+.nv-map { position: relative; max-width: 640px; margin: 30px auto 0; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid var(--gold-ink); }
+.nv-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; filter: grayscale(0.55) contrast(1.05) sepia(0.12); }
+
+/* ---------- Réponse ---------- */
+.nv-rsvp { padding: 92px 18px 88px; text-align: center; background: #f9f6f0; }
+.nv-rsvp > div:first-child { max-width: 560px; margin: 0 auto; }
+.nv-rsvp__sub { max-width: 440px; margin: 14px auto 0; font-size: 0.84rem; line-height: 1.8; color: var(--muted); text-wrap: balance; }
+.nv-rsvp__form { max-width: 560px; margin: 34px auto 0; padding: 30px 22px; text-align: left; background: var(--white); border: 1px solid #e4dccf; border-top: 2px solid var(--gold); box-shadow: 0 18px 55px rgba(45, 35, 20, 0.07); }
+.nv-rsvp__form section { max-width: none !important; margin: 0 !important; padding: 0 !important; text-align: left !important; background: transparent !important; }
+.nv-rsvp__form h2 { font-family: var(--display) !important; font-weight: 400 !important; font-size: 1.9rem !important; line-height: 1.15 !important; letter-spacing: -0.02em; color: var(--ink) !important; margin: 0 0 1rem !important; text-align: center !important; }
+.nv-rsvp__form h2:has(+ form) { display: none; }
+.nv-rsvp__form h2 span[style] { color: var(--gold-ink) !important; font-style: italic; font-weight: 400 !important; }
+.nv-rsvp__form form { gap: 1.1rem !important; }
+.nv-rsvp__form label { font-family: var(--sans) !important; font-size: 0.66rem !important; font-weight: 700 !important; letter-spacing: 0.13em !important; text-transform: uppercase; color: #6a655b !important; gap: 8px !important; }
+.nv-rsvp__form input:not([type='radio']):not([type='checkbox']):not([type='file']), .nv-rsvp__form textarea { width: 100%; min-height: 48px; border: 1px solid #d6cdbf !important; border-radius: 0 !important; background: #fffdf9 !important; color: var(--ink) !important; padding: 13px 13px !important; font-family: var(--sans) !important; font-size: 1rem !important; font-weight: 400 !important; text-transform: none; letter-spacing: 0; }
+.nv-rsvp__form textarea { min-height: 6.4rem; line-height: 1.5; }
+.nv-rsvp__form input:focus-visible, .nv-rsvp__form textarea:focus-visible { outline: none !important; border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold); }
+.nv-rsvp__form input[readonly], .nv-rsvp__form input:disabled { background: var(--paper) !important; opacity: 1 !important; }
+.nv-rsvp__form ::placeholder { color: #8c867b; opacity: 1; }
+.nv-rsvp__form input[type='radio'] { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; flex: none; margin: 0; border: 1px solid var(--ink); border-radius: 50%; background: #fff; display: inline-grid; place-content: center; cursor: pointer; }
+.nv-rsvp__form input[type='radio']::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--gold-ink); transform: scale(0); transition: transform 150ms ease; }
+.nv-rsvp__form input[type='radio']:checked::before { transform: scale(1); }
+.nv-rsvp__form label:has(> input[type='radio']) { min-height: 44px; font-size: 0.95rem !important; font-weight: 500 !important; letter-spacing: 0 !important; text-transform: none; color: var(--ink) !important; }
+.nv-rsvp__form button[type='submit'] { min-height: 52px; border-radius: 0 !important; background: var(--gold) !important; color: #171713 !important; font-family: var(--sans) !important; font-size: 0.7rem !important; font-weight: 700 !important; letter-spacing: 0.14em !important; text-transform: uppercase; }
+.nv-rsvp__form button[type='submit']:hover:not(:disabled) { background: var(--gold-hi) !important; }
+.nv-rsvp__form button[type='submit']:disabled { opacity: 0.6; cursor: wait; }
+.nv-rsvp__form button { min-height: 44px; }
+.nv-rsvp__form label span { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.nv-rsvp__form button:not([type='submit']) { color: var(--gold-ink) !important; font-size: 0.9rem !important; }
+.nv-rsvp__form p, .nv-rsvp__form span { font-family: var(--sans); }
+.nv-rsvp__form p { color: var(--ink); }
+.nv-rsvp__form p[style*='rgb(220, 38, 38)'] { color: #a11d1d !important; font-weight: 700; }
+.nv-rsvp__form [style*='dashed'] { border-radius: 0 !important; border-color: #b9ae9a !important; color: var(--ink) !important; }
+.nv-rsvp__form a { color: var(--gold-ink) !important; }
+.nv-rsvp__form span[style], .nv-rsvp__form p[style] { color: #6a655b !important; opacity: 1 !important; }
+.nv-rsvp__form img { border-radius: 0 !important; }
+/* Le QR code personnel est présenté dans le billet ci-dessous : on n'affiche pas deux fois le même code. */
+.nv-rsvp__form :has(> img[alt^='Votre QR code']) { display: none !important; }
+
+/* ---------- Billet ---------- */
+.nv-ticketsec { padding: 88px 18px 96px; text-align: center; background: var(--cream); }
+.nv-ticketsec > div:first-child { max-width: 560px; margin: 0 auto; }
+.nv-ticketsec__p { max-width: 400px; margin: 14px auto 0; font-size: 0.84rem; line-height: 1.8; color: var(--muted); text-wrap: balance; }
+.nv-ticket { position: relative; max-width: 540px; margin: 34px auto 0; padding: 26px 22px; text-align: left; background: var(--ink); color: #f7f1e6; }
+.nv-ticket::before, .nv-ticket::after { content: ''; position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%; background: var(--cream); transform: translateY(-50%); }
+.nv-ticket::before { left: -11px; }
+.nv-ticket::after { right: -11px; }
+.nv-ticket__top { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #d2b98c; }
+.nv-ticket__names { margin: 22px 0 6px; font-family: var(--display); font-weight: 400; font-size: clamp(1.7rem, 7vw, 2.2rem); line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; }
+.nv-ticket__meta { font-size: 0.74rem; line-height: 1.8; color: #d2c9b8; }
+.nv-ticket__body { display: flex; align-items: center; gap: 20px; padding: 22px 0 8px; }
+.nv-ticket__qr { flex: none; display: grid; place-items: center; width: 130px; height: 130px; padding: 8px; background: #fff; }
+.nv-ticket__qr img { width: 110px; height: 110px; }
+.nv-ticket__guest { display: flex; flex-direction: column; min-width: 0; font-size: 0.82rem; line-height: 1.8; color: #e7dfd0; }
+.nv-ticket__guest strong { font-family: var(--display); font-weight: 400; font-size: 1.4rem; line-height: 1.2; color: #fff; overflow-wrap: anywhere; }
+.nv-ticket__foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(255, 255, 255, 0.3); font-size: 0.56rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #c8bda9; }
+.nv-ticket__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+
+/* ---------- Conclusion ---------- */
+.nv-closing { padding: 64px 20px 44px; text-align: center; background: var(--ink); color: #c8c0b2; }
+.nv-closing > div { max-width: 560px; margin: 0 auto; }
+.nv-closing__t { font-family: var(--display); font-style: italic; font-size: clamp(1.3rem, 5.4vw, 1.7rem); line-height: 1.45; color: #f0e9da; text-wrap: balance; }
+.nv-closing__names { margin: 0 0 10px; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; text-wrap: balance; }
+.nv-share { margin-top: 36px; padding-top: 28px; border-top: 1px solid rgba(182, 154, 104, 0.3); }
+
+/* Bouton de musique de l'application : même fonctionnement, habillé aux couleurs du template */
+html:has(.nv-root) button[aria-label$='la musique'] { width: 46px !important; height: 46px !important; background: var(--ink, #171713) !important; color: #d8c08e !important; border: 1px solid #b69a68 !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35) !important; }
+
+@keyframes nv-spin { to { transform: rotate(360deg); } }
+@keyframes nv-breathe { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+@keyframes nv-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.nv-rise { animation: nv-rise 1000ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 120ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-root *, .nv-root *::before, .nv-root *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .re-reveal.is-armed { opacity: 1 !important; transform: none !important; }
+}
+
+@media (min-width: 700px) {
+  .nv-hero__stage { width: min(46svh, 440px); }
+  .nv-feature img { height: 760px; }
+  .nv-rsvp__form { padding: 42px 44px; }
+  .nv-details, .nv-prog, .nv-count, .nv-gal, .nv-place, .nv-rsvp, .nv-ticketsec { padding-block: 112px; }
+  .nv-ticket { padding: 30px 30px; }
+}
+@media (min-width: 1000px) {
+  .nv-hero__stage { width: min(52svh, 480px); }
+  .nv-ringtext__t { font-size: 5.8px; }
+  .nv-stack { max-width: 560px; }
+}
+
+/* Impression : seul le billet d'accès est imprimé */
+@media print {
+  .nv-root section:not(.nv-ticketsec), .nv-root header, .nv-root footer, .nv-noprint, button[aria-label$='la musique'] { display: none !important; }
+  .nv-ticketsec { padding: 0; background: #fff; }
+  .nv-ticket { margin: 20px auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .nv-ticket::before, .nv-ticket::after { display: none; }
+}

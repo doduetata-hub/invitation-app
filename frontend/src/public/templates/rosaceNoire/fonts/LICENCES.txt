@@ -1,0 +1,4 @@
+Polices servies avec le template « Rosace Noire » (SIL Open Font License 1.1, utilisation libre, y compris sur le web), sous-ensemble latin :
+- Playfair Display (The Playfair Display Project Authors)
+- DM Sans (The DM Sans Project Authors)
+Fichiers issus des paquets @fontsource-variable (jsDelivr), auto-hébergés : aucune requête vers un service tiers au chargement de la page.

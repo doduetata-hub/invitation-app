@@ -1,0 +1,5 @@
+Polices servies avec les templates « soirée » (SIL Open Font License 1.1, utilisation libre, y compris sur le web), sous-ensemble latin :
+- Bodoni Moda (Indestructible Type, Owen Earl)
+- Pinyon Script (Nicole Fally)
+- Cormorant Garamond (The Cormorant Project Authors)
+- Manrope (The Manrope Project Authors)

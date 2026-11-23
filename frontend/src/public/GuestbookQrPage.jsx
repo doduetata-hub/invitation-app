@@ -51,6 +51,9 @@ export default function GuestbookQrPage() {
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Les templates qui apportent leurs propres polices les chargent ici : la page garde l'identité de l'invitation.
+  const templateKey = info?.templateKey;
+  useEffect(() => { if (templateKey) getTemplate(templateKey).loadAssets?.(); }, [templateKey]);
   const [error, setError] = useState('');
   // Photo facultative : `photo` = nouvelle photo choisie (préparée côté navigateur, voir
   // guestbookPhoto.js) ; `existingPhotoUrl` = miniature de celle déjà enregistrée sur cette
