@@ -431,7 +431,7 @@ export default function InvitationEditorPage() {
         {isEdit && (
           <div className="editor-section">
             <h2>Programme</h2>
-            <ProgramEditor invitationId={id} />
+            <ProgramEditor invitationId={id} onChange={(events) => setInvitation((inv) => ({ ...inv, events }))} />
           </div>
         )}
 

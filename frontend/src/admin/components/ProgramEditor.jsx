@@ -3,14 +3,21 @@ import { api } from '../../shared/api/client';
 
 const emptyEvent = { title: '', time: '', location: '', description: '' };
 
-export default function ProgramEditor({ invitationId }) {
+// onChange(events) : prévient l'éditeur à chaque chargement/modification du programme, pour que l'aperçu en direct l'affiche aussitôt.
+export default function ProgramEditor({ invitationId, onChange }) {
   const [events, setEvents] = useState([]);
   const [form, setForm] = useState(emptyEvent);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = () => {
-    api.get(`/invitations/${invitationId}/events`).then(setEvents).catch((err) => setError(err.message));
+    api
+      .get(`/invitations/${invitationId}/events`)
+      .then((list) => {
+        setEvents(list);
+        if (onChange) onChange(list);
+      })
+      .catch((err) => setError(err.message));
   };
 
   useEffect(load, [invitationId]);
