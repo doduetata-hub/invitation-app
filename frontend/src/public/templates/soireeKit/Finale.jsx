@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import Reveal from './Reveal';
 import RsvpSection from '../../sections/RsvpSection';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
@@ -34,17 +33,11 @@ function Table({ guest }) {
   );
 }
 
-function Closing({ invitation, slug }) {
+function Closing({ invitation }) {
   const { namesLine, eventDate, contactPhone, contactWhatsapp } = invitation;
   const n = splitNames(namesLine);
-  const [copied, setCopied] = useState(false);
   const contactOn = !isDisabled(invitation, 'contact') && (contactPhone || contactWhatsapp);
-  const url = slug && typeof window !== 'undefined' ? `${window.location.origin}/i/${encodeURIComponent(slug)}` : null;
-  const text = `${namesLine ? `Invitation de ${namesLine}` : 'Invitation'}${url ? ` — ${url}` : ''}`;
-  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const date = eventDate ? formatEventDate(eventDate, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
-  const share = async () => { try { await navigator.share({ title: namesLine || 'Invitation', text: namesLine ? `Invitation de ${namesLine}` : 'Invitation', url }); } catch { /* annulé */ } };
-  const copy = async () => { try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* indisponible */ } };
   return (
     <section className="sk-closing" aria-label="Remerciements">
       <Reveal>
@@ -58,17 +51,6 @@ function Closing({ invitation, slug }) {
             {contactPhone && <a className="sk-btn sk-btn--ghost" href={`tel:${contactPhone}`}><Icon name="phone" className="sk-icon sk-icon--sm" />Appeler</a>}
           </div>
         )}
-        {url && (
-          <div className="sk-share">
-            <span className="sk-kicker">Partager l'invitation</span>
-            <div className="sk-share__row">
-              <a className="sk-round" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" aria-label="Partager sur WhatsApp"><Icon name="whatsapp" /></a>
-              {canShare && <button type="button" className="sk-round" onClick={share} aria-label="Partager via une autre application"><Icon name="share" /></button>}
-              <button type="button" className="sk-round" onClick={copy} aria-label={copied ? 'Lien copié' : 'Copier le lien'}><Icon name={copied ? 'check' : 'link'} /></button>
-            </div>
-            <p className="sk-sr" role="status">{copied ? 'Lien copié dans le presse-papiers' : ''}</p>
-          </div>
-        )}
       </Reveal>
     </section>
   );
@@ -78,7 +60,7 @@ function Closing({ invitation, slug }) {
 // Le formulaire gère à lui seul l'identification de l'invité, la présence, le nombre de personnes, la boisson, le mot du livre d'or,
 // la photo facultative et le verrouillage (RsvpSection).
 export default function Finale(props) {
-  const { invitation, slug } = props;
+  const { invitation } = props;
   const n = splitNames(props.namesLine);
   const who = n.second ? `${n.first} et ${n.second}` : n.first;
   return (
@@ -92,7 +74,7 @@ export default function Finale(props) {
         </Reveal>
         <Reveal className="sk-rsvp__form" delay={80}><RsvpSection {...props} /></Reveal>
       </section>
-      <Closing invitation={invitation} slug={slug} />
+      <Closing invitation={invitation} />
     </>
   );
 }

@@ -64,18 +64,12 @@ function Ticket({ invitation, slug }) {
   );
 }
 
-function Closing({ invitation, slug }) {
+function Closing({ invitation }) {
   const { namesLine, eventDate, contactPhone, contactWhatsapp } = invitation;
   const names = splitNames(namesLine);
   const ini = initials(names);
-  const [copied, setCopied] = useState(false);
   const contactOn = !isDisabled(invitation, 'contact') && (contactPhone || contactWhatsapp);
-  const url = slug && typeof window !== 'undefined' ? `${window.location.origin}/i/${encodeURIComponent(slug)}` : null;
-  const text = `${namesLine ? `Invitation de ${namesLine}` : 'Invitation'}${url ? ` — ${url}` : ''}`;
-  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const date = eventDate ? formatEventDate(eventDate, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
-  const share = async () => { try { await navigator.share({ title: namesLine || 'Invitation', text: namesLine ? `Invitation de ${namesLine}` : 'Invitation', url }); } catch { /* annulé */ } };
-  const copy = async () => { try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* indisponible */ } };
   return (
     <footer className="nv-closing" aria-label="Remerciements">
       <Reveal>
@@ -88,17 +82,6 @@ function Closing({ invitation, slug }) {
           <div className="nv-row">
             {contactWhatsapp && <a className="nv-btn" href={`https://wa.me/${contactWhatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">Écrire aux organisateurs<span className="nv-sr"> (WhatsApp, nouvel onglet)</span></a>}
             {contactPhone && <a className="nv-btn nv-btn--line" href={`tel:${contactPhone}`}>Appeler</a>}
-          </div>
-        )}
-        {url && (
-          <div className="nv-share nv-noprint">
-            <span className="nv-eyebrow">Partager l'invitation</span>
-            <div className="nv-row">
-              <a className="nv-btn nv-btn--line" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">WhatsApp<span className="nv-sr"> (nouvel onglet)</span></a>
-              {canShare && <button type="button" className="nv-btn nv-btn--line" onClick={share}>Partager</button>}
-              <button type="button" className="nv-btn nv-btn--line" onClick={copy}>{copied ? 'Lien copié ✓' : 'Copier le lien'}</button>
-            </div>
-            <p className="nv-sr" role="status">{copied ? 'Lien copié dans le presse-papiers' : ''}</p>
           </div>
         )}
       </Reveal>
@@ -123,7 +106,7 @@ export default function Finale(props) {
         <Reveal className="nv-rsvp__form" delay={80}><RsvpSection {...props} /></Reveal>
       </section>
       <Ticket invitation={invitation} slug={slug} />
-      <Closing invitation={invitation} slug={slug} />
+      <Closing invitation={invitation} />
     </>
   );
 }

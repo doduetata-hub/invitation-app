@@ -43,8 +43,6 @@
 .sk-btn:hover { opacity: 0.88; }
 .sk-root .sk-btn--ghost { background: transparent; color: var(--ink); }
 .sk-btnrow { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 26px; }
-.sk-round { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer; }
-.sk-round .sk-icon { width: 24px; height: 24px; }
 
 /* ---------- Couvertures ---------- */
 .sk-hero { position: relative; background: var(--bg); }
@@ -223,8 +221,6 @@
 .sk-thanks { margin-bottom: 12px; font-style: italic; font-size: clamp(1.4rem, 6vw, 1.8rem); line-height: 1.4; color: var(--ink); text-wrap: balance; }
 .sk-closing__names { margin: 18px 0 6px; font-family: 'SK Script', cursive; font-size: clamp(2.6rem, 12vw, 3.6rem); line-height: 1.2; color: var(--gold); text-wrap: balance; }
 .sk-closing__names em { font-family: var(--font-heading); font-size: 0.7em; font-style: italic; }
-.sk-share { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; margin-top: 34px; padding-top: 28px; border-top: 1px solid var(--line); }
-.sk-share__row { display: flex; gap: 14px; }
 
 @keyframes sk-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .sk-rise { animation: sk-rise 900ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 110ms); }
