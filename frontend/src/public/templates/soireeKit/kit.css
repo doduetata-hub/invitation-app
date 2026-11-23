@@ -196,9 +196,9 @@
 .sk-rsvp__form h2 span[style] { color: var(--gold) !important; font-weight: 600 !important; }
 .sk-rsvp__form form { gap: 1.1rem !important; }
 .sk-rsvp__form label { font-family: 'SK Sans', system-ui, sans-serif !important; font-size: 0.85rem !important; font-weight: 600 !important; letter-spacing: 0.02em !important; color: var(--muted) !important; gap: 8px !important; }
-.sk-rsvp__form input:not([type='radio']):not([type='checkbox']):not([type='file']), .sk-rsvp__form textarea { width: 100%; min-height: 48px; border: 1px solid var(--line) !important; border-radius: 8px !important; background: #fff !important; color: var(--ink) !important; padding: 10px 12px !important; font-family: var(--font-body) !important; font-size: 1.1rem !important; font-weight: 500 !important; }
+.sk-rsvp__form input:not([type='radio']):not([type='checkbox']):not([type='file']), .sk-rsvp__form textarea, .sk-rsvp__form select { width: 100%; min-height: 48px; border: 1px solid var(--line) !important; border-radius: 8px !important; background: #fff !important; color: var(--ink) !important; padding: 10px 12px !important; font-family: var(--font-body) !important; font-size: 1.1rem !important; font-weight: 500 !important; }
 .sk-rsvp__form textarea { min-height: 8rem; line-height: 1.5; }
-.sk-rsvp__form input:focus-visible, .sk-rsvp__form textarea:focus-visible { outline: 2px solid var(--gold) !important; outline-offset: 2px !important; }
+.sk-rsvp__form input:focus-visible, .sk-rsvp__form textarea:focus-visible, .sk-rsvp__form select:focus-visible { outline: 2px solid var(--gold) !important; outline-offset: 2px !important; }
 .sk-rsvp__form input[readonly], .sk-rsvp__form input:disabled { background: var(--bg2) !important; opacity: 1 !important; }
 .sk-rsvp__form ::placeholder { color: #8c7f76; opacity: 1; }
 .sk-rsvp__form input[type='radio'] { appearance: none; -webkit-appearance: none; width: 24px; height: 24px; flex: none; margin: 0; border: 1.5px solid var(--ink); border-radius: 50%; background: #fff; display: inline-grid; place-content: center; cursor: pointer; }

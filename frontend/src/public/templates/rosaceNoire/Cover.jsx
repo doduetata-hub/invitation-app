@@ -3,7 +3,7 @@ import Pic from '../soireeKit/Pic';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { buildMapsUrl } from '../../utils/mapsUrl';
 import { splitNames, initials, mediaOf, pick, upFirst } from '../soireeKit/utils';
-import { Cross, RingText, DressRings } from './Ornaments';
+import { RingText, DressRings } from './Ornaments';
 
 const DEFAULT_TEXT = "C'est avec une immense joie que nous vous convions à la célébration de notre mariage religieux. Votre présence et vos prières seront notre plus beau cadeau pour bénir cette union devant Dieu.";
 // Matthieu 19:6, version Louis Segond 1910 (domaine public). Remplacé par le message personnel de l'invitation s'il existe.
@@ -39,7 +39,6 @@ function Hero({ invitation }) {
         <div className="nv-hero__portrait">
           {cover ? <Pic m={cover} eager sizes="(min-width: 700px) 420px, 80vw" alt={namesLine || ''} focal="50% 22%" /> : <span className="nv-mono" aria-hidden="true">{ini.f}{ini.s && <i>&amp;</i>}{ini.s}</span>}
         </div>
-        <Cross className="nv-hero__cross" />
       </div>
       <p className="nv-eyebrow nv-rise" style={{ '--i': 1 }}>Une promesse · Une foi · Une vie</p>
       <h1 className="nv-names" style={{ '--len': longest }}>

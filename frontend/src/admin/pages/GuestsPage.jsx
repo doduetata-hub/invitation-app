@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { drinkGroup } from '../../shared/constants/drinks';
 import { useParams } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import QrCodeModal from '../../shared/components/QrCodeModal';
@@ -32,10 +33,15 @@ export default function GuestsPage() {
   const [importMessage, setImportMessage] = useState('');
   const [search, setSearch] = useState('');
   const [savingLock, setSavingLock] = useState(false);
-  const [sortDir, setSortDir] = useState(null); // null = ordre d'ajout, 'asc' | 'desc' = tri par table
-
-  const toggleSortByTable = () => {
-    setSortDir((d) => (d === 'asc' ? 'desc' : d === 'desc' ? null : 'asc'));
+  // Tri de la liste : null = ordre d'ajout ; sinon { key: 'table' | 'drink', dir: 'asc' | 'desc' }.
+  const [sort, setSort] = useState(null);
+  const [drinkFilter, setDrinkFilter] = useState('');
+  const sortDir = (key) => (sort && sort.key === key ? sort.dir : null);
+  const toggleSort = (key) => {
+    setSort((s) => {
+      if (!s || s.key !== key) return { key, dir: 'asc' };
+      return s.dir === 'asc' ? { key, dir: 'desc' } : null;
+    });
   };
 
   const load = () => {
@@ -140,22 +146,31 @@ export default function GuestsPage() {
   // stockage a part -- des qu'un nom de table est utilise une fois, il reapparait ici.
   const tableSuggestions = [...new Set(guests.map((g) => g.tableNumber).filter(Boolean))].sort();
   const q = search.trim().toLowerCase();
-  const filteredGuests = q
+  const searched = q
     ? guests.filter((g) =>
-        [g.name || g.rsvp?.name, g.phone, g.tableNumber]
+        [g.name || g.rsvp?.name, g.phone, g.tableNumber, g.rsvp?.drink]
           .filter(Boolean)
           .some((field) => field.toLowerCase().includes(q))
       )
     : guests;
-  // Tri par table optionnel (ordre naturel : "Table 2" avant "Table 10") ; les invités
-  // sans table assignée restent en fin de liste quel que soit le sens du tri.
-  const sortedGuests = sortDir
+  // Boissons choisies (regroupées : toutes les réponses « Autre : … » comptent comme « Autre ») avec leur effectif, pour le filtre.
+  const drinkCounts = guests.reduce((acc, g) => {
+    const group = drinkGroup(g.rsvp?.drink);
+    if (group) acc[group] = (acc[group] || 0) + 1;
+    return acc;
+  }, {});
+  const filteredGuests = drinkFilter ? searched.filter((g) => drinkGroup(g.rsvp?.drink) === drinkFilter) : searched;
+  // Tri par table (ordre naturel : "Table 2" avant "Table 10") ou par boisson ; les invités sans valeur
+  // restent en fin de liste quel que soit le sens du tri.
+  const sortedGuests = sort
     ? [...filteredGuests].sort((a, b) => {
-        if (!a.tableNumber && !b.tableNumber) return 0;
-        if (!a.tableNumber) return 1;
-        if (!b.tableNumber) return -1;
-        const cmp = a.tableNumber.localeCompare(b.tableNumber, 'fr', { numeric: true, sensitivity: 'base' });
-        return sortDir === 'asc' ? cmp : -cmp;
+        const va = sort.key === 'table' ? a.tableNumber : a.rsvp?.drink;
+        const vb = sort.key === 'table' ? b.tableNumber : b.rsvp?.drink;
+        if (!va && !vb) return 0;
+        if (!va) return 1;
+        if (!vb) return -1;
+        const cmp = va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' });
+        return sort.dir === 'asc' ? cmp : -cmp;
       })
     : filteredGuests;
 
@@ -271,8 +286,22 @@ export default function GuestsPage() {
             className="input"
             style={{ maxWidth: '340px', marginBottom: '1rem' }}
           />
+          {Object.keys(drinkCounts).length > 0 && (
+            <select
+              value={drinkFilter}
+              onChange={(e) => setDrinkFilter(e.target.value)}
+              className="input"
+              aria-label="Filtrer par boisson"
+              style={{ maxWidth: '240px', marginBottom: '1rem', marginLeft: '0.75rem' }}
+            >
+              <option value="">Toutes les boissons</option>
+              {Object.entries(drinkCounts).sort(([a], [b]) => a.localeCompare(b, 'fr')).map(([d, n]) => (
+                <option key={d} value={d}>{d} ({n})</option>
+              ))}
+            </select>
+          )}
           {filteredGuests.length === 0 ? (
-            <div className="empty-state">Aucun invité ne correspond à "{search}".</div>
+            <div className="empty-state">Aucun invité ne correspond à votre recherche ou au filtre choisi.</div>
           ) : (
           <div className="table-wrap">
           <table className="table">
@@ -282,14 +311,19 @@ export default function GuestsPage() {
                 <th>Téléphone</th>
                 <th>Max</th>
                 <th>
-                  <button type="button" className="table-sort-btn" onClick={toggleSortByTable}>
+                  <button type="button" className="table-sort-btn" onClick={() => toggleSort('table')}>
                     Table
-                    <span className="table-sort-icon">{sortDir === 'asc' ? '↑' : sortDir === 'desc' ? '↓' : '⇅'}</span>
+                    <span className="table-sort-icon">{sortDir('table') === 'asc' ? '↑' : sortDir('table') === 'desc' ? '↓' : '⇅'}</span>
                   </button>
                 </th>
                 <th>Statut</th>
                 <th>Personnes</th>
-                <th>Boisson</th>
+                <th>
+                  <button type="button" className="table-sort-btn" onClick={() => toggleSort('drink')}>
+                    Boisson
+                    <span className="table-sort-icon">{sortDir('drink') === 'asc' ? '↑' : sortDir('drink') === 'desc' ? '↓' : '⇅'}</span>
+                  </button>
+                </th>
                 <th>Message</th>
                 <th>Arrivée</th>
                 <th>Lien</th>

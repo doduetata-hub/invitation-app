@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import GuestbookPhotoPicker from '../../shared/components/GuestbookPhotoPicker';
+import { DRINKS, OTHER_DRINK, splitDrink, joinDrink } from '../../shared/constants/drinks';
 
-const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, drink: '', message: '' };
+const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, drinkChoice: '', drinkOther: '', message: '' };
 
 // Carte du QR code d'entrée de l'invité : affichée dès que son lien personnalisé est ouvert,
 // qu'il ait déjà répondu ou non, pour qu'il l'ait toujours sous la main le jour J sans que le
@@ -77,7 +78,8 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
       name: guestInfo?.name || guestInfo?.rsvp?.name || '',
       answer: guestInfo?.rsvp?.answer || 'YES',
       numberOfPersons: guestInfo?.rsvp?.numberOfPersons || 1,
-      drink: guestInfo?.rsvp?.drink || '',
+      drinkChoice: splitDrink(guestInfo?.rsvp?.drink).choice,
+      drinkOther: splitDrink(guestInfo?.rsvp?.drink).other,
       message: guestInfo?.rsvp?.message || '',
     });
     setError('');
@@ -96,6 +98,11 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
       return;
     }
 
+    if (form.answer === 'YES' && form.drinkChoice === OTHER_DRINK && !form.drinkOther.trim()) {
+      setError('Précisez votre boisson.');
+      return;
+    }
+
     if (photo && !form.message.trim()) {
       setError('Ajoutez un message pour accompagner votre photo.');
       return;
@@ -104,7 +111,9 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
     setSubmitting(true);
     try {
       if (onSubmit) {
-        await onSubmit(form, { photo: photo?.file || null, removePhoto: removeExistingPhoto && !photo });
+        const { drinkChoice, drinkOther, ...rest } = form;
+        // La boisson n'est envoyée que pour une réponse « présent » ; « Autre » garde le texte écrit par l'invité.
+        await onSubmit({ ...rest, drink: rest.answer === 'YES' ? joinDrink(drinkChoice, drinkOther) : '' }, { photo: photo?.file || null, removePhoto: removeExistingPhoto && !photo });
       }
       setEditing(false);
       setSubmitted(true);
@@ -199,8 +208,18 @@ export default function RsvpSection({ onSubmit, guestInfo, slug, namesLine, invi
             </label>
             <label style={styles.label}>
               Boisson
-              <input value={form.drink} onChange={handleChange('drink')} style={styles.input} />
+              <select value={form.drinkChoice} onChange={handleChange('drinkChoice')} style={styles.input}>
+                <option value="">Choisir une boisson…</option>
+                {DRINKS.map((d) => <option key={d} value={d}>{d}</option>)}
+                <option value={OTHER_DRINK}>{OTHER_DRINK} (à préciser)</option>
+              </select>
             </label>
+            {form.drinkChoice === OTHER_DRINK && (
+              <label style={styles.label}>
+                Précisez votre boisson
+                <input value={form.drinkOther} onChange={handleChange('drinkOther')} maxLength={60} placeholder="Ex. : jus d'ananas" style={styles.input} required />
+              </label>
+            )}
           </>
         )}
 
