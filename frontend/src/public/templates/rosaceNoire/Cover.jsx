@@ -42,11 +42,11 @@ function Hero({ invitation }) {
       </div>
       <p className="nv-eyebrow nv-rise" style={{ '--i': 1 }}>Une promesse · Une foi · Une vie</p>
       <h1 className="nv-names" style={{ '--len': longest }}>
-        <span className="nv-n1 nv-rise" style={{ '--i': 2 }}>{names.first || title}</span>
+        <span className="nv-n1"><span className="nv-line" style={{ '--i': 0 }}>{names.first || title}</span></span>
         {names.second && (
           <>
             <span className="nv-sr"> et </span>
-            <span className="nv-n2 nv-rise" style={{ '--i': 3 }}><i aria-hidden="true">&amp;</i> {names.second}</span>
+            <span className="nv-n2"><span className="nv-line" style={{ '--i': 1 }}><i aria-hidden="true">&amp;</i> {names.second}</span></span>
           </>
         )}
       </h1>
@@ -101,7 +101,11 @@ function Verse({ invitation }) {
     <section className="nv-verse" aria-label="Verset">
       <Reveal>
         <span className="nv-verse__mark" aria-hidden="true">“</span>
-        <blockquote className="nv-verse__t">{own ? own.replace(/^[«"“]\s*|\s*[»"”]$/g, '') : VERSE.text}</blockquote>
+        <blockquote className="nv-verse__t">
+          {(own ? own.replace(/^[«"“]\s*|\s*[»"”]$/g, '') : VERSE.text).split(/\s+/).map((w, i, all) => (
+            <span key={i}><span className="nv-w" style={{ '--w': i }}>{w}</span>{i < all.length - 1 ? ' ' : ''}</span>
+          ))}
+        </blockquote>
         {!own && <p className="nv-eyebrow">{VERSE.ref}</p>}
       </Reveal>
     </section>
