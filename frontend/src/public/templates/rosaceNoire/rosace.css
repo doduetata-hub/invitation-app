@@ -290,3 +290,17 @@ html:has(.nv-root) button[aria-label$='la musique'] { width: 46px !important; he
   .nv-ticket { margin: 20px auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .nv-ticket::before, .nv-ticket::after { display: none; }
 }
+
+/* ---------- Matières : pierre noire, papiers, velours, bougies, rosace, alliances, feuille d'or ----------
+   Fonds seulement (assets/) : les compositions, les couleurs de texte, la rosace qui tourne et les tirages ne changent pas. */
+.nv-hero { background: url('./assets/ink-stone.webp') 50% 0 / cover no-repeat, var(--ink); }
+.nv-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.85; background: url('./assets/rose-window.webp') 50% 26% / min(170vw, 820px) auto no-repeat; -webkit-mask-image: radial-gradient(circle min(84vw, 410px) at 50% 26%, #000 58%, transparent 100%); mask-image: radial-gradient(circle min(84vw, 410px) at 50% 26%, #000 58%, transparent 100%); }
+.nv-intro, .nv-count, .nv-gal, .nv-rsvp { background: linear-gradient(rgba(245, 241, 233, 0.6), rgba(245, 241, 233, 0.6)), url('./assets/paper-ivory.webp') 50% 0 / cover no-repeat, var(--paper); }
+.nv-details, .nv-place, .nv-ticketsec { background: linear-gradient(rgba(234, 227, 215, 0.55), rgba(234, 227, 215, 0.55)), url('./assets/paper-cream.webp') 50% 0 / cover no-repeat, var(--cream); }
+.nv-verse { background: linear-gradient(rgba(23, 23, 19, 0.1), rgba(23, 23, 19, 0.78) 58%), url('./assets/candles.webp') 50% 0 / cover no-repeat, var(--ink); }
+.nv-dress { padding-bottom: calc(88px + min(90vw, 560px)); background: linear-gradient(var(--ink) 0, rgba(23, 23, 19, 0.35) 46%, rgba(23, 23, 19, 0) 72%) , url('./assets/rings.webp') 50% 100% / min(100%, 700px) auto no-repeat, url('./assets/ink-stone.webp') 50% 0 / cover no-repeat, var(--ink); }
+.nv-prog, .nv-closing { background: url('./assets/ink-stone.webp') 50% 0 / cover no-repeat, var(--ink); }
+.nv-ticket { background: linear-gradient(rgba(23, 23, 19, 0.3), rgba(23, 23, 19, 0.3)), url('./assets/velvet-black.webp') 50% 50% / cover no-repeat, var(--ink); }
+/* Or : la feuille d'or champagne remplit les filets et les monogrammes dorés sur fond sombre */
+.nv-rule:not(.nv-rule--ink) { background: url('./assets/gold-foil.webp') 50% 50% / cover; }
+.nv-mono, .nv-mono2--light { background: url('./assets/gold-foil.webp') 50% 50% / cover; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
