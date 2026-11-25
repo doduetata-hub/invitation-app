@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link, NavLink } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import { STATUS_LABELS, STATUS_OPTIONS, PAYMENT_LABELS, PAYMENT_OPTIONS } from '../../shared/constants/invitations';
 import ProgramEditor from '../components/ProgramEditor';
@@ -9,7 +9,6 @@ import SectionsToggle from '../components/SectionsToggle';
 import MediaUploader from '../components/MediaUploader';
 import MusicUploader from '../components/MusicUploader';
 import PaymentsSection from '../components/PaymentsSection';
-import InvitationTabs from '../components/InvitationTabs';
 import InvitationPage from '../../public/InvitationPage';
 import { getTemplate } from '../../public/templates/registry';
 
@@ -32,6 +31,21 @@ const emptyForm = {
   paymentStatus: 'PENDING',
 };
 
+const PANELS = [
+  { id: 'infos', label: 'Infos' },
+  { id: 'design', label: 'Design' },
+  { id: 'medias', label: 'Médias' },
+  { id: 'programme', label: 'Programme' },
+  { id: 'acces', label: 'Accès et paiement' },
+];
+
+// Pages de l'invitation (hors de l'éditeur) : accessibles depuis la même rangée.
+const PAGES = [
+  { to: 'guests', label: 'Invités' },
+  { to: 'checkin', label: 'Check-in' },
+  { to: 'guestbook', label: 'Livre d’or' },
+];
+
 export default function InvitationEditorPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -41,6 +55,9 @@ export default function InvitationEditorPage() {
 
   const [form, setForm] = useState({ ...emptyForm, clientId: preselectedClientId });
   const [themeDraft, setThemeDraft] = useState({});
+  // L'éditeur n'affiche plus douze blocs à la suite : un panneau à la fois, l'aperçu reste toujours visible à droite.
+  const [panel, setPanel] = useState('infos');
+  const [designPart, setDesignPart] = useState('look');
   const [invitation, setInvitation] = useState(null);
   const [clients, setClients] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -256,6 +273,8 @@ export default function InvitationEditorPage() {
     };
   }, [form, themeDraft, selectedTemplate, invitation]);
 
+  const show = (name) => !isEdit || panel === name;
+
   if (loading) return <p className="admin-muted">Chargement...</p>;
 
   return (
@@ -275,9 +294,27 @@ export default function InvitationEditorPage() {
           )}
         </div>
 
-        {isEdit && <InvitationTabs id={id} />}
 
-        {isEdit && invitation?.status === 'PUBLISHED' && (
+        {isEdit && (
+          <nav className="editor-nav" aria-label="Parties de l'invitation">
+            <div className="editor-nav__group">
+              {PANELS.map((pn) => (
+                <button key={pn.id} type="button" className={`editor-nav__btn${panel === pn.id ? ' is-active' : ''}`} onClick={() => setPanel(pn.id)} aria-current={panel === pn.id ? 'true' : undefined}>
+                  {pn.label}
+                </button>
+              ))}
+            </div>
+            <div className="editor-nav__group editor-nav__group--pages">
+              {PAGES.map((pg) => (
+                <NavLink key={pg.to} to={`/admin/invitations/${id}/${pg.to}`} className="editor-nav__btn editor-nav__btn--page">
+                  {pg.label}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+        )}
+
+        {show('infos') && isEdit && invitation?.status === 'PUBLISHED' && (
           <div className="public-link-box">
             <p style={{ margin: 0 }}>
               URL publique : <a href={`/i/${invitation.slug}`} target="_blank" rel="noreferrer">/i/{invitation.slug}</a>
@@ -295,6 +332,7 @@ export default function InvitationEditorPage() {
           </div>
         )}
 
+        {show('infos') && (
         <form onSubmit={handleSubmit} className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginTop: '1.25rem' }}>
           <div className="field-row">
             <label className="field">
@@ -401,26 +439,31 @@ export default function InvitationEditorPage() {
             {dirty && !saving && <span className="admin-muted" style={{ fontSize: '0.85rem' }}>Modifications non enregistrées</span>}
           </div>
         </form>
+        )}
 
-        {selectedTemplate && (
+        {show('design') && selectedTemplate && (
           <div className="editor-section">
             <h2>Design</h2>
-            <ThemeEditor templateTokens={templateTokens} theme={themeDraft} onChange={handleThemeChange} />
-            <h3 style={{ marginTop: '1.25rem' }}>Sections affichées</h3>
-            <SectionsToggle theme={themeDraft} onChange={handleThemeChange} />
-            {templateTexts && (
+            <div className="editor-sub" role="tablist" aria-label="Réglages du design">
+              {[['look', 'Couleurs et polices'], ['sections', 'Sections'], ...(templateTexts ? [['texts', 'Textes']] : [])].map(([k, label]) => (
+                <button key={k} type="button" role="tab" aria-selected={designPart === k} className={`editor-sub__btn${designPart === k ? ' is-active' : ''}`} onClick={() => setDesignPart(k)}>{label}</button>
+              ))}
+            </div>
+            {designPart === 'look' && <ThemeEditor templateTokens={templateTokens} theme={themeDraft} onChange={handleThemeChange} />}
+            {designPart === 'sections' && (
               <>
-                <h3 style={{ marginTop: '1.25rem' }}>Textes de l'invitation</h3>
-                <TextsEditor groups={templateTexts} theme={themeDraft} onChange={handleThemeChange} />
+                <p className="admin-muted" style={{ marginTop: 0 }}>Cochez ce qui s'affiche et classez l'ordre avec les flèches.</p>
+                <SectionsToggle theme={themeDraft} onChange={handleThemeChange} />
               </>
             )}
+            {designPart === 'texts' && templateTexts && <TextsEditor groups={templateTexts} theme={themeDraft} onChange={handleThemeChange} />}
             <p className="design-hint">
-              Les changements de design ci-dessus sont appliqués dans l'aperçu immédiatement ; cliquez sur « Enregistrer » pour les sauvegarder.
+              Les changements de design sont appliqués dans l'aperçu immédiatement ; cliquez sur « Enregistrer » dans l'onglet Informations pour les sauvegarder.
             </p>
           </div>
         )}
 
-        {isEdit && invitation && (
+        {show('medias') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Photos & vidéos</h2>
             <h3 style={{ fontSize: '0.9rem', marginBottom: '0.4rem' }}>Photo de couverture</h3>
@@ -430,49 +473,21 @@ export default function InvitationEditorPage() {
           </div>
         )}
 
-        {isEdit && invitation && (
+        {show('medias') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Musique de fond</h2>
             <MusicUploader invitationId={id} musicUrl={invitation.musicUrl} onChange={refreshMedia} />
           </div>
         )}
 
-        {isEdit && (
+        {show('programme') && isEdit && (
           <div className="editor-section">
             <h2>Programme</h2>
             <ProgramEditor invitationId={id} onChange={(events) => setInvitation((inv) => ({ ...inv, events }))} />
           </div>
         )}
 
-        {isEdit && (
-          <div className="editor-section">
-            <h2>Invités</h2>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Link to={`/admin/invitations/${id}/guests`} className="btn btn-primary">
-                Gérer les invités et les RSVP →
-              </Link>
-              <Link to={`/admin/invitations/${id}/checkin`} className="btn btn-accent">
-                Check-in Jour J →
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {isEdit && (
-          <div className="editor-section">
-            <h2>Livre d'or</h2>
-            <p className="admin-muted" style={{ marginTop: 0 }}>
-              Rassemble les mots laissés par les invités, que ce soit via leur invitation numérique
-              ou en scannant un QR code posé sur table (invités papier). Modération et mode écran
-              pour la soirée.
-            </p>
-            <Link to={`/admin/invitations/${id}/guestbook`} className="btn btn-primary">
-              Ouvrir le livre d'or →
-            </Link>
-          </div>
-        )}
-
-        {isEdit && invitation && (
+        {show('acces') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Accès client</h2>
             <p className="admin-muted" style={{ marginTop: 0 }}>
@@ -505,7 +520,7 @@ export default function InvitationEditorPage() {
           </div>
         )}
 
-        {isEdit && invitation && (
+        {show('acces') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Accès check-in (jour J)</h2>
             <p className="admin-muted" style={{ marginTop: 0 }}>
@@ -538,7 +553,7 @@ export default function InvitationEditorPage() {
           </div>
         )}
 
-        {isEdit && (
+        {show('acces') && isEdit && (
           <div className="editor-section">
             <h2>Paiements</h2>
             <PaymentsSection invitationId={id} price={form.price} />

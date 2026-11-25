@@ -399,7 +399,7 @@ export default function GuestbookPage() {
               onClick={copyRegieLink}
               title="Lien à envoyer à la régie de la salle : il ouvre l'écran sur un bouton « Lancer », sans identifiant. Un clic lance tout depuis le début, avec la musique."
             >
-              {regieCopied ? '✓ Lien copié' : '📋 Copier le lien régie'}
+              {regieCopied ? '✓ Lien copié' : 'Copier le lien régie'}
             </button>
             <a
               href={`/guestbook/${invitation.slug}/display?reset=1`}
@@ -449,7 +449,7 @@ export default function GuestbookPage() {
               </button>
             ) : (
               <button type="button" className="btn btn-accent" disabled={endBusy} onClick={endGuestbook}>
-                {endBusy ? '...' : '🏁 Terminer le livre d\'or'}
+                {endBusy ? '...' : 'Terminer le livre d\'or'}
               </button>
             )}
           </div>
@@ -464,7 +464,7 @@ export default function GuestbookPage() {
                 <input className="input" readOnly value={souvenirUrl} onFocus={(e) => e.target.select()} style={{ width: '100%', marginBottom: '0.6rem' }} />
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <button type="button" className="btn btn-accent btn-sm" onClick={copySouvenirLink}>
-                    {souvenirCopied ? '✓ Lien copié' : '📋 Copier le lien'}
+                    {souvenirCopied ? '✓ Lien copié' : 'Copier le lien'}
                   </button>
                   <a href={souvenirUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
                     Voir la page →
@@ -479,7 +479,7 @@ export default function GuestbookPage() {
               </>
             ) : (
               <button type="button" className="btn btn-accent" disabled={souvenirBusy} onClick={createSouvenirLink}>
-                {souvenirBusy ? '...' : '✨ Créer le lien Souvenir'}
+                {souvenirBusy ? '...' : 'Créer le lien Souvenir'}
               </button>
             )}
           </div>
@@ -518,7 +518,7 @@ export default function GuestbookPage() {
         </p>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <a href={`/api/invitations/${id}/guestbook/export.pdf`} className="btn btn-accent">
-            📖 Livre d'or en PDF
+            Livre d'or en PDF
           </a>
           <Link
             to={`/admin/invitations/${id}/guestbook/video`}
@@ -526,7 +526,7 @@ export default function GuestbookPage() {
             className="btn btn-accent"
             title="Génère, dans ton navigateur, un souvenir vidéo animé (MP4) avec musique — peut prendre plusieurs minutes."
           >
-            🎬 Livre d'or en vidéo
+            Livre d'or en vidéo
           </Link>
           <a href={`/api/invitations/${id}/guestbook/export.xlsx`} className="btn btn-outline">
             Exporter Excel
@@ -598,7 +598,7 @@ export default function GuestbookPage() {
               className="btn btn-outline btn-sm"
               title="Regroupe tous les QR codes actifs dans un seul document, deux par feuille A4 (à découper en deux après impression)."
             >
-              🖨 Imprimer tout
+              Imprimer tout
             </Link>
           </div>
           <div className="table-wrap">
@@ -744,7 +744,7 @@ export default function GuestbookPage() {
           {filteredEntries.length === 0 ? (
             <div className="empty-state">
               {statusFilter === 'PENDING' && !q
-                ? 'Aucun message en attente — tout est validé 🎉'
+                ? 'Aucun message en attente — tout est validé '
                 : 'Aucun message ne correspond à votre recherche.'}
             </div>
           ) : (
@@ -818,10 +818,10 @@ export default function GuestbookPage() {
                                   onClick={() => setMessageView({ entryId: entry.id, name: entry.guestName, message: entry.message, tableNumber: entry.tableNumber, respondedAt: entry.createdAt, photoUrl: entry.pendingPhoto.url, photo: entry.pendingPhoto })}
                                 >
                                   <img src={entry.pendingPhoto.thumbUrl || entry.pendingPhoto.url} alt="" loading="lazy" decoding="async" />
-                                  <span>🕒 Nouvelle photo en attente</span>
+                                  <span>Nouvelle photo en attente</span>
                                 </button>
                               ) : (
-                                <span className="badge">🕒 Retrait de photo demandé</span>
+                                <span className="badge">Retrait de photo demandé</span>
                               )}
                               <button type="button" disabled={isBusy} onClick={() => resolvePendingPhoto(entry.id, true)} className="btn btn-outline btn-sm">
                                 ✓ Valider
@@ -849,8 +849,7 @@ export default function GuestbookPage() {
                           </button>
                         )}
                         <button type="button" disabled={isBusy} onClick={() => removeEntry(entry.id)} className="btn btn-danger-outline btn-icon">
-                          🗑
-                        </button>
+                                                  </button>
                       </td>
                     </tr>
                   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../shared/auth/AuthContext';
+import '../../public/templates/laPorte/fonts.css'; // Cormorant + Jost, servies avec l'application (aucun service tiers)
 
 // Icônes minimalistes (trait fin, currentColor) pour repérer chaque section d'un
 // coup d'œil dans la barre latérale, sans dépendre d'une librairie externe.
@@ -40,6 +41,17 @@ const icons = {
       <path d="M12 3.5v2M12 18.5v2M20.5 12h-2M5.5 12h-2M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4M17.7 17.7l-1.4-1.4M7.7 7.7L6.3 6.3" />
     </svg>
   ),
+};
+
+
+// Icônes de la barre du bas (téléphone) : même trait fin que le menu latéral.
+const quickIcons = {
+  messages: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5h16v10H9.5L5.5 19v-3.5H4z" /></svg>,
+  checkin: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M8.2 12.3l2.5 2.5 5-5.4" /></svg>,
+  guests: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" /><circle cx="17" cy="8.5" r="2.4" /><path d="M15 14.7c2.6.2 4.7 2.3 4.7 5.3" /></svg>,
+  home: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 11l8-6.5 8 6.5v8.5H4z" /><path d="M10 19.5v-5h4v5" /></svg>,
+  invitations: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="1.5" /><path d="M4 6.5l8 6.5 8-6.5" /></svg>,
+  menu: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>,
 };
 
 const navItems = [
@@ -85,13 +97,13 @@ export default function AdminLayout() {
   const invitationId = routeInvitationId || lastInvitationId;
   const quickLinks = invitationId
     ? [
-        { to: `/admin/invitations/${invitationId}/guestbook`, label: 'Messages', icon: '💬' },
-        { to: `/admin/invitations/${invitationId}/checkin`, label: 'Check-in', icon: '✅' },
-        { to: `/admin/invitations/${invitationId}/guests`, label: 'Invités', icon: '👥' },
+        { to: `/admin/invitations/${invitationId}/guestbook`, label: 'Messages', icon: quickIcons.messages },
+        { to: `/admin/invitations/${invitationId}/checkin`, label: 'Check-in', icon: quickIcons.checkin },
+        { to: `/admin/invitations/${invitationId}/guests`, label: 'Invités', icon: quickIcons.guests },
       ]
     : [
-        { to: '/admin', label: 'Accueil', icon: '🏠', end: true },
-        { to: '/admin/invitations', label: 'Invitations', icon: '✉️' },
+        { to: '/admin', label: 'Accueil', icon: quickIcons.home, end: true },
+        { to: '/admin/invitations', label: 'Invitations', icon: quickIcons.invitations },
       ];
 
   return (
@@ -150,7 +162,7 @@ export default function AdminLayout() {
           </NavLink>
         ))}
         <button type="button" className="bottom-nav-link" onClick={() => setSidebarOpen(true)}>
-          <span className="bottom-nav-icon" aria-hidden="true">☰</span>
+          <span className="bottom-nav-icon" aria-hidden="true">{quickIcons.menu}</span>
           Menu
         </button>
       </nav>

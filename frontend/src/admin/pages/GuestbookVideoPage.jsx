@@ -141,12 +141,12 @@ export default function GuestbookVideoPage() {
   const downloadName = invitation ? `livre-or-${invitation.slug}.mp4` : 'livre-or.mp4';
 
   return (
-    <div style={styles.page}>
+    <div className="admin-root" style={styles.page}>
       <div style={styles.toolbar}>
         <Link to={`/admin/invitations/${id}/guestbook`} className="btn btn-outline btn-sm">← Retour au livre d'or</Link>
         {display && phase === 'idle' && (
           <button type="button" onClick={start} className="btn btn-primary btn-sm" disabled={!supported || selectedEntries.length === 0}>
-            🎬 Générer la vidéo ({selectedEntries.length} message{selectedEntries.length > 1 ? 's' : ''})
+            Générer la vidéo ({selectedEntries.length} message{selectedEntries.length > 1 ? 's' : ''})
           </button>
         )}
         {phase === 'done' && (
@@ -158,7 +158,7 @@ export default function GuestbookVideoPage() {
 
       {display && phase === 'idle' && supported && (
         <p className="admin-muted" style={{ maxWidth: '900px', textAlign: 'center' }}>
-          ⚠️ Une fois lancée, garde cet onglet ouvert et actif à l'écran jusqu'à la fin (ne
+          <strong>Attention :</strong> une fois lancée, garde cet onglet ouvert et actif à l'écran jusqu'à la fin (ne
           bascule pas sur un autre onglet ou une autre application) : certains navigateurs
           déchargent en mémoire les onglets d'arrière-plan pendant un traitement long, ce qui
           efface la progression sans prévenir.
@@ -166,7 +166,7 @@ export default function GuestbookVideoPage() {
       )}
       {isRunning && (
         <p className="admin-muted" style={{ maxWidth: '900px', textAlign: 'center' }}>
-          ⚠️ Ne change pas d'onglet ni d'application avant la fin, sous peine de perdre la
+          <strong>Attention :</strong> ne change pas d'onglet ni d'application avant la fin, sous peine de perdre la
           progression.
         </p>
       )}

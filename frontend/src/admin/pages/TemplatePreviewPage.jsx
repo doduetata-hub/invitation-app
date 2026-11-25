@@ -1,10 +1,28 @@
-import { useParams, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import InvitationPage from '../../public/InvitationPage';
 import { buildSampleInvitation } from '../../public/sampleInvitation';
 
 export default function TemplatePreviewPage() {
   const { key } = useParams();
+  const [search] = useSearchParams();
   const invitation = buildSampleInvitation(key);
+  const embed = Boolean(search.get('embed'));
+  useEffect(() => {
+    if (!embed) return undefined;
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = 'hidden'; // vignette : pas de barre de défilement
+    return () => { html.style.overflow = prev; };
+  }, [embed]);
+  // ?embed=1 : la page est une vignette dans la bibliothèque des templates, sans barre ni explication.
+  if (embed) {
+    return (
+      <div className="tpl-embed">
+        <InvitationPage invitation={invitation} />
+      </div>
+    );
+  }
 
   return (
     <div>

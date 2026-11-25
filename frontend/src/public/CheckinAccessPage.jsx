@@ -147,14 +147,14 @@ export default function CheckinAccessPage() {
 
   if (notFound) {
     return (
-      <div style={styles.center}>
+      <div className="admin-root" style={styles.center}>
         <p>Ce lien n'est plus valide. Demande un nouveau lien à l'organisateur.</p>
       </div>
     );
   }
 
   if (!data) {
-    return <div style={styles.center}>Chargement...</div>;
+    return <div className="admin-root" style={styles.center}>Chargement...</div>;
   }
 
   const { guests, stats, invitation } = data;
@@ -162,7 +162,7 @@ export default function CheckinAccessPage() {
   const filteredGuests = guests.filter((g) => (g.name || g.rsvp?.name || '').toLowerCase().includes(q));
 
   return (
-    <div style={styles.page}>
+    <div className="admin-root service-page" style={styles.page}>
       <div style={styles.container}>
         <p className="admin-eyebrow">{invitation.title}</p>
         <h1 style={{ margin: '0.3rem 0 1.25rem' }}>{invitation.namesLine || 'Check-in'}</h1>

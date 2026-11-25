@@ -121,14 +121,14 @@ export default function ClientAccessPage() {
 
   if (notFound) {
     return (
-      <div style={styles.center}>
+      <div className="admin-root" style={styles.center}>
         <p>Ce lien n'est plus valide. Demande un nouveau lien à l'organisateur.</p>
       </div>
     );
   }
 
   if (!data) {
-    return <div style={styles.center}>Chargement...</div>;
+    return <div className="admin-root" style={styles.center}>Chargement...</div>;
   }
 
   const { guests, stats, invitation } = data;
@@ -148,7 +148,7 @@ export default function ClientAccessPage() {
     : guests;
 
   return (
-    <div style={styles.page}>
+    <div className="admin-root service-page" style={styles.page}>
       <div style={styles.container}>
         <p className="admin-eyebrow">{invitation.title}</p>
         <h1 style={{ margin: '0.3rem 0 1.25rem' }}>{invitation.namesLine || 'Liens d\'invités'}</h1>
@@ -176,7 +176,7 @@ export default function ClientAccessPage() {
             </div>
           )}
           <fieldset disabled={locked} style={{ ...styles.fieldset, opacity: locked ? 0.45 : 1, filter: locked ? 'grayscale(1)' : 'none' }}>
-          <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+          <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', marginBottom: '1.1rem' }}>
             <input
               placeholder="Nom (optionnel)"
               value={form.name}
@@ -196,17 +196,15 @@ export default function ClientAccessPage() {
               value={form.maxPersons}
               onChange={(e) => setForm((f) => ({ ...f, maxPersons: e.target.value }))}
               className="input"
-              style={{ width: '130px', flex: 'none' }}
             />
             <input
               placeholder="Table (optionnel)"
               value={form.tableNumber}
               onChange={(e) => setForm((f) => ({ ...f, tableNumber: e.target.value }))}
               className="input"
-              style={{ width: '130px', flex: 'none' }}
               list="table-suggestions"
             />
-            <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>
+            <button type="submit" disabled={creating} className="btn btn-primary">
               + Générer un lien
             </button>
           </form>

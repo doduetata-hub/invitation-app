@@ -224,7 +224,7 @@ export default function GuestsPage() {
 
       <div className="editor-section">
         <h2>Liens personnalisés</h2>
-        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+        <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', marginBottom: '1.1rem' }}>
           <input
             placeholder="Nom (optionnel)"
             value={form.name}
@@ -244,22 +244,22 @@ export default function GuestsPage() {
             value={form.maxPersons}
             onChange={(e) => setForm((f) => ({ ...f, maxPersons: e.target.value }))}
             className="input"
-            style={{ width: '130px', flex: 'none' }}
+            
           />
           <input
             placeholder="Table (optionnel)"
             value={form.tableNumber}
             onChange={(e) => setForm((f) => ({ ...f, tableNumber: e.target.value }))}
             className="input"
-            style={{ width: '130px', flex: 'none' }}
+            
             list="table-suggestions"
           />
-          <button type="submit" disabled={creating} className="btn btn-outline" style={{ flexShrink: 0 }}>+ Générer un lien</button>
+          <button type="submit" disabled={creating} className="btn btn-primary">+ Générer un lien</button>
         </form>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.1rem' }}>
           <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
-            {importing ? 'Import en cours...' : '📄 Importer depuis Excel'}
+            {importing ? 'Import en cours...' : 'Importer depuis Excel'}
             <input
               type="file"
               accept=".xlsx,.xls,.csv"

@@ -1,37 +1,38 @@
 /* ============================================================
    Système de design — back-office "Éditorial élégant"
-   Ivoire/charcoal + or antique, Playfair Display + Inter.
+   Régie : nuit, laiton, papier froid ; Cormorant + Jost (voir le bloc « RÉGIE » en fin de fichier).
    ============================================================ */
 
 :root {
-  --color-bg: #faf8f4;
+  --color-bg: #edeff1;
   --color-surface: #ffffff;
-  --color-surface-sunken: #f4efe4;
-  --color-ink: #1c1a17;
-  --color-ink-soft: #6b6255;
-  --color-ink-faint: #a89d8a;
-  --color-border: #e8e0d0;
-  --color-border-strong: #d8cbaf;
-  --color-accent: #b8873f;
-  --color-accent-dark: #93692c;
-  --color-accent-soft: #f3e6c9;
-  --color-success: #3f7d58;
-  --color-success-soft: #e3efe6;
-  --color-danger: #b0453a;
-  --color-danger-soft: #f6e6e3;
-  --color-warning-soft: #faf0dc;
+  --color-surface-sunken: #e6e9ec;
+  --color-ink: #14161c;
+  --color-ink-soft: #4d5560;
+  --color-ink-faint: #6b7480;
+  --color-border: #dcdfe3;
+  --color-border-strong: #c4c9cf;
+  --color-accent: #a67c2e;
+  --color-accent-dark: #7a5a1c;
+  --color-accent-soft: #f1e7cf;
+  --color-night: #0c0e13;
+  --color-success: #2d7a57;
+  --color-success-soft: #e1f0e8;
+  --color-danger: #a63a3a;
+  --color-danger-soft: #f6e3e3;
+  --color-warning-soft: #f6ecd2;
 
-  --font-heading: 'Playfair Display', Georgia, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'LP Serif', 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'LP Sans', 'Jost', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --radius-sm: 3px;
-  --radius-md: 6px;
-  --radius-lg: 12px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.05);
-  --shadow-md: 0 6px 20px rgba(28, 26, 23, 0.08);
-  --shadow-lg: 0 16px 40px rgba(28, 26, 23, 0.14);
+  --shadow-sm: 0 1px 2px rgba(12, 14, 19, 0.05);
+  --shadow-md: 0 8px 22px rgba(12, 14, 19, 0.1);
+  --shadow-lg: 0 18px 44px rgba(12, 14, 19, 0.18);
 
   --transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -66,11 +67,6 @@ body {
   margin: 0 0 0.4em;
 }
 
-.admin-root h1 {
-  font-size: 1.9rem;
-  line-height: 1.15;
-}
-
 .admin-root h2 {
   font-size: 1.3rem;
   padding-bottom: 0.5rem;
@@ -86,10 +82,6 @@ body {
 
 .admin-root p {
   line-height: 1.55;
-}
-
-.admin-root a {
-  color: var(--color-accent-dark);
 }
 
 .admin-eyebrow {
@@ -134,22 +126,10 @@ body {
   outline-offset: 2px;
 }
 
-.btn-primary {
-  background: var(--color-ink);
-  color: var(--color-bg);
-  border-color: var(--color-ink);
-}
-
 .btn-primary:hover:not(:disabled) {
   background: #322d26;
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
-}
-
-.btn-accent {
-  background: var(--color-accent);
-  color: #fff;
-  border-color: var(--color-accent);
 }
 
 .btn-accent:hover:not(:disabled) {
@@ -162,11 +142,6 @@ body {
   background: transparent;
   color: var(--color-ink);
   border-color: var(--color-border-strong);
-}
-
-.btn-outline:hover:not(:disabled) {
-  border-color: var(--color-ink);
-  background: var(--color-surface-sunken);
 }
 
 .btn-danger-outline {
@@ -266,12 +241,6 @@ textarea.input {
   transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
 }
 
-.card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-border-strong);
-  transform: translateY(-2px);
-}
-
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -341,10 +310,6 @@ textarea.input {
   transition: background var(--transition);
 }
 
-.table tbody tr:hover {
-  background: var(--color-surface-sunken);
-}
-
 .table a {
   color: var(--color-ink);
   font-weight: 600;
@@ -368,10 +333,6 @@ textarea.input {
   color: var(--color-ink-soft);
 }
 
-.badge-accent { background: var(--color-accent-soft); color: var(--color-accent-dark); }
-.badge-success { background: var(--color-success-soft); color: var(--color-success); }
-.badge-danger { background: var(--color-danger-soft); color: var(--color-danger); }
-
 /* --- Stat cards (dashboard) --- */
 
 .stat-card {
@@ -391,23 +352,6 @@ textarea.input {
   width: 3px;
   height: 100%;
   background: var(--color-accent);
-}
-
-.stat-value {
-  font-family: var(--font-heading);
-  font-size: 2.1rem;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--color-ink);
-}
-
-.stat-label {
-  margin-top: 0.35rem;
-  font-size: 0.76rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-ink-faint);
-  font-weight: 600;
 }
 
 .stats-grid {
@@ -464,10 +408,6 @@ textarea.input {
   transition: color var(--transition), border-color var(--transition);
 }
 
-.invitation-tab:hover {
-  color: var(--color-ink);
-}
-
 .invitation-tab.active {
   color: var(--color-ink);
   border-bottom-color: var(--color-accent);
@@ -513,28 +453,12 @@ textarea.input {
   padding: 1.75rem 0 1.5rem;
 }
 
-.sidebar-brand {
-  padding: 0 1.6rem;
-  margin-bottom: 2.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
 .sidebar-brand-mark {
   font-family: var(--font-heading);
   font-style: italic;
   font-size: 1.45rem;
   color: var(--color-bg);
   line-height: 1;
-}
-
-.sidebar-brand-tag {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--color-accent);
-  font-weight: 600;
 }
 
 .sidebar-nav {
@@ -555,11 +479,6 @@ textarea.input {
   font-weight: 500;
   border-left: 2px solid transparent;
   transition: color var(--transition), background var(--transition), border-color var(--transition);
-}
-
-.sidebar-link:hover {
-  color: var(--color-bg);
-  background: rgba(255, 255, 255, 0.04);
 }
 
 .sidebar-link.active {
@@ -682,39 +601,14 @@ textarea.input {
   font-weight: 600;
 }
 
-.login-divider {
-  width: 40px;
-  height: 2px;
-  background: var(--color-accent);
-  margin: 0 auto 1.75rem;
-}
-
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   text-align: left;
-}
-
-/* ============================================================
+}/* ============================================================
    Tableau de bord
    ============================================================ */
-
-.dashboard-header {
-  margin-bottom: 2rem;
-}
-
-.dashboard-greeting {
-  font-family: var(--font-heading);
-  font-style: italic;
-  font-size: 1.05rem;
-  color: var(--color-accent-dark);
-  margin: 0.2rem 0 0;
-}
-
-.dashboard-section {
-  margin-top: 2.25rem;
-}
 
 .dashboard-section-title {
   display: flex;
@@ -1244,13 +1138,8 @@ textarea.input {
   background: var(--color-surface, #fff);
   padding: 0.75rem 0 0.2rem;
   z-index: 1;
-}
-
-/* Un lien stylé en bouton plein : `.admin-root a` (plus spécifique que `.btn-accent`) lui imposait
+}/* Un lien stylé en bouton plein : `.admin-root a` (plus spécifique que `.btn-accent`) lui imposait
    une couleur de texte dorée sur fond doré, quasi illisible. */
-.admin-root a.btn-accent {
-  color: #fff;
-}
 
 .admin-root a.btn-primary {
   color: var(--color-bg);
@@ -1533,3 +1422,191 @@ textarea.input {
     font-size: 0.95rem;
   }
 }
+
+/* ============================================================
+   RÉGIE — refonte du back-office
+   L'administration est la régie d'un lieu de réception : nuit profonde, laiton, papier froid. Elle partage la matière des templates
+   (même laiton, mêmes polices, même trou de serrure) mais reste sobre : le contenu des invitations est la vedette, pas l'interface.
+   Cormorant pour les grands titres uniquement, Jost pour tout le reste. Plus de soulignements de titres, de libellés en capitales ni de
+   cartes qui se soulèvent : les chiffres clés forment une seule bande, les tableaux reposent sur un plan blanc.
+   ============================================================ */
+
+.admin-root { font-size: 15px; line-height: 1.5; font-feature-settings: 'lnum'; }
+.admin-root h1 { font-family: var(--font-heading); font-weight: 600; font-size: clamp(2rem, 3.4vw, 2.7rem); line-height: 1.04; letter-spacing: -0.012em; margin: 0 0 0.5rem; }
+.admin-root h2 { font-family: var(--font-body); font-weight: 600; font-size: 1.02rem; line-height: 1.3; letter-spacing: 0.005em; padding: 0; border: 0; margin: 0 0 0.9rem; }
+.admin-root h3 { font-size: 0.98rem; }
+.admin-root a { color: var(--color-accent-dark); }
+.admin-eyebrow { display: none; }
+.preview-label { text-transform: none; letter-spacing: 0; font-size: 0.82rem; }
+.admin-root :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* Boutons : plus francs, aucun soulèvement au survol */
+.btn { border-radius: 10px; font-weight: 600; font-size: 0.88rem; padding: 0.62rem 1.15rem; letter-spacing: 0.005em; }
+.btn:hover:not(:disabled) { transform: none !important; box-shadow: none !important; }
+.btn-primary { background: var(--color-night); border-color: var(--color-night); color: #f4ecdc; }
+.btn-primary:hover:not(:disabled) { background: #232834; }
+.btn-accent { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.btn-accent:hover:not(:disabled) { background: var(--color-accent-dark); }
+.btn-outline { background: #fff; border-color: var(--color-border-strong); }
+.btn-outline:hover:not(:disabled) { background: #f6f7f8; border-color: var(--color-ink-soft); }
+.btn-sm { border-radius: 8px; }
+.btn-icon { border-radius: 8px; }
+
+/* Champs */
+.field { color: var(--color-ink-soft); font-weight: 500; font-size: 0.84rem; }
+.input, select.input, textarea.input { border-radius: 10px; border-color: var(--color-border-strong); padding: 0.62rem 0.8rem; background: #fff; }
+.input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(166, 124, 46, 0.18); }
+
+/* Plans : un seul rayon, une seule bordure, pas de mouvement */
+.card, .panel { border-radius: 16px; border-color: var(--color-border); box-shadow: 0 1px 2px rgba(12, 14, 19, 0.04); }
+.card:hover { transform: none; box-shadow: 0 1px 2px rgba(12, 14, 19, 0.04); border-color: var(--color-border); }
+.empty-state { border-radius: 16px; background: rgba(255, 255, 255, 0.6); border-color: var(--color-border-strong); color: var(--color-ink-soft); }
+
+/* Chiffres clés : une bande, pas six cartes identiques */
+.stats-grid { gap: 1px; background: var(--color-border); border: 1px solid var(--color-border); border-radius: 16px; overflow: hidden; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.stat-card { border: 0; border-radius: 0; background: #fff; padding: 1.25rem 1.4rem 1.15rem; }
+.stat-card::before { display: none; }
+.stat-value { font-family: var(--font-heading); font-weight: 500; font-size: 2.9rem; line-height: 0.95; letter-spacing: -0.01em; color: var(--color-ink); }
+.stat-label { margin-top: 0.5rem; text-transform: none; letter-spacing: 0; font-size: 0.86rem; font-weight: 500; color: var(--color-ink-soft); }
+.dashboard-header { margin-bottom: 1.6rem; }
+.dashboard-greeting { font-family: var(--font-body); font-style: normal; font-size: 1rem; color: var(--color-ink-soft); margin: 0; }
+.dashboard-section { margin-top: 2rem; }
+
+/* Tableaux : posés sur un plan blanc, en-têtes en minuscules discrètes */
+.table-wrap { background: #fff; border: 1px solid var(--color-border); border-radius: 16px; }
+.table th { text-transform: none; letter-spacing: 0; font-size: 0.8rem; font-weight: 600; color: var(--color-ink-soft); padding: 0.85rem 1rem; border-bottom: 1px solid var(--color-border); background: #fbfbfc; }
+.table th:first-child { border-top-left-radius: 15px; }
+.table th:last-child { border-top-right-radius: 15px; }
+.table td { padding: 0.9rem 1rem; border-bottom: 1px solid #eceef0; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover { background: #f7f8f9; }
+.table a { color: var(--color-ink); }
+.detail-grid dt { text-transform: none; letter-spacing: 0; font-size: 0.85rem; font-weight: 500; color: var(--color-ink-soft); }
+
+/* Statuts : un point de couleur devant le mot */
+.badge { gap: 0.4rem; padding: 0.22rem 0.65rem 0.22rem 0.55rem; font-size: 0.76rem; background: #eceff1; color: var(--color-ink-soft); }
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge-accent { background: #f4ead2; color: var(--color-accent-dark); }
+.badge-success { background: #e1f0e8; color: var(--color-success); }
+.badge-danger { background: #f6e3e3; color: var(--color-danger); }
+
+/* Onglets d'une invitation : bascule segmentée */
+.invitation-tabs { display: inline-flex; gap: 2px; padding: 4px; margin: 0.9rem 0 1.4rem; border: 0; background: #e2e5e8; border-radius: 12px; flex-wrap: wrap; }
+.invitation-tab { margin: 0; padding: 0.45rem 1rem; border: 0; border-radius: 9px; font-size: 0.86rem; color: var(--color-ink-soft); }
+.invitation-tab:hover { color: var(--color-ink); }
+.invitation-tab.active { background: #fff; color: var(--color-ink); box-shadow: 0 1px 3px rgba(12, 14, 19, 0.12); border: 0; }
+
+/* Barre latérale : la nuit des templates */
+.sidebar { width: 252px; background: radial-gradient(120% 40% at 0% 0%, rgba(216, 184, 120, 0.16), transparent 70%), var(--color-night); color: #f4ecdc; padding: 1.6rem 0.85rem 1.4rem; border-right: 1px solid #000; }
+.sidebar-brand { flex-direction: row; align-items: center; gap: 0.75rem; padding: 0.2rem 0.75rem; margin-bottom: 2rem; }
+.sidebar-brand::before { content: ''; flex: none; width: 34px; height: 34px; border-radius: 10px; background: #16191f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 28'%3E%3Cpath d='M10 3a6.5 6.5 0 0 0-2.6 12.5L5.5 25h9l-1.9-9.5A6.5 6.5 0 0 0 10 3z' fill='%23d8b878'/%3E%3C/svg%3E") center / 14px no-repeat; box-shadow: inset 0 0 0 1px rgba(216, 184, 120, 0.35); }
+.sidebar-brand-mark { font-style: normal; font-weight: 600; font-size: 1.55rem; letter-spacing: 0; color: #f4ecdc; line-height: 1; }
+.sidebar-brand-tag { display: block; margin-top: 0.15rem; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: #b9b09c; }
+.sidebar-nav { gap: 0.2rem; }
+.sidebar-link { position: relative; padding: 0.7rem 0.85rem; gap: 0.8rem; border: 0; border-radius: 10px; color: #cfc8b8; font-size: 0.95rem; font-weight: 500; }
+.sidebar-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.sidebar-link.active { background: rgba(216, 184, 120, 0.14); color: #fff; font-weight: 600; }
+.sidebar-link.active::before { content: ''; position: absolute; left: -0.85rem; top: 0.5rem; bottom: 0.5rem; width: 3px; border-radius: 0 3px 3px 0; background: #d8b878; }
+.sidebar-icon, .sidebar-icon svg { width: 20px; height: 20px; }
+.sidebar-icon { opacity: 1; color: #d8b878; }
+.topbar { background: transparent; border: 0; padding: 1rem 2.25rem 0; }
+.topbar-email { color: var(--color-ink-soft); }
+.content-area { padding: 1.4rem 2.25rem 3.5rem; }
+.public-link-box { background: #fff; border: 1px solid var(--color-border); border-left: 3px solid var(--color-accent); border-radius: 12px; }
+.preview-mode-btn { padding: 0.4rem 0.85rem; border-radius: 999px; background: #fff; color: var(--color-ink-soft); }
+.preview-mode-btn.is-active { background: var(--color-night); border-color: var(--color-night); }
+.preview-frame { border-color: var(--color-night); box-shadow: 0 24px 50px rgba(12, 14, 19, 0.28); }
+
+/* Connexion : la nuit, la lumière sous la porte */
+.login-shell { background: radial-gradient(60% 50% at 50% 100%, rgba(216, 184, 120, 0.22), transparent 70%), radial-gradient(90% 60% at 50% 0%, #1b1f2a, var(--color-night)); }
+.login-card { background: #12151c; border: 1px solid rgba(216, 184, 120, 0.22); border-radius: 22px; color: #f4ecdc; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+.login-mark { font-style: normal; font-weight: 600; font-size: 2.4rem; color: #f4ecdc; }
+.login-tag { text-transform: none; letter-spacing: 0.02em; font-size: 0.9rem; font-weight: 500; color: #b9b09c; }
+.login-divider { width: 22px; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 28'%3E%3Cpath d='M10 1a7.5 7.5 0 0 0-3 14.4L4.6 27h10.8L13 15.4A7.5 7.5 0 0 0 10 1z' fill='%23d8b878'/%3E%3C/svg%3E") center / contain no-repeat; margin: 0 auto 1.5rem; }
+.login-card .field { color: #b9b09c; }
+.login-card .input { background: #0c0e13; color: #f4ecdc; border-color: rgba(255, 255, 255, 0.16); }
+.login-card .input:focus { border-color: #d8b878; box-shadow: 0 0 0 3px rgba(216, 184, 120, 0.2); }
+.login-card .btn-primary { background: #d8b878; border-color: #d8b878; color: #0c0e13; }
+.login-card .btn-primary:hover:not(:disabled) { background: #ecd29c; }
+.login-card a { color: #d8b878; }
+
+/* Bibliothèque : chaque template se montre en vrai */
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, 260px); gap: 2rem 1.75rem; margin-top: 1.5rem; }
+.tpl-card { display: flex; flex-direction: column; gap: 0.85rem; }
+.tpl-card__shot { position: relative; display: block; width: 260px; height: 400px; overflow: hidden; border-radius: 22px; background: #0c0e13; box-shadow: 0 0 0 5px #14161c, 0 18px 36px rgba(12, 14, 19, 0.28); transition: box-shadow 200ms ease; }
+.tpl-card__shot:hover { box-shadow: 0 0 0 5px #14161c, 0 0 0 7px var(--color-accent), 0 18px 36px rgba(12, 14, 19, 0.28); }
+.tpl-card__shot iframe { position: absolute; left: 0; top: 0; width: 390px; height: 600px; border: 0; transform: scale(0.6667); transform-origin: 0 0; pointer-events: none; background: #0c0e13; }
+.tpl-card__meta { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; padding: 0 0.25rem; }
+.tpl-card__meta h3 { margin: 0; font-family: var(--font-heading); font-weight: 600; font-size: 1.35rem; line-height: 1.1; }
+.tpl-card__meta span { font-size: 0.82rem; color: var(--color-ink-soft); text-transform: capitalize; }
+.tpl-embed .lp-replay, .tpl-embed button[aria-label$='la musique'] { display: none !important; }
+
+/* Barre du bas (téléphone) : icônes au trait, plus d'émojis colorés */
+.bottom-nav-icon { display: inline-flex; width: 22px; height: 22px; font-size: 0; }
+.bottom-nav-icon svg { width: 22px; height: 22px; }
+
+/* Correctifs de spécificité (.admin-root a l'emporte sur les classes seules) */
+.admin-root .sidebar-link { color: #cfc8b8; }
+.admin-root .sidebar-link:hover, .admin-root .sidebar-link.active { color: #fff; }
+.admin-root .login-card a { color: #d8b878; }
+.sidebar-brand { display: grid; grid-template-columns: 34px 1fr; column-gap: 0.75rem; align-items: center; }
+.sidebar-brand::before { grid-row: 1 / span 2; }
+.sidebar-brand-mark { grid-column: 2; }
+.sidebar-brand-tag { grid-column: 2; margin-top: 0.1rem; }
+.stats-grid:has(> :only-child) { max-width: 280px; }
+.sidebar { position: sticky; top: 0; height: 100vh; align-self: flex-start; overflow-y: auto; }
+@media (max-width: 860px) { .sidebar { position: fixed; height: 100%; align-self: auto; } }
+
+/* Éditeur d'invitation : une rangée de panneaux, un seul affiché à la fois ; l'aperçu reste à droite */
+.editor-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1.25rem; }
+.editor-nav__btn { padding: 0.5rem 0.95rem; border: 1px solid var(--color-border-strong); border-radius: 999px; background: #fff; color: var(--color-ink-soft); font: 600 0.84rem var(--font-body); cursor: pointer; transition: background var(--transition), color var(--transition), border-color var(--transition); }
+.editor-nav__btn:hover { border-color: var(--color-ink-soft); color: var(--color-ink); }
+.editor-nav__btn.is-active { background: var(--color-night); border-color: var(--color-night); color: #f4ecdc; }
+.editor-section { margin-top: 0; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: 16px; background: #fff; }
+.editor-section + .editor-section { margin-top: 1.25rem; }
+.editor-section h2 { font-family: var(--font-heading); font-size: 1.7rem; font-weight: 600; line-height: 1.1; margin-bottom: 1rem; }
+.editor-main { max-width: 740px; }
+.editor-columns { gap: 2.25rem; }
+.editor-main > .panel { margin-top: 0 !important; }
+.editor-main .page-header + .invitation-tabs { margin-top: 0.5rem; }
+
+/* Rangée unique : panneaux de l'éditeur, puis les pages de l'invitation */
+.editor-nav__sep { width: 1px; align-self: stretch; margin: 0.2rem 0.35rem; background: var(--color-border-strong); }
+.admin-root a.editor-nav__btn--page { text-decoration: none; background: transparent; border-color: transparent; color: var(--color-ink-soft); }
+.admin-root a.editor-nav__btn--page:hover { background: #fff; color: var(--color-ink); }
+.admin-root a.editor-nav__btn--page.active { background: var(--color-night); color: #f4ecdc; }
+.editor-sub { display: flex; gap: 1.4rem; margin: 0 0 1.25rem; border-bottom: 1px solid var(--color-border); }
+.editor-sub__btn { margin-bottom: -1px; padding: 0.55rem 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--color-ink-soft); font: 600 0.9rem var(--font-body); cursor: pointer; }
+.editor-sub__btn:hover { color: var(--color-ink); }
+.editor-sub__btn.is-active { color: var(--color-ink); border-bottom-color: var(--color-accent); }
+
+/* Chiffres clés : séparateurs par ombre portée (pas de case grise quand la dernière rangée est incomplète) */
+.stats-grid { gap: 0; background: #fff; }
+.stat-card { box-shadow: 1px 0 0 var(--color-border), 0 1px 0 var(--color-border); }
+.admin-root .invitation-tab { color: var(--color-ink-soft); }
+.admin-root .invitation-tab:hover, .admin-root .invitation-tab.active { color: var(--color-ink); }
+
+/* Rangée d'édition : panneaux à gauche, pages de l'invitation à droite */
+.editor-nav { justify-content: space-between; align-items: center; gap: 0.6rem 1.25rem; }
+.editor-nav__group { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.editor-nav__group--pages { gap: 0.1rem; }
+.editor-nav__sep { display: none; }
+
+/* Cases et boutons radio aux couleurs de l'application */
+.admin-root input[type='checkbox'], .admin-root input[type='radio'] { accent-color: var(--color-accent); width: 1.05rem; height: 1.05rem; }
+
+/* Liens présentés comme des boutons : la couleur des liens ne doit pas écraser celle du bouton */
+.admin-root a.btn-ghost { color: var(--color-ink-soft); }
+.admin-root a.btn-ghost:hover { color: var(--color-ink); }
+.admin-root a.btn-outline { color: var(--color-ink); }
+.admin-root a.btn-danger-outline { color: var(--color-danger); }
+.admin-root a.btn-accent { color: #fff; }
+
+/* Pages de service ouvertes par lien (accès client, check-in) : le titre de l'invitation reste visible comme contexte */
+.service-page .admin-eyebrow { display: block; margin-bottom: 0.2rem; font-size: 0.95rem; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--color-ink-soft); }
+.service-page h1 { margin-bottom: 1.1rem; }
+
+/* Fenêtres : même rayon et mêmes teintes froides que le reste */
+.modal-card { border-radius: 18px; box-shadow: 0 30px 80px rgba(12, 14, 19, 0.35); }
+.modal-link-text { background: #f1f3f5; border: 1px solid var(--color-border); color: var(--color-ink-soft); border-radius: 10px; }
+.qr-row { flex-wrap: wrap; }
