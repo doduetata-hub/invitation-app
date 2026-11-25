@@ -99,12 +99,37 @@ export function playSeal() {
   });
 }
 
+// Sonnette : tous ses sons passent par un même gain, pour pouvoir la couper net (et en douceur) dès que l'invité ouvre la porte.
+let bellGain = null;
+let bellEpoch = 0;
+
+/** Coupe la sonnette tout de suite (fondu de 0,12 s) : un coup en cours s'arrête, et un coup en attente ne partira plus. */
+export function stopBell() {
+  bellEpoch += 1;
+  const a = ctx;
+  if (a && bellGain) {
+    try {
+      const g = bellGain.gain;
+      g.cancelScheduledValues(a.currentTime);
+      g.setValueAtTime(g.value, a.currentTime);
+      g.linearRampToValueAtTime(0.0001, a.currentTime + 0.12);
+    } catch { /* sans effet */ }
+    bellGain = null;
+  }
+}
+
 /** Sonnette d'entrée « ding-dong » (deux notes, harmoniques de cloche). Renvoie true si le son part tout de suite ; sinon (navigateur qui
  *  bloque le son avant un premier geste) il partira dès que l'appareil le permet, sans bloquer quoi que ce soit. */
 export function playBell() {
   const a = ac();
   if (!a) return false;
+  const epoch = bellEpoch;
   const ring = () => {
+    if (epoch !== bellEpoch) return; // la porte a été ouverte entre-temps
+    const out = a.createGain();
+    out.gain.value = 1;
+    out.connect(a.destination);
+    bellGain = out;
     const t = a.currentTime + 0.02;
     [[659.25, 0], [523.25, 0.85]].forEach(([f, d]) => {
       [[1, 0.2], [2.01, 0.07], [2.76, 0.06], [5.4, 0.025]].forEach(([m, v]) => {
@@ -115,7 +140,7 @@ export function playBell() {
         g.gain.setValueAtTime(0.0001, t + d);
         g.gain.exponentialRampToValueAtTime(v, t + d + 0.008);
         g.gain.exponentialRampToValueAtTime(0.0001, t + d + (m === 1 ? 2.3 : 1.2));
-        o.connect(g).connect(a.destination);
+        o.connect(g).connect(out);
         o.start(t + d);
         o.stop(t + d + 2.4);
       });

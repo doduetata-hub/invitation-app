@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { splitNames, initials } from '../soireeKit/utils';
 import { getText } from './texts';
-import { playDoor, playSeal, playBell } from './sound';
+import { playDoor, playSeal, playBell, stopBell } from './sound';
 import plateUrl from './assets/gate/plate.webp';
 import leafLeftUrl from './assets/gate/leaf-left.webp';
 import leafRightUrl from './assets/gate/leaf-right.webp';
@@ -38,7 +38,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   const date = eventDate ? formatEventDate(eventDate, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const guestName = guest?.name || '';
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => () => { timers.current.forEach(clearTimeout); stopBell(); }, []);
 
   // Trois images indispensables à la première vue (décor + deux battants) ; filet de sécurité à 12 s (réseau très lent).
   const onImg = useCallback(() => { loaded.current += 1; if (loaded.current >= 3) setReady(true); }, []);
@@ -101,6 +101,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
 
   const open = () => {
     if (phase !== 'door') return;
+    stopBell(); // la sonnerie s'arrête dès que la porte s'ouvre
     playDoor();
     setPhase('opening');
     later(() => setPhase((p) => (p === 'opening' ? 'envelope' : p)), 3700);
@@ -115,6 +116,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
 
   const skip = useCallback(() => {
     if (phase === 'leaving') return;
+    stopBell();
     timers.current.forEach(clearTimeout);
     timers.current = [];
     leave(520);
