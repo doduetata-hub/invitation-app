@@ -1,0 +1,108 @@
+{
+  "plate": {
+    "file": "plate.webp",
+    "w": 900,
+    "h": 1350,
+    "kb": 224,
+    "src": [
+      1024,
+      1536
+    ]
+  },
+  "seal": {
+    "file": "seal.webp",
+    "w": 320,
+    "h": 322,
+    "kb": 17,
+    "bbox_in_src": [
+      9,
+      6,
+      1237,
+      1240
+    ],
+    "src": [
+      1241,
+      1268
+    ]
+  },
+  "envelope-open": {
+    "file": "envelope-open.webp",
+    "w": 900,
+    "h": 841,
+    "kb": 65,
+    "bbox_in_src": [
+      198,
+      2,
+      1287,
+      1020
+    ],
+    "src": [
+      1484,
+      1060
+    ]
+  },
+  "envelope-closed": {
+    "file": "envelope-closed.webp",
+    "w": 900,
+    "h": 578,
+    "kb": 48,
+    "bbox_in_src": [
+      96,
+      110,
+      1393,
+      943
+    ],
+    "src": [
+      1484,
+      1060
+    ]
+  },
+  "visitor": {
+    "file": "visitor.webp",
+    "w": 469,
+    "h": 1503,
+    "kb": 55,
+    "bbox_in_src": [
+      245,
+      14,
+      714,
+      1517
+    ],
+    "src": [
+      1024,
+      1536
+    ]
+  },
+  "leaf-right": {
+    "file": "leaf-right.webp",
+    "w": 420,
+    "h": 1038,
+    "kb": 64,
+    "bbox_in_src": [
+      212,
+      14,
+      818,
+      1512
+    ],
+    "src": [
+      1024,
+      1536
+    ]
+  },
+  "leaf-left": {
+    "file": "leaf-left.webp",
+    "w": 420,
+    "h": 1061,
+    "kb": 53,
+    "bbox_in_src": [
+      208,
+      14,
+      801,
+      1512
+    ],
+    "src": [
+      1024,
+      1536
+    ]
+  }
+}

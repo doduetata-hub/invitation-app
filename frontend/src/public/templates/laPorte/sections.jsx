@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import './fonts.css';
 import './porte.css';
+import './gate.css';
 
 export { default as Cover } from './Cover';
 export { default as Countdown } from './Countdown';

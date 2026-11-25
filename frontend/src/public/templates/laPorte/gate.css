@@ -1,0 +1,148 @@
+/* OUVERTURE DE « LA PORTE » — calques photographiques (voir ASSETS.md et assets/gate/). Seules des transformations et des opacités sont animées.
+   Le décor est un cadre vertical 2:3 (1024 × 1536) : toutes les positions ci-dessous sont des pourcentages de ce cadre. */
+
+.lp-gate { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #f4ecdc; font-family: var(--sans);
+  background: #1a130d;
+  opacity: 1; transition: opacity 0.7s ease, transform 1.1s cubic-bezier(.5, 0, .2, 1); }
+.lp-gate.is-ready { opacity: 1; }
+/* Chargement des images : une petite lueur dorée, jamais une scène à moitié construite */
+.lp-gate:not(.is-ready)::before { content: ''; position: absolute; left: 50%; top: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 2px solid rgba(243, 223, 166, 0.25); border-top-color: #f3dfa6; animation: lp-load 0.9s linear infinite; }
+@keyframes lp-load { to { transform: rotate(360deg); } }
+.lp-gate--inline { position: absolute; z-index: 5; }
+.lp-gate[data-phase='leaving'] { opacity: 0; transform: scale(1.06); pointer-events: none; }
+
+/* « Passer » : presque invisible, n'apparaît qu'après 7 secondes */
+.lp-gate__skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 6px; z-index: 12; min-height: 44px; padding: 0 12px; border: 0; background: none; color: rgba(233, 220, 192, 0.38); font: 500 0.6rem/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; opacity: 0; animation: lp-skip-in 1.2s ease 7s forwards; }
+@keyframes lp-skip-in { to { opacity: 1; } }
+.lp-gate__skip:hover, .lp-gate__skip:focus-visible { color: rgba(233, 220, 192, 0.85); }
+
+/* Fond : le décor flouté prolonge le hall au-dessus, en dessous et sur les côtés (plus de bandes ni de cadre posé sur du noir) */
+.pg-backdrop { position: absolute; inset: -5%; width: 110%; height: 110%; object-fit: cover; filter: blur(22px) brightness(0.55) saturate(1.1); pointer-events: none; }
+
+/* ---------- Le cadre ---------- */
+.lp-gate:not(.is-ready) .pg-stage { opacity: 0; }
+.pg-stage { position: relative; transition: opacity 0.7s ease; flex: none; width: min(108%, 66.6667vh); width: min(108%, calc(100svh * 2 / 3)); aspect-ratio: 2 / 3; container-type: inline-size; }
+.pg-plate { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Monogramme et noms sur le panneau du linteau (texte HTML) */
+.pg-lintel { position: absolute; left: 0; right: 0; top: 1.3%; z-index: 2; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.pg-mono { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 7.4cqw; line-height: 1.05; white-space: nowrap; background: linear-gradient(180deg, #fff3cf, #e4c07a 58%, #b8914a); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.55)); }
+.pg-names { max-width: 62cqw; margin-top: 0.9cqw; padding-left: 0.5em; font: 500 1.9cqw/1.2 var(--sans); letter-spacing: 0.5em; text-transform: uppercase; color: #ead6a4; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75); text-wrap: balance; }
+
+/* Le visiteur, dehors : visible quand les battants s'écartent */
+.pg-visitor { position: absolute; left: 50%; bottom: 26.4%; z-index: 2; height: 41.3%; width: auto; transform: translateX(-50%) scale(0.95); transform-origin: 50% 100%; transition: transform 3.8s cubic-bezier(.2, .8, .2, 1) 0.9s; }
+.lp-gate:not([data-phase='door']) .pg-visitor { transform: translateX(-50%) scale(1); }
+
+/* La double porte : deux battants qui pivotent autour de leurs gonds, vers l'invité */
+.pg-door { position: absolute; left: 23.44%; top: 23.3%; width: 53.42%; height: 50.5%; z-index: 3; perspective: 240cqw; perspective-origin: 50% 40%; cursor: pointer; }
+.lp-gate:not([data-phase='door']) .pg-door { cursor: default; }
+.pg-leaf { position: absolute; top: 0; bottom: 0; width: 50.1%; transition: transform 3.2s cubic-bezier(.45, .02, .2, 1) 0.45s; }
+.pg-leaf img { display: block; width: 100%; height: 100%; object-fit: fill; }
+.pg-leaf--l { left: 0; transform-origin: 0 50%; }
+.pg-leaf--r { right: 0; transform-origin: 100% 50%; }
+.lp-gate:not([data-phase='door']) .pg-leaf--l { transform: rotateY(-68deg); }
+.lp-gate:not([data-phase='door']) .pg-leaf--r { transform: rotateY(68deg); }
+.pg-shade { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7)); transition: opacity 3.2s ease 0.45s; }
+.pg-leaf--r .pg-shade { background: linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7)); }
+.lp-gate:not([data-phase='door']) .pg-shade { opacity: 0.5; }
+
+/* La lumière du dehors se répand sur le sol du hall quand la porte s'ouvre */
+.pg-floorlight { position: absolute; left: 19%; right: 19%; top: 73%; height: 14%; z-index: 1; pointer-events: none; opacity: 0; background: linear-gradient(rgba(255, 220, 160, 0.5), rgba(255, 200, 120, 0.1) 75%, transparent); clip-path: polygon(8% 0, 92% 0, 120% 100%, -20% 100%); transition: opacity 2.8s ease 0.9s; }
+.lp-gate:not([data-phase='door']) .pg-floorlight { opacity: 1; }
+
+/* Coups : la porte tressaille à chaque sonnerie (deux noms d'animation pour pouvoir la relancer) */
+.lp-gate[data-ring='a'][data-phase='door'] .pg-door { animation: pg-knock 2.6s ease-in-out 1.9s 1; }
+.lp-gate[data-ring='b'][data-phase='door'] .pg-door { animation: pg-knock-b 2.6s ease-in-out 1.9s 1; }
+@keyframes pg-knock { 0%, 40%, 100% { transform: none; } 6% { transform: translateY(-0.3cqw); } 12% { transform: none; } 20% { transform: translateY(-0.3cqw); } 26% { transform: none; } 34% { transform: translateY(-0.35cqw); } }
+@keyframes pg-knock-b { 0%, 40%, 100% { transform: none; } 6% { transform: translateY(-0.3cqw); } 12% { transform: none; } 20% { transform: translateY(-0.3cqw); } 26% { transform: none; } 34% { transform: translateY(-0.35cqw); } }
+
+/* Sonnette murale sur le montant de pierre, et « ding dong » */
+.pg-bell { position: absolute; left: 79.2%; top: 45%; z-index: 4; width: 3.1cqw; height: 5cqw; border-radius: 0.6cqw; background: linear-gradient(90deg, #5a3d12, #d9ad55 30%, #fff1bd 50%, #c59a45 72%, #6a4a14); box-shadow: 0.4cqw 0.6cqw 0.8cqw rgba(0, 0, 0, 0.55), inset 0 0 0 0.15cqw rgba(255, 240, 190, 0.4); }
+.pg-bell b { position: absolute; left: 50%; top: 50%; width: 1.7cqw; height: 1.7cqw; margin: -0.85cqw 0 0 -0.85cqw; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff9dc, #ffd987 45%, #b9822a); box-shadow: 0 0 1.4cqw 0.3cqw rgba(255, 210, 120, 0.7); animation: pg-bell-glow 2s ease-in-out infinite; }
+@keyframes pg-bell-glow { 50% { box-shadow: 0 0 2.2cqw 0.7cqw rgba(255, 210, 120, 0.95); } }
+.pg-bell i { position: absolute; left: 50%; top: 50%; width: 2cqw; height: 2cqw; margin: -1cqw 0 0 -1cqw; border-radius: 50%; border: 0.25cqw solid rgba(255, 232, 160, 0.9); animation: lp-wave 1.5s ease-out 2; pointer-events: none; }
+@keyframes lp-wave { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(5); opacity: 0; } }
+.lp-gate:not([data-phase='door']) .pg-bell b { animation: none; }
+.lp-toc { position: absolute; left: 0; right: 0; top: 18.4%; z-index: 5; text-align: center; white-space: nowrap; pointer-events: none; }
+.lp-toc b { display: inline-block; margin: 0 1.6cqw; font-family: var(--display); font-style: italic; font-weight: 500; font-size: 4.4cqw; letter-spacing: 0.08em; color: #f3dfa6; text-shadow: 0 0 14px rgba(243, 223, 166, 0.6), 0 1px 4px rgba(0, 0, 0, 0.7); opacity: 0; animation: lp-toc 1.5s ease-out both; animation-delay: calc(var(--n) * 0.85s); }
+@keyframes lp-toc { 0% { opacity: 0; transform: translateY(8px) scale(0.7); } 12% { opacity: 1; transform: none; } 60% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-4px); } }
+
+/* LA poignée : zone tactile généreuse sur les deux poignées en laiton */
+.pg-handle { position: absolute; left: 45.5%; top: 39.5%; z-index: 6; width: 14%; height: 18%; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.pg-handle:disabled { cursor: default; }
+.pg-handle:focus-visible { outline: 2px solid #f3dfa6; outline-offset: -4px; border-radius: 1.5cqw; }
+.pg-handle__ping { position: absolute; left: 50%; top: 50%; width: 5cqw; height: 5cqw; margin: -2.5cqw 0 0 -2.5cqw; border-radius: 50%; border: 0.5cqw solid rgba(255, 238, 180, 0.95); box-shadow: 0 0 3cqw rgba(255, 220, 140, 0.8); animation: lp-tap 2.2s ease-out infinite; pointer-events: none; }
+@keyframes lp-tap { 0% { transform: scale(0.6); opacity: 0.95; } 100% { transform: scale(3.4); opacity: 0; } }
+.lp-gate:not([data-phase='door']) .pg-handle__ping { display: none; }
+
+/* Consigne sur le tapis */
+.pg-ui { position: absolute; left: 8%; right: 8%; bottom: 3.4%; z-index: 5; display: flex; flex-direction: column; align-items: center; text-align: center; pointer-events: none; transition: opacity 0.7s ease, transform 0.9s ease; }
+.pg-ui::before { content: ''; position: absolute; inset: -5cqw -12cqw; z-index: -1; background: radial-gradient(closest-side, rgba(40, 6, 10, 0.6), transparent); }
+.pg-ui__cta { display: inline-flex; align-items: center; gap: 1.4cqw; font-size: 2.5cqw; font-weight: 600; line-height: 1.4; letter-spacing: 0.26em; text-transform: uppercase; color: #f8e7b8; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85); animation: lp-cta 2.2s ease-in-out infinite; }
+.pg-ui__cta i { flex: none; width: 1.3cqw; height: 1.3cqw; border-radius: 50%; background: #f3dfa6; box-shadow: 0 0 10px 2px rgba(243, 223, 166, 0.8); }
+@keyframes lp-cta { 50% { opacity: 0.6; } }
+.pg-ui__who { margin-top: 1.8cqw; font-size: 2.1cqw; font-weight: 600; line-height: 1.4; letter-spacing: 0.3em; text-transform: uppercase; color: #ecd199; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85); text-wrap: balance; }
+.pg-ui__t { margin-top: 0.8cqw; font-family: var(--display); font-style: italic; font-weight: 500; font-size: 5cqw; line-height: 1.15; color: #fff4d6; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8); text-wrap: balance; }
+.pg-ui__t--sm { font-size: 4.2cqw; font-weight: 400; }
+.lp-gate:not([data-phase='door']) .pg-ui--door { opacity: 0; transform: translateY(1.4cqw); }
+.pg-ui--env { opacity: 0; transform: translateY(1.2cqw); }
+.lp-gate[data-phase='envelope'] .pg-ui--env { opacity: 1; transform: none; transition-delay: 0.9s; }
+.lp-gate[data-phase='unseal'] .pg-ui--env, .lp-gate[data-phase='leaving'] .pg-ui--env { opacity: 0; }
+
+/* Quand l'enveloppe arrive, la scène s'assombrit pour la laisser seule en lumière */
+.pg-dim { position: absolute; inset: -80svh -40vw; z-index: 7; pointer-events: none; opacity: 0; background: radial-gradient(70% 55% at 50% 58%, rgba(8, 5, 3, 0.5), rgba(8, 5, 3, 0.8)); transition: opacity 1.2s ease; }
+.lp-gate[data-phase='envelope'] .pg-dim, .lp-gate[data-phase='unseal'] .pg-dim, .lp-gate[data-phase='leaving'] .pg-dim { opacity: 1; }
+
+/* ---------- L'enveloppe ---------- */
+.pg-env { position: absolute; left: 50%; top: 60%; z-index: 8; width: 78%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; container-type: inline-size; }
+.lp-gate[data-phase='envelope'] .pg-env, .lp-gate[data-phase='unseal'] .pg-env, .lp-gate[data-phase='leaving'] .pg-env { opacity: 1; animation: pg-env-in 1.7s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes pg-env-in { 0% { opacity: 0; transform: translate(-50%, -78%) scale(0.18) rotate(-9deg); } 30% { opacity: 1; } 100% { opacity: 1; transform: translate(-50%, -50%); } }
+.pg-env__box { position: relative; width: 100%; aspect-ratio: 1297 / 833; animation: pg-float 5s ease-in-out 1.8s infinite; transition: transform 1.1s cubic-bezier(.5, 0, .2, 1), opacity 0.9s ease; }
+@keyframes pg-float { 50% { transform: translateY(-1.4cqw) rotate(-0.5deg); } }
+.lp-gate[data-phase='unseal'] .pg-env__box, .lp-gate[data-phase='leaving'] .pg-env__box { animation: none; }
+.lp-gate[data-phase='leaving'] .pg-env__box { transform: scale(1.4) translateY(-6%); opacity: 0; }
+.pg-env__closed { position: absolute; inset: 0; z-index: 4; width: 100%; height: 100%; filter: drop-shadow(0 2.4cqw 3.4cqw rgba(0, 0, 0, 0.55)); transition: opacity 0.5s ease 0.25s; }
+.pg-env__open { position: absolute; left: -2.75%; bottom: 0; z-index: 1; width: 105.5%; height: auto; opacity: 0; transition: opacity 0.5s ease 0.35s; }
+.pg-env__open--front { z-index: 3; clip-path: polygon(0 38.6%, 46.6% 61.9%, 53.6% 61.9%, 100% 38.6%, 100% 100%, 0 100%); }
+.lp-gate[data-phase='unseal'] .pg-env__open, .lp-gate[data-phase='leaving'] .pg-env__open { opacity: 1; }
+.lp-gate[data-phase='unseal'] .pg-env__closed, .lp-gate[data-phase='leaving'] .pg-env__closed { opacity: 0; }
+
+/* Nom du destinataire sur l'enveloppe fermée (HTML) */
+.pg-env__to { position: absolute; left: 0; right: 0; bottom: 3.5%; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 0.5cqw; padding: 0 8cqw; text-align: center; transition: opacity 0.4s ease; }
+.pg-env__to span { font: 600 2cqw/1 var(--sans); letter-spacing: 0.34em; text-transform: uppercase; color: #7a5c24; }
+.pg-env__to b { font-family: var(--display); font-style: italic; font-weight: 600; font-size: 5.6cqw; line-height: 1.15; color: #2a2017; text-wrap: balance; }
+.lp-gate[data-phase='unseal'] .pg-env__to, .lp-gate[data-phase='leaving'] .pg-env__to { opacity: 0; }
+
+/* La lettre : glisse hors de la pochette (cachée par la face avant de l'enveloppe, qui la recouvre) */
+.pg-env__slot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; height: 98.6cqw; clip-path: inset(-100% -20% 0 -20%); pointer-events: none; }
+.pg-env__letter { position: absolute; left: 9%; right: 9%; top: 66cqw; height: 55cqw; display: flex; flex-direction: column; align-items: center; gap: 1.6cqw; padding: 6cqw 4cqw 0; border-radius: 0.8cqw; background: linear-gradient(180deg, #fffdf6, #f3e9d1); color: #1c1915; text-align: center; box-shadow: 0 0 0 0.3cqw rgba(138, 106, 47, 0.35) inset; transition: transform 1.3s cubic-bezier(.3, .7, .2, 1) 1s; }
+.lp-gate[data-phase='unseal'] .pg-env__letter, .lp-gate[data-phase='leaving'] .pg-env__letter { transform: translateY(-52cqw); }
+.pg-env__l-eyebrow { font: 600 2.2cqw/1 var(--sans); letter-spacing: 0.4em; text-transform: uppercase; color: #8a6a2f; }
+.pg-env__l-names { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 7.6cqw; line-height: 1.1; color: #1c1915; text-wrap: balance; }
+.pg-env__l-rule { width: 18cqw; height: 0.3cqw; background: linear-gradient(90deg, transparent, #8a6a2f, transparent); }
+.pg-env__l-date { font: italic 500 3.4cqw/1.2 var(--display); color: #5f584c; }
+
+/* Sceau de cire : l'image du sceau, le monogramme doré en texte ; il se fend en deux au toucher */
+.pg-seal { position: absolute; left: 49.8%; top: 63.6%; z-index: 6; width: 15cqw; aspect-ratio: 1; padding: 0; border: 0; background: none; transform: translate(-50%, -50%); cursor: pointer; pointer-events: auto; outline: none; -webkit-tap-highlight-color: transparent; filter: drop-shadow(0 0.7cqw 1cqw rgba(0, 0, 0, 0.5)); }
+.lp-gate[data-phase='door'] .pg-seal, .lp-gate[data-phase='opening'] .pg-seal { pointer-events: none; }
+.pg-seal:focus-visible { box-shadow: 0 0 0 0.8cqw rgba(243, 223, 166, 0.9); border-radius: 50%; }
+.pg-seal::before { content: ''; position: absolute; inset: -22%; border-radius: 50%; border: 1px solid rgba(243, 223, 166, 0.7); opacity: 0; }
+.lp-gate[data-phase='envelope'] .pg-seal::before { animation: lp-ping 2s ease-out 1.6s infinite; }
+@keyframes lp-ping { 0% { transform: scale(0.7); opacity: 0.9; } 100% { transform: scale(1.5); opacity: 0; } }
+.pg-seal__half { position: absolute; inset: 0; background-size: contain; background-repeat: no-repeat; background-position: center; transition: transform 0.95s cubic-bezier(.3, 0, .2, 1), opacity 0.95s ease; }
+.pg-seal__half--a { clip-path: polygon(-40% -40%, 140% -40%, 140% 46%, 64% 54%, 40% 43%, -40% 55%); }
+.pg-seal__half--b { clip-path: polygon(-40% 55%, 40% 43%, 64% 54%, 140% 46%, 140% 140%, -40% 140%); }
+.lp-gate[data-phase='unseal'] .pg-seal__half--a, .lp-gate[data-phase='leaving'] .pg-seal__half--a { transform: translate(-16%, -80%) rotate(-26deg); opacity: 0; }
+.lp-gate[data-phase='unseal'] .pg-seal__half--b, .lp-gate[data-phase='leaving'] .pg-seal__half--b { transform: translate(20%, 80%) rotate(22deg); opacity: 0; }
+.pg-seal__mono { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-style: italic; font-weight: 600; font-size: 3.3cqw; white-space: nowrap; color: #ecd292; text-shadow: 0 0.12cqw 0.25cqw rgba(0, 0, 0, 0.65), 0 -0.06cqw 0 rgba(255, 255, 255, 0.25); transition: opacity 0.25s ease; }
+.lp-gate[data-phase='unseal'] .pg-seal__mono, .lp-gate[data-phase='leaving'] .pg-seal__mono { opacity: 0; }
+
+/* Éclat de lumière quand la lettre sort */
+.lp-gate__flash { position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 52%, #fffdf0 0%, #ffe9b3 28%, rgba(255, 214, 140, 0) 70%); }
+.lp-gate[data-phase='unseal'] .lp-gate__flash { animation: lp-flash 2.2s ease-in 0.9s forwards; }
+.lp-gate[data-phase='leaving'] .lp-gate__flash { opacity: 0.55; }
+@keyframes lp-flash { 0% { opacity: 0; } 55% { opacity: 0.1; } 100% { opacity: 0.55; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-gate *, .lp-gate *::before, .lp-gate *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.3s !important; transition-delay: 0ms !important; }
+}
