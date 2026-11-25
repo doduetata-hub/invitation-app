@@ -304,3 +304,14 @@
 @media print {
   .lp-root section:not(.lp-ticketsec), .lp-root header, .lp-root footer, .lp-gate, .lp-noprint, button[aria-label$='la musique'] { display: none !important; }
 }
+
+/* ---------- Matières du hall : les sections reprennent la pierre, le marbre, la moquette et le noyer de l'ouverture ----------
+   Les textures (assets/tex/) sont des fonds ; la mise en page, les couleurs de texte et les ornements ne changent pas. */
+.lp-details, .lp-dress, .lp-gal { background: linear-gradient(rgba(11, 12, 17, 0.4), rgba(11, 12, 17, 0.5)), url('./assets/tex/wall-dark.webp') 50% 0 / cover no-repeat, var(--night); }
+.lp-place, .lp-ticketsec { background: linear-gradient(rgba(18, 20, 28, 0.42), rgba(18, 20, 28, 0.55)), url('./assets/tex/wall-dark.webp') 50% 100% / cover no-repeat, var(--night2); }
+.lp-intro { background: linear-gradient(rgba(251, 247, 238, 0.58), rgba(247, 240, 226, 0.66)), url('./assets/tex/marble-cream.webp') 50% 0 / cover no-repeat, var(--ivory); }
+.lp-prog.lp-light, .lp-rsvp { background: linear-gradient(rgba(251, 247, 238, 0.66), rgba(247, 240, 226, 0.72)), url('./assets/tex/marble-cream.webp') 50% 100% / cover no-repeat, var(--ivory); }
+.lp-count { background: radial-gradient(90% 70% at 50% 0%, rgba(143, 14, 20, 0.28), transparent 70%), linear-gradient(rgba(42, 7, 9, 0.42), rgba(20, 4, 6, 0.62)), url('./assets/tex/carpet-red.webp') 50% 50% / cover no-repeat, var(--wine); }
+/* Billet : un cadre de noyer */
+.lp-ticket { border: 6px solid transparent; border-image: url('./assets/tex/walnut.webp') 40 round; border-radius: 0; }
+.lp-ticket::before { top: 8px; }
