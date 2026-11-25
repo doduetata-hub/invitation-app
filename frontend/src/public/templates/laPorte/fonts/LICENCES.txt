@@ -1,0 +1,3 @@
+Police propre au template « La Porte » (SIL Open Font License 1.1, utilisation libre, y compris sur le web), sous-ensemble latin :
+- Jost (The Jost Project Authors), paquet @fontsource-variable/jost (jsDelivr), auto-hébergée : aucune requête vers un service tiers.
+Cormorant Garamond et Pinyon Script sont les fichiers déjà servis avec les templates « soirée » (voir ../../soireeKit/fonts/LICENCES.txt).

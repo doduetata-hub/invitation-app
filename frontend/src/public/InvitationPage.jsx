@@ -48,7 +48,11 @@ export default function InvitationPage({ invitation, slug, onRsvpSubmit }) {
   const overrides = invitation.theme || {};
   const cssVars = tokensToCssVars({ ...template.tokens, ...(overrides.colors || {}), ...(overrides.fonts || {}) });
 
-  const sectionsOrder = overrides.sectionsOrder || DEFAULT_SECTIONS_ORDER;
+  // Un ordre enregistré peut ne pas citer une section (ordre sauvegardé avant son existence, ou réduit à la main) : sans ce complément elle
+  // disparaîtrait de l'invitation sans que rien ne la désactive — c'était le cas du programme. Une section n'est masquée que par
+  // disabledSections ; les sections absentes de l'ordre sont ajoutées à la suite, dans l'ordre par défaut.
+  const savedOrder = overrides.sectionsOrder || DEFAULT_SECTIONS_ORDER;
+  const sectionsOrder = [...savedOrder, ...DEFAULT_SECTIONS_ORDER.filter((s) => !savedOrder.includes(s))];
   const disabledSections = new Set(overrides.disabledSections || []);
   const activeSections = sectionsOrder.filter(
     (s) => !disabledSections.has(s) && !isEmptySection(s, invitation)

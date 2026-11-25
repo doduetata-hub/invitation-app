@@ -32,6 +32,7 @@ async function main() {
     { key: 'fiancailles', name: 'Fiançailles', category: 'fiancailles' },
     { key: 'professionnel', name: 'Événement professionnel', category: 'professionnel' },
     { key: 'luxury-wedding-gold', name: 'Luxury Wedding Gold', category: 'mariage' },
+    { key: 'la-porte', name: 'La Porte', category: 'mariage' },
   ];
 
   for (const t of templates) {
