@@ -415,7 +415,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'sans-serif',
-    color: '#6b7280',
+    color: 'var(--color-ink-soft)',
     textAlign: 'center',
     padding: '2rem',
   },

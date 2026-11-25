@@ -250,9 +250,9 @@ export default function GuestbookVideoPage() {
 }
 
 const styles = {
-  page: { minHeight: '100vh', background: '#e9e2d0', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  page: { minHeight: '100vh', background: 'var(--color-bg)', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   toolbar: { display: 'flex', gap: '0.6rem', marginBottom: '1.5rem', width: '100%', maxWidth: '900px', justifyContent: 'space-between', flexWrap: 'wrap' },
-  selectionPanel: { width: '100%', maxWidth: '900px', background: '#FFFDF8', border: '1px solid #e4d9bd', borderRadius: '6px', padding: '1rem 1.2rem', marginBottom: '1.2rem' },
+  selectionPanel: { width: '100%', maxWidth: '900px', background: 'var(--color-surface)', border: '1px solid var(--color-border-strong)', borderRadius: '6px', padding: '1rem 1.2rem', marginBottom: '1.2rem' },
   selectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' },
   entryList: { display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' },
   entryRow: { display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', padding: '0.4rem', borderRadius: '4px' },

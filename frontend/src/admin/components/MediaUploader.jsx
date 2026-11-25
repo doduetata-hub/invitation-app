@@ -116,7 +116,7 @@ const styles = {
   },
   deleteButton: {
     position: 'absolute', top: '-7px', right: '-7px', width: '22px', height: '22px',
-    borderRadius: '50%', border: '1px solid var(--color-danger)', color: 'var(--color-danger)', background: '#fff',
+    borderRadius: '50%', border: '1px solid var(--color-danger)', color: 'var(--color-danger)', background: 'var(--color-surface)',
     cursor: 'pointer', fontSize: '0.75rem', lineHeight: 1,
   },
   addTile: {
