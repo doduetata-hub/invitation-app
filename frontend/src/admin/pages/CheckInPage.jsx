@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAppliedTheme } from '../theme';
 import { useParams, Link } from 'react-router-dom';
 import jsQR from 'jsqr';
 import { api } from '../../shared/api/client';
@@ -13,6 +14,7 @@ function extractGuestCode(scannedText) {
 }
 
 export default function CheckInPage() {
+  useAppliedTheme();
   const { id } = useParams();
   const [invitation, setInvitation] = useState(null);
   const [data, setData] = useState(null);

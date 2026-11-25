@@ -6,8 +6,10 @@ import { buildSampleInvitation } from '../../public/sampleInvitation';
 export default function TemplatePreviewPage() {
   const { key } = useParams();
   const [search] = useSearchParams();
-  const invitation = buildSampleInvitation(key);
   const embed = Boolean(search.get('embed'));
+  const sample = buildSampleInvitation(key);
+  // Vignette : seule la couverture est rendue (pas de galerie ni de carte, donc beaucoup moins d'images et de calculs).
+  const invitation = embed ? { ...sample, theme: { ...(sample.theme || {}), disabledSections: ['countdown', 'program', 'gallery', 'map', 'rsvp', 'contact'] } } : sample;
   useEffect(() => {
     if (!embed) return undefined;
     const html = document.documentElement;

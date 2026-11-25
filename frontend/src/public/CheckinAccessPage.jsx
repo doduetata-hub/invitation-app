@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAppliedTheme } from '../admin/theme';
 import { useParams } from 'react-router-dom';
 import jsQR from 'jsqr';
 import { api } from '../shared/api/client';
@@ -18,6 +19,7 @@ function extractGuestCode(scannedText) {
 // donner le pouvoir de créer, modifier ou supprimer un invité — juste scanner/rechercher et
 // pointer une arrivée.
 export default function CheckinAccessPage() {
+  useAppliedTheme();
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);

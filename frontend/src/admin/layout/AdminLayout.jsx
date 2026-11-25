@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../shared/auth/AuthContext';
+import { getTheme, applyTheme, storeTheme, useAppliedTheme } from '../theme';
 import '../../public/templates/laPorte/fonts.css'; // Cormorant + Jost, servies avec l'application (aucun service tiers)
 
 // Icônes minimalistes (trait fin, currentColor) pour repérer chaque section d'un
@@ -79,6 +80,14 @@ function readLastInvitation() {
 
 export default function AdminLayout() {
   const { admin, logout } = useAuth();
+  useAppliedTheme();
+  const [theme, setTheme] = useState(getTheme);
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    storeTheme(next);
+    applyTheme(next);
+  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { pathname } = useLocation();
   const routeInvitationId = pathname.match(INVITATION_ROUTE)?.[1] || null;
@@ -141,6 +150,14 @@ export default function AdminLayout() {
           </button>
           <span className="topbar-brand">Invitations</span>
           <span className="topbar-email">{admin?.email}</span>
+          <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+            )}
+            <span>{theme === 'dark' ? 'Clair' : 'Sombre'}</span>
+          </button>
           <button onClick={logout} className="btn btn-outline btn-sm">
             Déconnexion
           </button>

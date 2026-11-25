@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAppliedTheme } from '../theme';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import { buildGuestbookVideoTimeline } from '../../shared/video/guestbookVideoTimeline';
@@ -39,6 +40,7 @@ function formatDuration(totalSeconds) {
 // dessiné image par image dans un <canvas> puis encodé en MP4 par ffmpeg.wasm (voir
 // guestbookVideoEncoder.js).
 export default function GuestbookVideoPage() {
+  useAppliedTheme();
   const { id } = useParams();
   const canvasRef = useRef(null);
   const [invitation, setInvitation] = useState(null);

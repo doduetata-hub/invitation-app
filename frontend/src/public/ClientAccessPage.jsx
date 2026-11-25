@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAppliedTheme } from '../admin/theme';
 import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import QrCodeModal from '../shared/components/QrCodeModal';
@@ -22,6 +23,7 @@ function AnswerBadge({ answer }) {
 // client délègue le contrôle d'entrée jour J à une tierce personne, elle ne doit jamais
 // pouvoir créer/modifier/supprimer un invité avec ce même lien.
 export default function ClientAccessPage() {
+  useAppliedTheme();
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
