@@ -30,7 +30,6 @@ export default function TemplatePreviewPage() {
     <div>
       <div style={styles.bar}>
         <Link to="/admin/templates" style={styles.back}>← Retour aux templates</Link>
-        <span style={styles.note}>Aperçu avec des données d'exemple — le RSVP n'est pas fonctionnel ici.</span>
       </div>
       <InvitationPage invitation={invitation} />
     </div>
@@ -40,10 +39,7 @@ export default function TemplatePreviewPage() {
 const styles = {
   bar: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '0.25rem 1rem',
     padding: 'calc(0.5rem + env(safe-area-inset-top, 0px)) 1rem 0.5rem',
     background: '#1c1a17',
     color: '#faf8f4',
@@ -51,5 +47,4 @@ const styles = {
     fontSize: '0.85rem',
   },
   back: { color: '#faf8f4', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px', fontWeight: 600 },
-  note: { color: '#a89d8a' },
 };
