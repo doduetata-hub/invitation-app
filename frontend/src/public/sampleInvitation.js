@@ -4,7 +4,7 @@ export function buildSampleInvitation(templateKey) {
   return {
     template: { key: templateKey },
     title: 'Mariage',
-    namesLine: 'Marie & Paul',
+    namesLine: 'Josué & Sephora',
     eventDate: inFifteenDays,
     venueName: 'Domaine des Roses',
     address: '12 chemin des Vignes, 33000 Bordeaux',
