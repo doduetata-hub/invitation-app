@@ -1,0 +1,87 @@
+/* OUVERTURE DE « LA SERRE » — la buée sur la verrière. Les calques viennent de assets/ (voir ASSETS.md) ; seules des transformations et des
+   opacités sont animées. Les tailles suivent le CADRE (unités cqw / cqh) : l'écran du téléphone comme l'aperçu de l'administration. */
+
+.ls-gate { position: fixed; inset: 0; z-index: 100; overflow: hidden; container-type: size; background: #f4f1e8; color: #1f3d31; font-family: var(--sans);
+  opacity: 1; transition: opacity 0.9s ease; -webkit-user-select: none; user-select: none; }
+.ls-gate--inline { position: absolute; z-index: 5; }
+.ls-gate[data-phase='leaving'] { opacity: 0; pointer-events: none; }
+/* Chargement : un anneau de laiton sur fond nacre */
+.ls-gate:not(.is-ready)::before { content: ''; position: absolute; left: 50%; top: 50%; z-index: 20; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 2px solid rgba(168, 133, 74, 0.25); border-top-color: #a8854a; animation: ls-load 0.9s linear infinite; }
+@keyframes ls-load { to { transform: rotate(360deg); } }
+.ls-gate:not(.is-ready) > * { visibility: hidden; }
+
+.ls-gate__scene { position: absolute; inset: 0; transform-origin: 50% 62%; transition: transform 2.4s cubic-bezier(.45, .02, .2, 1); }
+.ls-gate__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ls-gate[data-phase='part'] .ls-gate__scene, .ls-gate[data-phase='leaving'] .ls-gate__scene { transform: scale(1.14); }
+
+/* Voile nacré derrière les noms : la ferronnerie ne gêne jamais la lecture */
+.ls-gate__veil { position: absolute; left: -20%; right: -20%; top: 13%; height: 52%; pointer-events: none; opacity: 0; transition: opacity 1.4s ease 0.3s;
+  background: radial-gradient(closest-side, rgba(244, 241, 232, 0.94) 0%, rgba(244, 241, 232, 0.8) 52%, rgba(244, 241, 232, 0) 100%); }
+
+/* Les massifs du premier plan, dans les angles du bas */
+.ls-gate__flower { position: absolute; bottom: 0; width: min(76cqw, 36cqh); height: auto; pointer-events: none; transition: transform 2.2s cubic-bezier(.55, 0, .25, 1), opacity 1.6s ease 0.5s; }
+.ls-gate__flower--l { left: 0; transform-origin: 0 100%; }
+.ls-gate__flower--r { right: 0; transform-origin: 100% 100%; }
+.ls-gate[data-phase='clear'] .ls-gate__flower--l { animation: ls-sway-l 5.5s ease-in-out infinite alternate; }
+.ls-gate[data-phase='clear'] .ls-gate__flower--r { animation: ls-sway-r 6.2s ease-in-out infinite alternate; }
+@keyframes ls-sway-l { to { transform: rotate(-1.4deg) translateX(-1.5%); } }
+@keyframes ls-sway-r { to { transform: rotate(1.4deg) translateX(1.5%); } }
+.ls-gate[data-phase='part'] .ls-gate__flower--l, .ls-gate[data-phase='leaving'] .ls-gate__flower--l { transform: translate(-82%, 14%) rotate(-12deg) scale(1.2); opacity: 0; }
+.ls-gate[data-phase='part'] .ls-gate__flower--r, .ls-gate[data-phase='leaving'] .ls-gate__flower--r { transform: translate(82%, 14%) rotate(12deg) scale(1.2); opacity: 0; }
+
+/* Les noms, révélés avec la serre */
+.ls-gate__names { position: absolute; left: 0; right: 0; top: 17%; height: 44%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 18px; text-align: center; }
+.ls-gate__names > * { margin: 0; opacity: 0; transform: translateY(16px); transition: opacity 1.2s ease, transform 1.2s cubic-bezier(.2, .7, .2, 1); }
+.ls-gate:not([data-phase='fog']) .ls-gate__names > * { opacity: 1; transform: none; }
+.ls-gate:not([data-phase='fog']) .ls-gate__names > :nth-child(1) { transition-delay: 0.45s; }
+.ls-gate:not([data-phase='fog']) .ls-gate__names > :nth-child(2) { transition-delay: 0.7s; }
+.ls-gate:not([data-phase='fog']) .ls-gate__names > :nth-child(n + 3) { transition-delay: 1.35s; }
+.ls-gate__eyebrow { font: 600 0.7rem/1.5 var(--sans); letter-spacing: 0.34em; text-transform: uppercase; color: #6d5222; }
+.ls-gate__h { display: flex; flex-direction: column; align-items: center; max-width: 100%; margin: 4px 0 6px !important; font-family: var(--script); font-size: clamp(3.6rem, min(calc(215cqw / var(--len, 8)), 14cqh), 8.4rem); font-weight: 400; line-height: 1.02; color: #1f3d31; text-shadow: 0 0 22px rgba(244, 241, 232, 0.95); }
+.ls-gate__h span { max-width: 100%; padding: 0 0.12em; overflow-wrap: anywhere; }
+.ls-gate__h .ls-gate__amp { font-size: 0.56em; line-height: 0.9; color: #9a4e48; }
+.ls-gate__date { font-family: var(--display); font-size: clamp(1.4rem, 6cqw, 2rem); line-height: 1.3; }
+.ls-gate__time { margin-top: 2px !important; font: 600 0.74rem/1.5 var(--sans); letter-spacing: 0.26em; text-transform: uppercase; color: #345244; }
+.ls-gate[data-phase='part'] .ls-gate__names { opacity: 0; transform: scale(1.06); transition: opacity 0.9s ease, transform 1.5s ease; }
+.ls-gate[data-phase='part'] .ls-gate__veil { opacity: 0 !important; transition-delay: 0s; }
+.ls-gate[data-phase='clear'] .ls-gate__veil { opacity: 1; }
+
+/* La vitre embuée */
+.ls-gate__fog { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; touch-action: none; cursor: grab; transition: opacity 1.6s ease; }
+.ls-gate__fog:active { cursor: grabbing; }
+.ls-gate:not([data-phase='fog']) .ls-gate__fog { opacity: 0; pointer-events: none; }
+
+/* Le geste à faire : une empreinte qui va et vient tant que l'invité n'a pas touché la vitre */
+.ls-gate__finger { position: absolute; left: 50%; top: 47%; z-index: 4; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 28%, rgba(255, 255, 255, 0.35) 55%, rgba(255, 255, 255, 0) 72%); box-shadow: 0 0 0 1px rgba(31, 61, 49, 0.28); animation: ls-finger 2.8s ease-in-out infinite; }
+@keyframes ls-finger { 0% { transform: translate(-90px, 12px) scale(0.8); opacity: 0; } 18% { opacity: 1; transform: translate(-72px, 6px) scale(1); } 50% { transform: translate(30px, -34px) scale(1); } 80% { transform: translate(86px, 22px) scale(1); opacity: 1; } 100% { transform: translate(100px, 30px) scale(0.8); opacity: 0; } }
+.ls-gate.is-touched .ls-gate__finger, .ls-gate:not([data-phase='fog']) .ls-gate__finger { display: none; }
+
+.ls-gate__ui { position: absolute; left: 0; right: 0; bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px)); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 20px; text-align: center; pointer-events: none; transition: opacity 0.6s ease; }
+.ls-gate__who { margin: 0; padding: 6px 18px; border-radius: 999px; background: rgba(244, 241, 232, 0.86); font-family: var(--display); font-size: 1.35rem; line-height: 1.35; text-wrap: balance; }
+.ls-gate__cta { min-height: 50px; max-width: 340px; padding: 10px 28px; border: 0; border-radius: 999px; background: #1f3d31; color: #f4f1e8; font: 600 0.9rem/1.35 var(--sans); letter-spacing: 0.02em; box-shadow: 0 10px 28px rgba(31, 61, 49, 0.35), 0 0 0 1px rgba(229, 184, 174, 0.7); cursor: pointer; pointer-events: auto; text-wrap: balance; }
+.ls-gate__cta:disabled { cursor: default; }
+.ls-gate__cta:focus-visible { outline: 3px solid #e5b8ae; outline-offset: 3px; }
+.ls-gate:not([data-phase='fog']) .ls-gate__ui--fog { opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s 0.4s; }
+.ls-gate__ui--clear { opacity: 0; visibility: hidden; }
+.ls-gate[data-phase='clear'] .ls-gate__ui--clear { opacity: 1; visibility: visible; transition: opacity 0.8s ease 1.8s, visibility 0s 1.8s; }
+.ls-gate__ui--clear .ls-gate__cta { background: #e5b8ae; color: #1f3d31; }
+
+/* « Passer » : discret, apparaît après quelques secondes */
+.ls-gate__skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 12; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(244, 241, 232, 0.82); color: #1f3d31; font: 600 0.62rem/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; opacity: 0; animation: ls-skip-in 1.2s ease 4s forwards; }
+@keyframes ls-skip-in { to { opacity: 1; } }
+.ls-gate__skip:focus-visible { opacity: 1; outline: 3px solid #a8854a; }
+
+/* Écran large (ordinateur, tablette couchée) */
+@container (min-aspect-ratio: 1/1) {
+  .ls-gate__flower { width: min(30cqw, 62cqh); }
+  .ls-gate__names { top: 12%; height: 58%; }
+  .ls-gate__veil { left: 12%; right: 12%; top: 4%; height: 76%; }
+  .ls-gate__h { font-size: clamp(3.2rem, 13cqh, 8rem); }
+  .ls-gate__finger { top: 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-gate *, .ls-gate { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.2s !important; transition-delay: 0s !important; }
+  .ls-gate__finger { display: none; }
+  .ls-gate__skip { opacity: 1; }
+}

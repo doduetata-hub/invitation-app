@@ -1,0 +1,279 @@
+/* LA SERRE — matin dans une verrière. Libre Caslon Display (titres, dates), Imperial Script (noms et titres manuscrits), Figtree (texte).
+   Contrastes (WCAG AA) : vert/nacre 10,5:1 · laiton foncé/nacre ≥ 5,3:1 · pivoine foncée/nacre 5,2:1 · nacre/vert 10,5:1. */
+
+.ls-root {
+  --nacre: #f4f1e8; --paper: #fbf9f3; --green: #1f3d31; --green-deep: #132a21; --sage: #a9b89c; --blush: #e5b8ae;
+  --brass: #a8854a; --brass-ink: #6d5222; --rose-ink: #9a4e48; --muted: #4f6457;
+  --fg: #1f3d31; --soft: #4f6457; --acc: #6d5222; --line: rgba(168, 133, 74, 0.45);
+  --display: var(--font-heading); --sans: var(--font-body); --script: 'LS Script', 'Imperial Script', 'Snell Roundhand', cursive;
+  position: relative; overflow-x: clip; background: var(--nacre); color: var(--fg);
+  font-family: var(--sans); font-weight: 400; font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%; text-rendering: optimizeLegibility; font-variant-numeric: lining-nums;
+}
+@supports not (overflow: clip) { .ls-root { overflow-x: hidden; } }
+.ls-root *, .ls-root *::before, .ls-root *::after { box-sizing: border-box; }
+.ls-root img, .ls-root video { display: block; max-width: 100%; }
+:where(.ls-root) :where(h1, h2, h3, p, ol, ul, dl, dd, figure, blockquote) { margin: 0; padding: 0; }
+:where(.ls-root) :where(ol, ul) { list-style: none; }
+.ls-root a { color: inherit; }
+.ls-root :focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+.ls-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.ls-root section { position: relative; }
+.ls-center { display: flex; justify-content: center; margin-top: 34px; }
+.ls-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 28px; }
+@media (prefers-reduced-motion: no-preference) { html:has(.ls-root) { scroll-behavior: smooth; } }
+
+/* Deux ambiances : le papier d'herbier et le feuillage sombre */
+.ls-light { color: var(--fg); }
+.ls-dark { --fg: #f4f1e8; --soft: #cfdac9; --acc: #e2c890; --line: rgba(226, 200, 144, 0.45); color: var(--fg); }
+
+.re-reveal.is-armed { opacity: 0; transform: translateY(20px); }
+.re-reveal.is-shown { opacity: 1; transform: none; transition: opacity 900ms ease, transform 900ms cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0ms); }
+
+/* ---------- Textes communs ---------- */
+.ls-eyebrow { font-family: var(--sans); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--acc); text-wrap: balance; }
+.ls-head { max-width: 620px; margin: 0 auto; text-align: center; }
+.ls-h1, .ls-h2 { font-family: var(--script); font-weight: 400; line-height: 1.1; color: var(--fg); text-wrap: balance; }
+.ls-h1 { margin-top: 8px; font-size: clamp(3.3rem, 14.5vw, 4.8rem); }
+.ls-h2 { margin-top: 4px; font-size: clamp(3.2rem, 14vw, 4.6rem); }
+.ls-head__sub { margin-top: 2px; font-family: var(--display); font-size: 1.28rem; line-height: 1.5; color: var(--soft); text-wrap: balance; }
+
+/* Séparateur : un bouton de pivoine sous une arche, entre deux filets de laiton */
+.ls-hero .ls-div { margin: 6px auto 8px; }
+.ls-div { display: flex; align-items: center; justify-content: center; gap: 12px; width: min(250px, 68%); margin: 14px auto 16px; color: var(--acc); }
+.ls-div i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, currentColor); }
+.ls-div i:last-child { background: linear-gradient(270deg, transparent, currentColor); }
+.ls-div svg { flex: none; }
+
+.ls-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 10px 30px; border: 1px solid var(--acc); border-radius: 999px; background: transparent; color: var(--fg); font-family: var(--sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; text-align: center; text-decoration: none; cursor: pointer; transition: background 250ms ease, color 250ms ease; }
+.ls-btn:hover:not(:disabled) { background: var(--green); color: var(--nacre); }
+.ls-dark .ls-btn:hover:not(:disabled) { background: var(--nacre); color: var(--green); }
+.ls-btn:disabled { opacity: 0.6; cursor: wait; }
+.ls-btn--solid { border-color: var(--green); background: var(--green); color: var(--nacre) !important; }
+
+/* =====================================================================
+   COUVERTURE : la verrière en haut, qui se fond dans la nacre, puis le portrait dans l'arche
+   ===================================================================== */
+.ls-cover { position: relative; min-height: 100vh; min-height: 100svh; }
+.ls-hero { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; min-height: 100svh; padding: 30px 20px 76px; text-align: center;
+  background: linear-gradient(180deg, rgba(244, 241, 232, 0.72) 0%, rgba(244, 241, 232, 0.82) 38%, var(--nacre) 66%), url('./assets/bg-portrait.webp') 50% 0 / cover no-repeat, var(--nacre); }
+.ls-hero:not(.is-in) .ls-rise { opacity: 0; }
+.ls-hero.is-in .ls-rise { animation: ls-rise 1.1s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 110ms + 100ms); }
+@keyframes ls-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.ls-replay { position: absolute; top: 12px; right: 12px; z-index: 4; min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(244, 241, 232, 0.9); color: var(--green); font: 600 0.66rem/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+.ls-hero--preview { padding-top: 62px; }
+.ls-hero__guest { margin-bottom: 6px; font-family: var(--display); font-size: 1.45rem; color: var(--rose-ink); }
+.ls-hero__text { display: flex; flex-direction: column; align-items: center; max-width: 100%; }
+
+.ls-arch { position: relative; flex: none; width: min(66vw, 28vh, 350px); width: min(66vw, 28svh, 350px); aspect-ratio: 820 / 1226; margin: 14px auto 6px; }
+.ls-arch__photo { position: absolute; left: 11.4%; right: 12%; top: 3.9%; bottom: 4.3%; overflow: hidden; border-radius: 50% 50% 0 0 / 27.9% 27.9% 0 0; background: var(--green); }
+.ls-arch__photo img { width: 100%; height: 100%; object-fit: cover; animation: ls-kb 22s ease-in-out infinite alternate; }
+.ls-arch__frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; filter: drop-shadow(0 18px 22px rgba(31, 61, 49, 0.28)); }
+@keyframes ls-kb { from { transform: scale(1); } to { transform: scale(1.07) translateY(-1%); } }
+.ls-mono { display: grid; grid-auto-flow: column; place-content: center; align-items: center; width: 100%; height: 100%; font-family: var(--script); font-size: clamp(4rem, 20vw, 6.4rem); color: var(--nacre); background: linear-gradient(rgba(19, 42, 33, 0.35), rgba(19, 42, 33, 0.35)), url('./assets/foliage.webp') 50% 50% / cover; }
+.ls-mono i { padding: 0 0.12em; font-size: 0.7em; font-style: normal; color: var(--blush); }
+
+.ls-names { display: flex; flex-direction: column; align-items: center; max-width: 100%; font-family: var(--script); font-weight: 400; font-size: clamp(2.9rem, min(calc(190vw / var(--len, 8)), 8.4svh), 6.6rem); line-height: 1; }
+.ls-names span { max-width: 100%; padding: 0 0.12em; overflow-wrap: anywhere; }
+.ls-names .ls-amp { font-size: 0.55em; line-height: 0.85; color: var(--rose-ink); }
+.ls-herodate { font-family: var(--display); font-size: clamp(1.6rem, 7vw, 2.1rem); line-height: 1.25; }
+.ls-herovenue { margin-top: 6px; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); text-wrap: balance; }
+.ls-scroll { position: absolute; left: 50%; bottom: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; translate: -50% 0; text-decoration: none; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; white-space: nowrap; }
+.ls-root a.ls-scroll { color: var(--brass-ink); }
+.ls-scroll i { width: 1px; height: 32px; background: linear-gradient(var(--brass), transparent); animation: ls-drop 2.2s ease-in-out infinite; transform-origin: top; }
+@keyframes ls-drop { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* ---------- Matières ---------- */
+.ls-intro, .ls-gal, .ls-rsvp { background: url('./assets/paper.webp') 50% 0 / 100% auto repeat-y, var(--nacre); }
+.ls-dress, .ls-place { background: var(--nacre); }
+.ls-prog { background: linear-gradient(180deg, #fbf9f3, #f4f1e8); }
+.ls-details, .ls-count, .ls-ticketsec { background: linear-gradient(rgba(19, 42, 33, 0.66), rgba(19, 42, 33, 0.76)), url('./assets/foliage.webp') 50% 0 / cover no-repeat, var(--green-deep); }
+.ls-count { background-position: 50% 100%; }
+
+/* ---------- Invitation : une feuille d'herbier ---------- */
+.ls-intro { padding: 84px 18px 80px; text-align: center; }
+.ls-sheet { position: relative; max-width: 540px; margin: 0 auto; padding: 66px 28px 56px; background: rgba(255, 254, 250, 0.9); border: 1px solid rgba(168, 133, 74, 0.35); border-radius: 220px 220px 8px 8px / 130px 130px 8px 8px; box-shadow: 0 26px 54px rgba(31, 61, 49, 0.14); }
+.ls-sheet::before { content: ''; position: absolute; inset: 9px; border: 1px solid rgba(168, 133, 74, 0.28); border-radius: inherit; pointer-events: none; }
+.ls-sprig { position: absolute; z-index: 1; height: auto; pointer-events: none; filter: drop-shadow(0 8px 8px rgba(31, 61, 49, 0.18)); }
+.ls-sprig--a { left: -24px; top: -6px; width: 80px; transform: rotate(-52deg); }
+.ls-sprig--b { right: -20px; bottom: -26px; width: 96px; transform: rotate(24deg); }
+.ls-lede { font-family: var(--display); font-size: clamp(1.3rem, 5.4vw, 1.55rem); line-height: 1.6; white-space: pre-line; text-wrap: pretty; }
+.ls-quote { max-width: 400px; margin: 22px auto 0; font-family: var(--display); font-size: 1.2rem; line-height: 1.6; color: var(--rose-ink); }
+.ls-sign { margin-top: 28px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+.ls-signnames { margin-top: 2px; font-family: var(--script); font-size: clamp(2.5rem, 10.5vw, 3.3rem); line-height: 1.2; color: var(--brass-ink); }
+
+/* Table de l'invité : l'étiquette plantée dans un massif */
+.ls-stake { display: flex; flex-direction: column; align-items: center; margin-top: 44px; }
+.ls-stake__tag { display: flex; flex-direction: column; align-items: center; min-width: 190px; padding: 18px 30px 14px; background: var(--green); color: var(--nacre); border-radius: 100px 100px 6px 6px / 44px 44px 6px 6px; box-shadow: inset 0 0 0 4px var(--green), inset 0 0 0 5px rgba(226, 200, 144, 0.7), 0 14px 26px rgba(31, 61, 49, 0.28); }
+.ls-stake__tag span { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: #e2c890; }
+.ls-stake__tag b { font-family: var(--display); font-weight: 400; font-size: 3.2rem; line-height: 1.1; }
+.ls-stake > i { width: 4px; height: 46px; border-radius: 0 0 4px 4px; background: linear-gradient(90deg, #6d5222, #d9bd83 50%, #6d5222); }
+
+/* ---------- Détails : trois étiquettes de laiton ---------- */
+.ls-details { padding: 92px 20px 96px; }
+.ls-labels { display: grid; gap: 18px; max-width: 460px; margin: 38px auto 0; }
+.ls-label { position: relative; padding: 22px 22px 24px; text-align: center; color: var(--green); background: linear-gradient(170deg, #fffdf7, #ece7d6); border-radius: 8px; box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35), inset 0 0 0 5px #fbf9f3, inset 0 0 0 6px rgba(168, 133, 74, 0.6); }
+.ls-label::before, .ls-label::after { content: ''; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff0c4, #8a6a2f); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+.ls-label::before { left: 15px; }
+.ls-label::after { right: 15px; }
+.ls-label dt { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--brass-ink); }
+.ls-label dd { display: flex; flex-direction: column; gap: 2px; margin: 4px 10px 0; }
+.ls-label b { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 7.4vw, 2.3rem); line-height: 1.15; text-wrap: balance; overflow-wrap: anywhere; }
+.ls-label span { font-size: 0.92rem; color: #4f6457; text-wrap: balance; }
+
+/* ---------- Dress code : un éventail de pétales ---------- */
+.ls-dress { padding: 90px 22px 96px; text-align: center; }
+.ls-petals { display: flex; justify-content: center; align-items: flex-end; height: 116px; margin: 14px 0 22px; }
+.ls-petals li { width: 62px; height: 90px; margin: 0 -8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; transform-origin: 50% 120%; transform: rotate(calc(var(--k, 0) * 17deg)); box-shadow: 0 10px 18px rgba(31, 61, 49, 0.22), inset 0 0 0 1px rgba(31, 61, 49, 0.14), inset 0 -18px 22px rgba(31, 61, 49, 0.12); }
+.ls-dress__code { font-family: var(--display); font-size: clamp(1.8rem, 7.4vw, 2.4rem); line-height: 1.2; color: var(--rose-ink); text-wrap: balance; overflow-wrap: anywhere; }
+.ls-dress__t { max-width: 400px; margin: 12px auto 0; font-size: 0.94rem; line-height: 1.75; color: var(--soft); text-wrap: balance; }
+
+/* ---------- Compte à rebours : quatre vitres en arche ---------- */
+.ls-count { padding: 88px 16px 96px; text-align: center; }
+.ls-panes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 520px; margin: 30px auto 0; }
+.ls-panes li { display: flex; flex-direction: column; align-items: center; padding: 30px 2px 14px; border: 1px solid rgba(226, 200, 144, 0.75); border-radius: 100px 100px 6px 6px / 54px 54px 6px 6px; background: linear-gradient(160deg, rgba(244, 241, 232, 0.2), rgba(244, 241, 232, 0.04) 55%, rgba(244, 241, 232, 0.12)); box-shadow: inset 0 0 0 3px rgba(19, 42, 33, 0.5), inset 0 0 0 4px rgba(226, 200, 144, 0.35); }
+.ls-panes b { font-family: var(--display); font-weight: 400; font-size: clamp(2.2rem, 10vw, 3.4rem); line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
+.ls-panes span { margin-top: 8px; font-size: 0.55rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #e2c890; }
+.ls-count__done { margin-top: 10px; font-family: var(--display); font-size: 1.5rem; }
+
+/* ---------- Programme : la tige qui fleurit ---------- */
+.ls-prog { padding: 92px 18px 84px; }
+.ls-stem { max-width: 560px; margin: 36px auto 0; }
+.ls-step { position: relative; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 18px; align-items: center; padding: 14px 0; }
+.ls-step::before { content: ''; position: absolute; left: 45px; top: 0; bottom: 0; width: 2px; border-radius: 2px; background: linear-gradient(#7f9a6c, #5f7d52); }
+.ls-step:first-child::before { top: 50%; }
+.ls-step:last-child::before { bottom: 50%; }
+.ls-step:only-child::before { display: none; }
+.ls-step__flower { position: relative; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: radial-gradient(circle, #fffdf7 55%, rgba(229, 184, 174, 0.35) 100%); box-shadow: 0 0 0 1px rgba(168, 133, 74, 0.4), 0 10px 20px rgba(31, 61, 49, 0.12); }
+.ls-step__flower img { width: 82%; height: 82%; object-fit: contain; }
+.ls-step.is-shown .ls-step__flower img { animation: ls-bloom 1.4s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--d, 0ms) + 120ms); }
+@keyframes ls-bloom { from { transform: scale(0.45) rotate(-18deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.ls-step__body { display: flex; flex-direction: column; min-width: 0; }
+.ls-step__t { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--rose-ink); }
+.ls-step__h { font-family: var(--display); font-size: 1.65rem; line-height: 1.2; overflow-wrap: anywhere; text-wrap: balance; }
+.ls-step__w { margin-top: 2px; font-size: 0.9rem; font-weight: 600; color: var(--brass-ink); }
+.ls-step__d { margin-top: 2px; font-size: 0.92rem; line-height: 1.6; color: var(--muted); }
+
+/* ---------- Galerie : planches d'herbier ---------- */
+.ls-gal { padding: 90px 18px; }
+.ls-herbier { columns: 2; column-gap: 16px; max-width: 760px; margin: 40px auto 0; }
+.ls-herbier > li { break-inside: avoid; padding-top: 10px; margin-bottom: 8px; }
+.ls-herbier > li:nth-child(odd) .ls-plate { transform: rotate(-1.4deg); }
+.ls-herbier > li:nth-child(even) .ls-plate { transform: rotate(1.2deg); }
+.ls-plate { position: relative; display: block; width: 100%; padding: 8px 8px 4px; border: 0; border-radius: 2px; background: #fffdf8; cursor: zoom-in; box-shadow: 0 14px 28px rgba(31, 61, 49, 0.18), 0 0 0 1px rgba(168, 133, 74, 0.22); }
+.ls-plate::before { content: ''; position: absolute; left: 50%; top: -9px; z-index: 1; width: 54px; height: 19px; margin-left: -27px; background: rgba(169, 184, 156, 0.62); transform: rotate(-3deg); }
+.ls-plate img, .ls-plate video { width: 100%; height: auto; }
+.ls-plate__n { display: block; padding: 6px 0 2px; font-family: var(--display); font-size: 0.98rem; color: var(--brass-ink); }
+.ls-lb { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 26, 19, 0.96); }
+.ls-lb img, .ls-lb video { max-width: 100%; max-height: 86vh; width: auto; height: auto; box-shadow: 0 0 0 6px #fffdf8, 0 30px 80px rgba(0, 0, 0, 0.7); }
+.ls-lb__x, .ls-lb__a { position: absolute; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; border: 1px solid rgba(226, 200, 144, 0.55); border-radius: 50%; background: rgba(19, 42, 33, 0.75); color: #f4f1e8; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.ls-lb__x { top: 14px; right: 14px; }
+.ls-lb__a { top: 50%; transform: translateY(-50%); }
+.ls-lb__a--p { left: 10px; }
+.ls-lb__a--n { right: 10px; }
+.ls-lb__c { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-family: var(--display); color: #cfdac9; }
+
+/* ---------- Lieu ---------- */
+.ls-place { padding: 90px 18px; text-align: center; }
+.ls-place__n { font-family: var(--display); font-size: clamp(1.7rem, 7vw, 2.2rem); line-height: 1.2; text-wrap: balance; }
+.ls-place__a { margin-top: 4px; font-size: 0.94rem; color: var(--soft); text-wrap: balance; }
+.ls-mapwrap { position: relative; max-width: 520px; margin: 34px auto 0; }
+.ls-mapwrap__fern { position: absolute; right: -14px; bottom: -34px; z-index: 1; width: 110px; transform: rotate(18deg); pointer-events: none; }
+.ls-map { position: relative; aspect-ratio: 4 / 4.4; overflow: hidden; border: 6px solid var(--green); border-radius: 260px 260px 10px 10px / 170px 170px 10px 10px; box-shadow: 0 0 0 1px var(--brass), 0 24px 50px rgba(31, 61, 49, 0.2); }
+.ls-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; filter: saturate(0.55) sepia(0.16); }
+
+/* ---------- Réponse ---------- */
+.ls-rsvp { padding: 90px 16px 96px; text-align: center; }
+.ls-form { max-width: 540px; margin: 32px auto 0; padding: 34px 20px 30px; text-align: left; background: #fffefa; border: 1px solid rgba(168, 133, 74, 0.35); border-radius: 80px 80px 12px 12px / 40px 40px 12px 12px; box-shadow: 0 24px 56px rgba(31, 61, 49, 0.14); }
+.ls-form :has(> img[alt^='Votre QR code']) { display: none !important; }
+/* Formulaire RSVP de l'application, habillé pour la serre */
+.ls-form section { max-width: none !important; margin: 0 !important; padding: 0 !important; text-align: left !important; background: transparent !important; }
+.ls-form h2 { margin: 0 0 1rem !important; font-family: var(--display) !important; font-weight: 400 !important; font-size: 1.9rem !important; line-height: 1.15 !important; color: var(--green) !important; text-align: center !important; }
+.ls-form h2:has(+ form) { display: none; }
+.ls-form h2 span[style] { color: var(--rose-ink) !important; font-weight: 400 !important; }
+.ls-form form { gap: 1.1rem !important; }
+.ls-form label { gap: 8px !important; font-family: var(--sans) !important; font-size: 0.68rem !important; font-weight: 700 !important; letter-spacing: 0.13em !important; text-transform: uppercase; color: var(--muted) !important; }
+.ls-form input:not([type='radio']):not([type='checkbox']):not([type='file']), .ls-form textarea, .ls-form select { width: 100%; min-height: 48px; padding: 13px !important; border: 1px solid #c9d1c0 !important; border-radius: 10px !important; background: #fdfcf8 !important; color: var(--green) !important; font-family: var(--sans) !important; font-size: 1rem !important; font-weight: 400 !important; letter-spacing: 0; text-transform: none; }
+.ls-form textarea { min-height: 6.4rem; line-height: 1.5; }
+.ls-form input:focus-visible, .ls-form textarea:focus-visible, .ls-form select:focus-visible { outline: none !important; border-color: var(--green) !important; box-shadow: 0 0 0 2px var(--sage); }
+.ls-form input[readonly], .ls-form input:disabled { background: var(--nacre) !important; opacity: 1 !important; }
+.ls-form ::placeholder { color: #75837a; opacity: 1; }
+.ls-form input[type='radio'] { appearance: none; -webkit-appearance: none; display: inline-grid; place-content: center; flex: none; width: 22px; height: 22px; margin: 0; border: 1px solid var(--green); border-radius: 50%; background: #fff; cursor: pointer; }
+.ls-form input[type='radio']::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--green); transform: scale(0); transition: transform 150ms ease; }
+.ls-form input[type='radio']:checked::before { transform: scale(1); }
+.ls-form label:has(> input[type='radio']) { min-height: 44px; font-size: 0.97rem !important; font-weight: 500 !important; letter-spacing: 0 !important; text-transform: none; color: var(--green) !important; }
+.ls-form button { min-height: 44px; }
+.ls-form button[type='submit'] { min-height: 52px; border-radius: 999px !important; background: var(--green) !important; color: var(--nacre) !important; font-family: var(--sans) !important; font-size: 0.74rem !important; font-weight: 700 !important; letter-spacing: 0.16em !important; text-transform: uppercase; }
+.ls-form button[type='submit']:hover:not(:disabled) { background: var(--green-deep) !important; }
+.ls-form button[type='submit']:disabled { opacity: 0.6; cursor: wait; }
+.ls-form button:not([type='submit']) { color: var(--brass-ink) !important; font-size: 0.9rem !important; }
+.ls-form label span { font-weight: 400; letter-spacing: 0; text-transform: none; }
+.ls-form label p { font-size: 0.82rem; font-weight: 400; line-height: 1.5; letter-spacing: 0; text-transform: none; }
+.ls-form p, .ls-form span { font-family: var(--sans); }
+.ls-form p { color: var(--green); }
+.ls-form span[style], .ls-form p[style] { color: var(--muted) !important; opacity: 1 !important; }
+.ls-form p[style*='rgb(220, 38, 38)'] { color: #a11d1d !important; font-weight: 700; }
+.ls-form [style*='dashed'] { border-radius: 10px !important; border-color: var(--sage) !important; color: var(--green) !important; }
+.ls-form a { color: var(--brass-ink) !important; }
+
+/* ---------- Billet : une étiquette botanique ---------- */
+.ls-ticketsec { padding: 90px 18px 96px; text-align: center; }
+.ls-ticketsec__p { max-width: 400px; margin: 14px auto 0; font-size: 0.86rem; line-height: 1.8; color: var(--soft); text-wrap: balance; }
+.ls-ticket { position: relative; max-width: 330px; margin: 44px auto 0; padding: 54px 24px 20px; color: var(--green); background: url('./assets/paper.webp') 50% 50% / cover, #fbf9f3; border-radius: 165px 165px 12px 12px / 96px 96px 12px 12px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45); }
+.ls-ticket::before { content: ''; position: absolute; left: 50%; top: 18px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--green-deep); box-shadow: 0 0 0 3px #c9a864, inset 0 2px 5px rgba(0, 0, 0, 0.6); }
+.ls-ticket__sprig { position: absolute; right: -30px; top: 24px; width: 88px; height: auto; transform: rotate(38deg); filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.3)); pointer-events: none; }
+.ls-ticket__top { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: #6d5222; }
+.ls-ticket__names { margin: 10px 4px 0; font-family: var(--script); font-weight: 400; font-size: clamp(2.4rem, 10vw, 2.9rem); line-height: 1.15; text-wrap: balance; }
+.ls-ticket__meta { margin: 4px 4px 0; font-size: 0.78rem; line-height: 1.7; color: #4f6457; }
+.ls-ticket__qr { display: grid; place-items: center; width: 150px; height: 150px; margin: 16px auto 14px; background: #fff; border-radius: 8px; box-shadow: 0 0 0 1px rgba(168, 133, 74, 0.55); }
+.ls-ticket__qr img { width: 130px; height: 130px; }
+.ls-ticket__guest { display: flex; flex-direction: column; font-size: 0.84rem; line-height: 1.7; }
+.ls-ticket__guest strong { font-family: var(--display); font-weight: 400; font-size: 1.55rem; line-height: 1.25; overflow-wrap: anywhere; }
+.ls-ticket__k { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: #6d5222; }
+.ls-ticket__foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(109, 82, 34, 0.5); font-size: 0.55rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #6d5222; }
+
+/* ---------- Conclusion : retour dans la verrière ---------- */
+.ls-closing { position: relative; overflow: hidden; padding: 84px 22px 300px; text-align: center; background: linear-gradient(180deg, var(--nacre) 0%, rgba(244, 241, 232, 0.9) 45%, rgba(244, 241, 232, 0.55) 100%), url('./assets/bg-portrait.webp') 50% 100% / cover no-repeat, var(--nacre); }
+.ls-closing__in { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; }
+.ls-closing__bloom { width: 92px; height: auto; margin: 0 auto 4px; }
+.ls-closing__mono { font-family: var(--script); font-size: clamp(3.8rem, 16vw, 5.4rem); line-height: 1.15; }
+.ls-closing__t { margin-top: 4px; font-family: var(--display); font-size: 1.42rem; line-height: 1.55; text-wrap: balance; }
+.ls-closing__names { margin: 0 0 12px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); text-wrap: balance; }
+.ls-closing__flower { position: absolute; bottom: 0; width: min(56vw, 360px); height: auto; pointer-events: none; }
+.ls-closing__flower--l { left: 0; }
+.ls-closing__flower--r { right: 0; }
+.ls-closing .ls-closing__flower { max-width: min(56vw, 360px); }
+
+/* ---------- Grands écrans ---------- */
+@media (min-width: 700px) {
+  .ls-labels { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); max-width: 900px; align-items: stretch; }
+  .ls-herbier { columns: 3; column-gap: 22px; }
+  .ls-form { padding: 46px 44px 40px; }
+  .ls-sheet { padding: 84px 64px 64px; }
+  .ls-sprig--a { left: -44px; top: 16px; width: 124px; }
+  .ls-sprig--b { right: -40px; width: 128px; }
+  .ls-hero { background-image: linear-gradient(180deg, rgba(244, 241, 232, 0.68) 0%, rgba(244, 241, 232, 0.82) 50%, var(--nacre) 100%), url('./assets/bg-landscape.webp'); }
+  .ls-closing { padding-bottom: 240px; background-image: linear-gradient(180deg, var(--nacre) 0%, rgba(244, 241, 232, 0.88) 50%, rgba(244, 241, 232, 0.5) 100%), url('./assets/bg-landscape.webp'); }
+}
+@media (min-width: 960px) {
+  .ls-hero { flex-direction: row; gap: clamp(40px, 7vw, 120px); padding: 60px 40px; }
+  .ls-hero__top { position: absolute; left: 0; right: 0; top: 28px; }
+  .ls-arch { width: min(34vw, 50vh, 440px); margin: 52px 0 0; }
+  .ls-hero__text { max-width: 46vw; margin-top: 40px; }
+  .ls-names { font-size: clamp(4rem, calc(76vw / var(--len, 8)), 8rem); }
+}
+
+/* ---------- Animations réduites ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ls-root *, .ls-root *::before, .ls-root *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .re-reveal.is-armed { opacity: 1 !important; transform: none !important; }
+  .ls-hero:not(.is-in) .ls-rise { opacity: 1; }
+}
+
+/* ---------- Impression : seul le billet d'accès est imprimé ---------- */
+@media print {
+  .ls-root section:not(.ls-ticketsec), .ls-root header:not(.ls-head), .ls-root footer, .ls-gate, .ls-noprint, button[aria-label$='la musique'] { display: none !important; }
+  .ls-ticketsec { background: #fff; color: #1f3d31; --fg: #1f3d31; --soft: #4f6457; }
+  .ls-ticket { margin: 20px auto; box-shadow: 0 0 0 1px #a8854a; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .ls-ticket::before { display: none; }
+}

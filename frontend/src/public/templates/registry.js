@@ -12,6 +12,7 @@ import mariageCoutumier from './mariageCoutumier/index.jsx';
 import soireeGala from './soireeGala/index.jsx';
 import rosaceNoire from './rosaceNoire/index.jsx';
 import laPorte from './laPorte/index.jsx';
+import laSerre from './laSerre/index.jsx';
 import generic from './generic.jsx';
 
 const TEMPLATES = {
@@ -29,6 +30,7 @@ const TEMPLATES = {
   [soireeGala.key]: soireeGala,
   [rosaceNoire.key]: rosaceNoire,
   [laPorte.key]: laPorte,
+  [laSerre.key]: laSerre,
   [generic.key]: generic,
 };
 
