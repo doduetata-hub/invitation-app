@@ -82,7 +82,12 @@ Square image, 1024x1024, perfectly flat pure white #FFFFFF background. Exactly 6
 Vertical 2:3 image, 1024x1536. An antique engraved world map used as a very pale background: faint midnight-blue lines for coastlines and a delicate grid of meridians on ivory paper #F5EEDF, one small elegant compass rose near the bottom. Extremely light and low contrast so dark text stays readable on top. NO place names, NO letters, NO numbers, no route lines.
 ```
 
-## Ce que je fais dès réception
+## État : images reçues et intégrées
+
+Les originaux sont dans `assets/source/` (non utilisés par l'application). Le template utilise les versions optimisées de `assets/`
+(environ 660 Ko au total) ; les polices sont dans `fonts/`. `volet.png` a été retourné pour placer la poignée en bas.
+
+## Ce qui est fait à partir de ces images
 
 1. Découpe du hublot, mise au même repère du volet et du ciel, tailles mobile / ordinateur, compression (objectif : moins de 900 Ko au total).
 2. Le volet qui glisse au doigt, la lumière qui entre, le panneau à volets tournants et les sons sont réalisés en code.

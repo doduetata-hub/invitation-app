@@ -1,0 +1,98 @@
+/* OUVERTURE DE « L'EMBARQUEMENT » — le hublot. La scène est un cadre vertical 2:3 (1024 × 1536) : toutes les positions ci-dessous sont des
+   pourcentages de ce cadre (ouverture du hublot : x 20,9 → 79,1 % ; y 19,5 → 65,3 %). --p vaut 0 volet fermé, 1 volet ouvert.
+   Les tailles suivent le CADRE (unités cqw / cqh) : l'écran du téléphone comme l'aperçu de l'administration. */
+
+.em-gate { position: fixed; inset: 0; z-index: 100; overflow: hidden; container-type: size; background: #0a1224; color: var(--ivory); font-family: var(--sans);
+  opacity: 1; transition: opacity 0.9s ease; -webkit-user-select: none; user-select: none; }
+.em-gate--inline { position: absolute; z-index: 5; }
+.em-gate[data-phase='leaving'] { opacity: 0; pointer-events: none; }
+.em-gate:not(.is-ready)::before { content: ''; position: absolute; left: 50%; top: 50%; z-index: 20; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 2px solid rgba(227, 174, 85, 0.25); border-top-color: #e3ae55; animation: em-load 0.9s linear infinite; }
+@keyframes em-load { to { transform: rotate(360deg); } }
+.em-gate:not(.is-ready) > * { visibility: hidden; }
+
+/* Prolongement flou de la cabine autour du cadre (écrans larges) */
+.em-gate__backdrop { position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover; filter: blur(26px) brightness(0.38); pointer-events: none; }
+
+/* ---------- La scène ---------- */
+.em-stage { position: absolute; left: 50%; top: calc((100cqh - min(186cqw, 100cqh)) * 0.4); width: min(124cqw, 66.6667cqh); aspect-ratio: 2 / 3; container-type: inline-size; transform: translateX(-50%); transform-origin: 50% 42.4%; transition: transform 1.9s cubic-bezier(.55, .02, .3, 1), left 1.4s cubic-bezier(.5, 0, .2, 1);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 97%, transparent 100%), linear-gradient(#000 93%, transparent); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 97%, transparent 100%), linear-gradient(#000 93%, transparent); mask-composite: intersect; }
+.em-gate[data-phase='board'] .em-stage, .em-gate[data-phase='leaving'] .em-stage { transform: translateX(-50%) scale(3.6); }
+.em-stage > img { position: absolute; display: block; }
+.em-stage__sky { left: 0; top: -5%; width: 100%; height: 100%; transform-origin: 50% 45%; animation: em-fly 18s ease-in-out infinite alternate; }
+@keyframes em-fly { from { transform: scale(1.02) translateX(-0.8%); } to { transform: scale(1.09) translateX(1.2%); } }
+.em-stage__shade { position: absolute; left: 20.5%; top: 19%; width: 59%; height: 46.8%; transform: translateY(calc(var(--p, 0) * -102%)); transition: transform 0.9s cubic-bezier(.3, .8, .3, 1); }
+.em-stage__shade img { display: block; width: 100%; height: 100%; object-fit: fill; }
+.em-gate.is-dragging .em-stage__shade { transition: none; }
+.em-stage__cabin { inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* La cabine est dans la pénombre tant que le volet est fermé ; la lumière du matin entre avec lui */
+.em-stage__dim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(60% 40% at 50% 42%, rgba(8, 15, 34, 0.18), rgba(8, 15, 34, 0.72)); opacity: calc(1 - var(--p, 0)); transition: opacity 0.9s ease; }
+.em-stage__glow { position: absolute; left: -10%; right: -10%; top: 8%; height: 76%; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(255, 178, 92, 0.5), rgba(233, 118, 91, 0.16) 60%, transparent); opacity: calc(var(--p, 0) * 0.75); transition: opacity 0.9s ease; }
+.em-gate.is-dragging .em-stage__dim, .em-gate.is-dragging .em-stage__glow { transition: none; }
+.em-stage__head { position: absolute; left: 16%; right: 16%; top: 2%; margin: 0; text-align: center; font-family: var(--display); font-size: 5.6cqw; line-height: 1.15; color: var(--ivory); text-shadow: 0 1px 12px rgba(8, 15, 34, 0.9), 0 0 3px rgba(8, 15, 34, 0.7); text-wrap: balance; transition: opacity 0.6s ease; }
+.em-gate:not([data-phase='closed']) .em-stage__head { opacity: 0; }
+.em-stage__grip { position: absolute; left: 20.9%; top: 19.5%; width: 58.2%; height: 45.8%; border-radius: 28% / 24%; touch-action: none; cursor: grab; }
+.em-gate.is-dragging .em-stage__grip { cursor: grabbing; }
+.em-gate:not([data-phase='closed']) .em-stage__grip { pointer-events: none; cursor: default; }
+/* Trois chevrons au-dessus de la poignée : le geste à faire */
+.em-stage__arrows { position: absolute; left: 0; right: 0; bottom: 19%; display: flex; flex-direction: column; align-items: center; gap: 1cqw; pointer-events: none; }
+.em-stage__arrows i { width: 4.6cqw; height: 4.6cqw; border-left: 0.7cqw solid #fff; border-top: 0.7cqw solid #fff; transform: rotate(45deg); filter: drop-shadow(0 0 4px rgba(16, 31, 60, 0.75)); opacity: 0; animation: em-chevron 1.8s ease-in-out infinite; }
+.em-stage__arrows i:nth-child(1) { animation-delay: 0.36s; }
+.em-stage__arrows i:nth-child(2) { animation-delay: 0.18s; }
+@keyframes em-chevron { 0%, 100% { opacity: 0; translate: 0 1.6cqw; } 50% { opacity: 0.95; translate: 0 -0.8cqw; } }
+.em-gate.is-dragging .em-stage__arrows, .em-gate:not([data-phase='closed']) .em-stage__arrows { display: none; }
+
+/* ---------- Consigne ---------- */
+.em-gate__ui { position: absolute; left: 0; right: 0; bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px)); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 20px; text-align: center; pointer-events: none; transition: opacity 0.5s ease, visibility 0s; }
+.em-gate:not([data-phase='closed']) .em-gate__ui { opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s 0.4s; }
+.em-gate__who { margin: 0; font-family: var(--cond); font-size: 1rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9); text-wrap: balance; }
+.em-gate__cta { min-height: 50px; max-width: 340px; padding: 10px 28px; border: 0; border-radius: 999px; background: var(--coral); color: var(--night); font: 600 0.92rem/1.35 var(--sans); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); cursor: pointer; pointer-events: auto; text-wrap: balance; }
+.em-gate__cta:disabled { cursor: default; }
+.em-gate__cta:focus-visible, .em-pass__go:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+/* ---------- Carte d'embarquement ---------- */
+.em-pass { position: absolute; left: 50%; bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px)); z-index: 5; width: min(92cqw, 390px); max-width: 390px; padding: 0 18px 14px; text-align: left; color: var(--night); background: var(--paper-img); border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); transform: translate(-50%, 130%) rotate(3deg); visibility: hidden; transition: transform 0.9s cubic-bezier(.2, .8, .2, 1), opacity 0.5s ease, visibility 0s 0.9s; }
+.em-gate[data-phase='open'] .em-pass { transform: translate(-50%, 0) rotate(0deg); visibility: visible; transition: transform 1s cubic-bezier(.2, .8, .2, 1) 0.55s, visibility 0s 0.55s; }
+.em-gate[data-phase='board'] .em-pass { transform: translate(-50%, 130%); visibility: visible; transition: transform 0.8s cubic-bezier(.6, 0, .8, .4), visibility 0s; }
+.em-pass p, .em-pass dl, .em-pass dd { margin: 0; }
+.em-pass__top { display: flex; justify-content: space-between; gap: 12px; margin: 0 -18px !important; padding: 9px 18px; border-radius: 16px 16px 0 0; background: var(--night); color: var(--ivory); font-family: var(--cond); font-weight: 600; font-size: 0.86rem; letter-spacing: 0.22em; text-transform: uppercase; }
+.em-pass__top b { font-weight: 600; color: var(--gold); white-space: nowrap; }
+.em-pass__names { padding: 8px 0 6px; font-family: var(--display); font-size: clamp(1.7rem, 8cqw, 2.3rem); line-height: 1.12; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
+.em-pass__names.is-long { padding-block: 6px 4px; font-size: clamp(1.4rem, 6.4cqw, 1.8rem); }
+.em-pass dt { font-family: var(--cond); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--coral-ink); }
+.em-pass__grid { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px dashed rgba(16, 31, 60, 0.45); }
+.em-pass__grid dd { font-family: var(--cond); font-weight: 600; font-size: 1.5rem; line-height: 1.15; text-transform: uppercase; white-space: nowrap; }
+.em-pass__route { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; padding-bottom: 10px; }
+.em-pass__route dd { font-family: var(--cond); font-weight: 600; font-size: 1.05rem; line-height: 1.2; overflow-wrap: anywhere; }
+.em-pass__go { display: block; width: 100%; min-height: 46px; border: 0; border-radius: 999px; background: var(--coral); color: var(--night); font: 600 0.9rem/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+
+.em-gate__skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 12; min-height: 36px; padding: 0 14px; border: 1px solid rgba(245, 238, 223, 0.35); border-radius: 999px; background: rgba(10, 18, 36, 0.7); color: var(--ivory); font: 600 0.62rem/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; opacity: 0; animation: em-skip-in 1.2s ease 4s forwards; }
+@keyframes em-skip-in { to { opacity: 1; } }
+.em-gate__skip:focus-visible { opacity: 1; outline: 3px solid var(--gold); }
+
+/* Écran court (petit téléphone) : carte resserrée pour ne pas couvrir le hublot */
+@container (max-height: 700px) and (max-aspect-ratio: 1/1) {
+  .em-pass { padding-bottom: 10px; }
+  .em-pass__top { padding-block: 6px; font-size: 0.76rem; }
+  .em-pass__names, .em-pass__names.is-long { padding: 4px 0 2px; font-size: 1.35rem; }
+  .em-pass__grid { padding: 4px 0; }
+  .em-pass__grid dd { font-size: 1.2rem; }
+  .em-pass__route { display: none; }
+  .em-pass__go { min-height: 44px; }
+}
+/* Écran large : le hublot à gauche, la carte à droite */
+@container (min-aspect-ratio: 13/10) {
+  .em-gate { background: radial-gradient(80% 90% at 35% 45%, #1b2f55, #070d1c 75%); }
+  .em-gate__backdrop { opacity: 0.12; filter: blur(60px) brightness(0.5); }
+  .em-stage { left: calc(50% - 200px); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%), linear-gradient(#000 88%, transparent); mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%), linear-gradient(#000 88%, transparent); }
+  .em-gate[data-phase='board'] .em-stage, .em-gate[data-phase='leaving'] .em-stage { left: 50%; transform: translateX(-50%) scale(5.4); }
+  .em-gate__ui { left: calc(50% + 60px); right: auto; top: 50%; bottom: auto; width: 360px; transform: translateY(-50%); }
+  .em-pass { left: calc(50% + 50px); bottom: auto; top: 50%; width: 390px; transform: translate(60px, -50%); opacity: 0; }
+  .em-gate[data-phase='open'] .em-pass { transform: translate(0, -50%); opacity: 1; transition: transform 1s cubic-bezier(.2, .8, .2, 1) 0.55s, opacity 0.8s ease 0.55s, visibility 0s 0.55s; }
+  .em-gate[data-phase='board'] .em-pass { transform: translate(80px, -50%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-gate, .em-gate * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.2s !important; transition-delay: 0s !important; }
+  .em-stage__arrows i { opacity: 0.9; }
+  .em-gate__skip { opacity: 1; }
+}
