@@ -25,23 +25,21 @@ export default function SectionsToggle({ theme, onChange }) {
     onChange({ ...theme, disabledSections: Array.from(nextDisabled) });
   };
 
-  const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0', borderBottom: '1px solid var(--color-border)' };
-
   return (
     <div>
-      <div style={rowStyle}>
-        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-ink-soft)' }}>Couverture</span>
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-faint)' }}>toujours affichée en premier</span>
+      <div className="toggle-row">
+        <span>Couverture</span>
+        <span className="toggle-row__note">toujours affichée en premier</span>
       </div>
       {order.map((key, index) => (
-        <div key={key} style={rowStyle}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.9rem' }}>
+        <div key={key} className="toggle-row">
+          <label>
             <input type="checkbox" checked={!disabled.has(key)} onChange={() => toggle(key)} />
             {SECTION_LABELS[key]}
           </label>
-          <div style={{ display: 'flex', gap: '0.3rem' }}>
-            <button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="btn btn-outline btn-icon">↑</button>
-            <button type="button" onClick={() => move(index, 1)} disabled={index === order.length - 1} className="btn btn-outline btn-icon">↓</button>
+          <div className="row-actions">
+            <button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="row-action" aria-label={`Monter : ${SECTION_LABELS[key]}`} title="Monter">↑</button>
+            <button type="button" onClick={() => move(index, 1)} disabled={index === order.length - 1} className="row-action" aria-label={`Descendre : ${SECTION_LABELS[key]}`} title="Descendre">↓</button>
           </div>
         </div>
       ))}

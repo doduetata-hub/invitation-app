@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import { STATUS_LABELS, STATUS_BADGE_CLASS } from '../../shared/constants/invitations';
+import PageHeader from '../components/ui/PageHeader';
+import Loading from '../components/ui/Loading';
+import Icon from '../components/ui/Icon';
+import InvitationActions from '../components/InvitationActions';
+import InvitationCard from '../components/InvitationCard';
+import { useCompact } from '../hooks/useMediaQuery';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
@@ -9,6 +15,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState(null);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const compact = useCompact();
 
   useEffect(() => {
     api
@@ -30,62 +37,95 @@ export default function ClientDetailPage() {
   };
 
   if (error && !client) return <p className="error-text">{error}</p>;
-  if (!client) return <p className="admin-muted">Chargement...</p>;
+  if (!client) return <Loading />;
+
+  const fields = [
+    { label: 'Téléphone', value: client.phone },
+    { label: 'WhatsApp', value: client.whatsapp },
+    { label: 'Email', value: client.email },
+    { label: 'Adresse', value: client.address },
+    { label: 'Client depuis', value: new Date(client.createdAt).toLocaleDateString('fr-FR') },
+    { label: 'Notes', value: client.notes, wide: true },
+  ];
 
   return (
-    <div style={{ maxWidth: '660px' }}>
-      <div className="page-header">
-        <div>
-          <span className="admin-eyebrow">Client</span>
-          <h1>{client.firstName} {client.lastName}</h1>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Link to={`/admin/clients/${id}/edit`} className="btn btn-outline">Modifier</Link>
-          <button onClick={handleDelete} disabled={deleting} className="btn btn-danger-outline">
-            {deleting ? 'Suppression...' : 'Supprimer'}
-          </button>
-        </div>
-      </div>
+    <div className="page--narrow">
+      <PageHeader title={`${client.firstName} ${client.lastName}`} back={{ to: '/admin/clients', label: 'Clients' }}>
+        <Link to={`/admin/clients/${id}/edit`} className="btn btn-outline">
+          <Icon name="edit" />
+          Modifier
+        </Link>
+        <button type="button" onClick={handleDelete} disabled={deleting} className="btn btn-danger-outline">
+          <Icon name="trash" />
+          {deleting ? 'Suppression...' : 'Supprimer'}
+        </button>
+      </PageHeader>
 
       {error && <p className="error-text">{error}</p>}
 
-      <dl className="detail-grid card" style={{ marginTop: '1rem' }}>
-        <dt>Téléphone</dt>
-        <dd>{client.phone || '—'}</dd>
-        <dt>WhatsApp</dt>
-        <dd>{client.whatsapp || '—'}</dd>
-        <dt>Email</dt>
-        <dd>{client.email || '—'}</dd>
-        <dt>Adresse</dt>
-        <dd>{client.address || '—'}</dd>
-        <dt>Notes</dt>
-        <dd>{client.notes || '—'}</dd>
-        <dt>Client depuis</dt>
-        <dd>{new Date(client.createdAt).toLocaleDateString('fr-FR')}</dd>
-      </dl>
-
-      <div className="page-header" style={{ marginTop: '2.25rem' }}>
-        <h2 style={{ border: 'none', margin: 0, padding: 0 }}>Invitations</h2>
-        <Link to={`/admin/invitations/new?clientId=${id}`} className="btn btn-outline btn-sm">
-          + Nouvelle invitation
-        </Link>
+      <div className="card">
+        <dl className="detail-grid">
+          {fields.map((f) => (
+            <div key={f.label} className={f.wide ? 'is-wide' : undefined}>
+              <dt>{f.label}</dt>
+              <dd className={f.value ? undefined : 'cell-muted'}>{f.value || '—'}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
-      {client.invitations.length === 0 ? (
-        <div className="empty-state">Aucune invitation pour le moment.</div>
-      ) : (
-        <div className="table-wrap" style={{ marginTop: '0.75rem' }}>
-        <table className="table">
-          <tbody>
-            {client.invitations.map((inv) => (
-              <tr key={inv.id}>
-                <td><Link to={`/admin/invitations/${inv.id}/edit`}>{inv.title}</Link></td>
-                <td><span className={STATUS_BADGE_CLASS[inv.status]}>{STATUS_LABELS[inv.status]}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      <section className="data-card dashboard-section">
+        <div className="data-card__head">
+          <h2>Invitations</h2>
+          <Link to={`/admin/invitations/new?clientId=${id}`} className="btn btn-outline btn-sm">
+            <Icon name="plus" />
+            Nouvelle invitation
+          </Link>
         </div>
-      )}
+        {client.invitations.length === 0 ? (
+          <div className="empty-state">Aucune invitation pour le moment.</div>
+        ) : compact ? (
+          <ul className="card-list">
+            {client.invitations.map((inv) => (
+              <InvitationCard
+                key={inv.id}
+                id={inv.id}
+                title={inv.title}
+                status={inv.status}
+                date={inv.eventDate ? new Date(inv.eventDate).toLocaleDateString('fr-FR', { timeZone: 'UTC' }) : ''}
+                publicSlug={inv.status === 'PUBLISHED' ? inv.slug : undefined}
+              />
+            ))}
+          </ul>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Titre</th>
+                  <th>Date événement</th>
+                  <th>Statut</th>
+                  <th className="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {client.invitations.map((inv) => (
+                  <tr key={inv.id}>
+                    <td><Link to={`/admin/invitations/${inv.id}/edit`}>{inv.title}</Link></td>
+                    <td className={inv.eventDate ? undefined : 'cell-muted'}>
+                      {inv.eventDate ? new Date(inv.eventDate).toLocaleDateString('fr-FR', { timeZone: 'UTC' }) : '—'}
+                    </td>
+                    <td><span className={STATUS_BADGE_CLASS[inv.status]}>{STATUS_LABELS[inv.status]}</span></td>
+                    <td className="col-actions">
+                      <InvitationActions id={inv.id} title={inv.title} publicSlug={inv.status === 'PUBLISHED' ? inv.slug : undefined} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

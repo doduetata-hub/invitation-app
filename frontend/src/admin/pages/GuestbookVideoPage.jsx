@@ -201,7 +201,7 @@ export default function GuestbookVideoPage() {
           </p>
           <div style={styles.entryList}>
             {display.entries.map((entry) => (
-              <label key={entry.id} style={styles.entryRow}>
+              <label key={entry.id} className="gb-video-row" style={styles.entryRow}>
                 <input
                   type="checkbox"
                   checked={selectedIds?.has(entry.id) ?? false}

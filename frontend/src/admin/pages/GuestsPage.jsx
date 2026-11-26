@@ -5,6 +5,13 @@ import { api } from '../../shared/api/client';
 import QrCodeModal from '../../shared/components/QrCodeModal';
 import GuestMessageModal from '../../shared/components/GuestMessageModal';
 import InvitationTabs from '../components/InvitationTabs';
+import PageHeader from '../components/ui/PageHeader';
+import SearchField from '../components/ui/SearchField';
+import StatCard from '../components/ui/StatCard';
+import Loading from '../components/ui/Loading';
+import Icon from '../components/ui/Icon';
+import GuestCard from '../components/GuestCard';
+import { useCompact } from '../hooks/useMediaQuery';
 import { buildWhatsappShareUrl } from '../../shared/utils/whatsapp';
 import { buildGuestDeleteWarning } from '../../shared/utils/guestWarnings';
 import { buildInvitationMessage } from '../../shared/utils/invitationMessage';
@@ -37,6 +44,8 @@ export default function GuestsPage() {
   // Tri de la liste : null = ordre d'ajout ; sinon { key: 'table' | 'drink', dir: 'asc' | 'desc' }.
   const [sort, setSort] = useState(null);
   const [drinkFilter, setDrinkFilter] = useState('');
+  const compact = useCompact();
+  const [showCreate, setShowCreate] = useState(false);
   const sortDir = (key) => (sort && sort.key === key ? sort.dir : null);
   const toggleSort = (key) => {
     setSort((s) => {
@@ -145,7 +154,7 @@ export default function GuestsPage() {
     setTimeout(() => setCopiedId(''), 1500);
   };
 
-  if (!data || !invitation) return <p className="admin-muted">Chargement...</p>;
+  if (!data || !invitation) return error ? <p className="error-text">{error}</p> : <Loading />;
 
   const { guests, walkInRsvps, stats } = data;
   // Suggestions de table : derivees des tables deja saisies pour cette invitation, pas de
@@ -180,46 +189,49 @@ export default function GuestsPage() {
       })
     : filteredGuests;
 
+  const lockSection = (
+      <div className="editor-section">
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={Boolean(invitation.rsvpEditLocked)}
+            onChange={toggleRsvpLock}
+            disabled={savingLock}
+          />
+          <span>
+            <strong>Verrouiller les modifications de réponse RSVP</strong>
+            <span className="admin-muted">
+              Une fois activé, un invité ayant déjà répondu ne peut plus changer sa présence, le nombre de
+              personnes, la boisson ou son message depuis son lien — il est invité à vous contacter directement.
+              Le nom reste dans tous les cas toujours réservé par vos soins, jamais modifiable par l'invité.
+            </span>
+          </span>
+        </label>
+      </div>
+  );
+
+  const shareUrl = (g) => (g.phone ? buildWhatsappShareUrl(g.phone, invitationMessage(g)) : null);
+  const openMessage = (g) => setMessageView({ ...g.rsvp, name: g.name || g.rsvp?.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone });
+  // Sur téléphone, le formulaire de création se déplie à la demande pour laisser la liste en vue.
+  const createOpen = !compact || showCreate || guests.length === 0;
+
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="admin-eyebrow">{invitation.title}</span>
-          <h1 style={{ margin: '0.3rem 0 0' }}>Invités</h1>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <a href={`/api/invitations/${id}/guests/export`} className="btn btn-outline">
-            Exporter CSV
-          </a>
-          <a href={`/api/invitations/${id}/guests/export.xlsx`} className="btn btn-primary">
-            Exporter Excel
-          </a>
-        </div>
-      </div>
+      <PageHeader title="Invités" back={{ to: `/admin/invitations/${id}/edit`, label: invitation.title }}>
+        <a href={`/api/invitations/${id}/guests/export`} className="btn btn-outline">
+          <Icon name="download" />
+          Exporter CSV
+        </a>
+        <a href={`/api/invitations/${id}/guests/export.xlsx`} className="btn btn-primary">
+          <Icon name="download" />
+          Exporter Excel
+        </a>
+      </PageHeader>
       <InvitationTabs id={id} />
 
       {error && <p className="error-text">{error}</p>}
 
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '1rem' }}>
-        <input
-          type="checkbox"
-          checked={Boolean(invitation.rsvpEditLocked)}
-          onChange={toggleRsvpLock}
-          disabled={savingLock}
-          style={{ marginTop: '0.2rem' }}
-        />
-        <span>
-          <strong>Verrouiller les modifications de réponse RSVP</strong>
-          <br />
-          <span className="admin-muted">
-            Une fois activé, un invité ayant déjà répondu ne peut plus changer sa présence, le nombre de
-            personnes, la boisson ou son message depuis son lien — il est invité à vous contacter directement.
-            Le nom reste dans tous les cas toujours réservé par vos soins, jamais modifiable par l'invité.
-          </span>
-        </span>
-      </label>
-
-      <div className="stats-grid" style={{ marginTop: '1.25rem' }}>
+      <div className="stats-grid">
         <StatCard label="Invitations envoyées" value={stats.totalGuests} />
         <StatCard label="Confirmés" value={stats.confirmed} />
         <StatCard label="Refus" value={stats.declined} />
@@ -228,17 +240,29 @@ export default function GuestsPage() {
         <StatCard label="Arrivés" value={stats.arrived} />
       </div>
 
+      {!compact && lockSection}
+
       <div className="editor-section">
         <h2>Liens personnalisés</h2>
-        <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', marginBottom: '1.1rem' }}>
+        {compact && guests.length > 0 && (
+          <button type="button" className="btn btn-primary guest-new" onClick={() => setShowCreate((v) => !v)} aria-expanded={showCreate}>
+            <Icon name={showCreate ? 'x' : 'plus'} />
+            {showCreate ? 'Fermer' : 'Nouveau lien personnalisé'}
+          </button>
+        )}
+        {createOpen && (
+          <>
+        <form onSubmit={handleCreate} className="guest-create">
           <input
             placeholder="Nom (optionnel)"
+            aria-label="Nom"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="input"
           />
           <input
             placeholder="Téléphone (optionnel)"
+            aria-label="Téléphone"
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
             className="input"
@@ -247,23 +271,23 @@ export default function GuestsPage() {
             type="number"
             min="1"
             placeholder="Max personnes"
+            aria-label="Nombre maximal de personnes"
             value={form.maxPersons}
             onChange={(e) => setForm((f) => ({ ...f, maxPersons: e.target.value }))}
             className="input"
-            
           />
           <input
             placeholder="Table (optionnel)"
+            aria-label="Table"
             value={form.tableNumber}
             onChange={(e) => setForm((f) => ({ ...f, tableNumber: e.target.value }))}
             className="input"
-            
             list="table-suggestions"
           />
           <button type="submit" disabled={creating} className="btn btn-primary">+ Générer un lien</button>
         </form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.1rem' }}>
+        <div className="guest-tools">
           <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
             {importing ? 'Import en cours...' : 'Importer depuis Excel'}
             <input
@@ -274,43 +298,79 @@ export default function GuestsPage() {
               style={{ display: 'none' }}
             />
           </label>
-          <a href={`/api/invitations/${id}/guests/import-template`} className="admin-muted" style={{ fontSize: '0.82rem' }}>
+          <a href={`/api/invitations/${id}/guests/import-template`} className="text-link">
             Télécharger le modèle
           </a>
           {importMessage && <span className="success-text">{importMessage}</span>}
         </div>
+          </>
+        )}
 
         {guests.length === 0 ? (
           <div className="empty-state">Aucun lien personnalisé pour le moment.</div>
         ) : (
-          <>
-          <input
-            type="text"
-            placeholder="Rechercher un invité (nom, téléphone, table)..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input"
-            style={{ maxWidth: '340px', marginBottom: '1rem' }}
-          />
-          {Object.keys(drinkCounts).length > 0 && (
-            <select
-              value={drinkFilter}
-              onChange={(e) => setDrinkFilter(e.target.value)}
-              className="input"
-              aria-label="Filtrer par boisson"
-              style={{ maxWidth: '240px', marginBottom: '1rem', marginLeft: '0.75rem' }}
-            >
-              <option value="">Toutes les boissons</option>
-              {Object.entries(drinkCounts).sort(([a], [b]) => a.localeCompare(b, 'fr')).map(([d, n]) => (
-                <option key={d} value={d}>{d} ({n})</option>
-              ))}
-            </select>
-          )}
+          <div className="data-card">
+          <div className="data-card__toolbar">
+            <SearchField
+              placeholder="Rechercher un invité (nom, téléphone, table)..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {compact && (
+              <select
+                value={sort?.key || ''}
+                onChange={(e) => setSort(e.target.value ? { key: e.target.value, dir: 'asc' } : null)}
+                className="input"
+                aria-label="Trier les invités"
+              >
+                <option value="">Ordre d'ajout</option>
+                <option value="table">Par table</option>
+                <option value="drink">Par boisson</option>
+              </select>
+            )}
+            {Object.keys(drinkCounts).length > 0 && (
+              <select
+                value={drinkFilter}
+                onChange={(e) => setDrinkFilter(e.target.value)}
+                className="input"
+                aria-label="Filtrer par boisson"
+              >
+                <option value="">Toutes les boissons</option>
+                {Object.entries(drinkCounts).sort(([a], [b]) => a.localeCompare(b, 'fr')).map(([d, n]) => (
+                  <option key={d} value={d}>{d} ({n})</option>
+                ))}
+              </select>
+            )}
+          </div>
           {filteredGuests.length === 0 ? (
             <div className="empty-state">Aucun invité ne correspond à votre recherche ou au filtre choisi.</div>
+          ) : compact ? (
+            <ul className="card-list">
+              {sortedGuests.map((g) => (
+                <GuestCard
+                  key={g.id}
+                  guest={g}
+                  badge={<AnswerBadge answer={g.rsvp?.answer} />}
+                  showDrink
+                  editing={editingId === g.id}
+                  editForm={editForm}
+                  setEditForm={setEditForm}
+                  saving={savingEdit}
+                  onSave={() => saveEdit(g.id)}
+                  onCancel={cancelEdit}
+                  onEdit={() => startEdit(g)}
+                  onCopy={() => handleCopy(g)}
+                  copied={copiedId === g.guestCode}
+                  onQr={() => setQrGuest(g)}
+                  onDelete={() => handleDelete(g.id)}
+                  whatsappUrl={shareUrl(g)}
+                  onMessage={() => openMessage(g)}
+                />
+              ))}
+            </ul>
           ) : (
           <div className="table-wrap">
-          <table className="table">
+          <table className="table table--sticky">
             <thead>
               <tr>
                 <th>Nom</th>
@@ -332,8 +392,7 @@ export default function GuestsPage() {
                 </th>
                 <th>Message</th>
                 <th>Arrivée</th>
-                <th>Lien</th>
-                <th></th>
+                <th className="col-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -390,7 +449,7 @@ export default function GuestsPage() {
                     <td><AnswerBadge answer={g.rsvp?.answer} /></td>
                     <td>{g.rsvp?.numberOfPersons ?? '—'}</td>
                     <td>{g.rsvp?.drink || '—'}</td>
-                    <td className="cell-message">
+                    <td className={g.rsvp?.message ? 'cell-message' : 'cell-muted'}>
                       {g.rsvp?.message ? (
                         <button type="button" className="cell-message-btn" onClick={() => setMessageView({ ...g.rsvp, name: g.name || g.rsvp?.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}>
                           <span className="cell-message-btn-text">{g.rsvp.message}</span>
@@ -398,26 +457,32 @@ export default function GuestsPage() {
                       ) : '—'}
                     </td>
                     <td>{g.checkedInAt ? <span className="badge badge-success">Arrivé</span> : '—'}</td>
-                    {isEditing ? (
-                      <td colSpan={2} style={{ display: 'flex', gap: '0.4rem' }}>
-                        <button type="button" onClick={() => saveEdit(g.id)} disabled={savingEdit} className="btn btn-primary btn-sm">
-                          Enregistrer
-                        </button>
-                        <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">
-                          Annuler
-                        </button>
-                      </td>
-                    ) : (
-                      <>
-                        <td style={{ display: 'flex', gap: '0.4rem' }}>
-                          <button type="button" onClick={() => startEdit(g)} className="btn btn-outline btn-sm">
-                            Modifier
+                    <td className="col-actions">
+                      {isEditing ? (
+                        <span className="inline-actions">
+                          <button type="button" onClick={() => saveEdit(g.id)} disabled={savingEdit} className="btn btn-primary btn-sm">
+                            Enregistrer
                           </button>
-                          <button type="button" onClick={() => handleCopy(g)} className="btn btn-outline btn-sm">
-                            {copiedId === g.guestCode ? 'Copié !' : 'Copier'}
+                          <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">
+                            Annuler
                           </button>
-                          <button type="button" onClick={() => setQrGuest(g)} className="btn btn-outline btn-sm">
-                            Afficher le QR code
+                        </span>
+                      ) : (
+                        <span className="row-actions">
+                          <button type="button" onClick={() => startEdit(g)} className="row-action" title="Modifier" aria-label="Modifier">
+                            <Icon name="edit" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(g)}
+                            className={`row-action${copiedId === g.guestCode ? ' is-done' : ''}`}
+                            title={copiedId === g.guestCode ? 'Copié !' : 'Copier'}
+                            aria-label={copiedId === g.guestCode ? 'Copié !' : 'Copier'}
+                          >
+                            <Icon name={copiedId === g.guestCode ? 'check' : 'copy'} />
+                          </button>
+                          <button type="button" onClick={() => setQrGuest(g)} className="row-action" title="Afficher le QR code" aria-label="Afficher le QR code">
+                            <Icon name="qr" />
                           </button>
                           {g.phone && (
                             <a
@@ -427,18 +492,19 @@ export default function GuestsPage() {
                               )}
                               target="_blank"
                               rel="noreferrer"
-                              className="btn btn-outline btn-sm"
+                              className="row-action"
                               title="Partager le lien par WhatsApp"
+                              aria-label="Partager le lien par WhatsApp"
                             >
-                              WhatsApp
+                              <Icon name="chat" />
                             </a>
                           )}
-                        </td>
-                        <td>
-                          <button type="button" onClick={() => handleDelete(g.id)} className="btn btn-danger-outline btn-icon">✕</button>
-                        </td>
-                      </>
-                    )}
+                          <button type="button" onClick={() => handleDelete(g.id)} className="row-action row-action--danger" title="Supprimer" aria-label="Supprimer">
+                            <Icon name="trash" />
+                          </button>
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -446,7 +512,7 @@ export default function GuestsPage() {
           </table>
           </div>
           )}
-          </>
+          </div>
         )}
       </div>
 
@@ -454,6 +520,26 @@ export default function GuestsPage() {
         <h2>Réponses via le lien général</h2>
         {walkInRsvps.length === 0 ? (
           <div className="empty-state">Aucune réponse via le lien général pour le moment.</div>
+        ) : compact ? (
+          <ul className="card-list">
+            {walkInRsvps.map((r) => (
+              <li key={r.id} className="stack-card">
+                <div className="stack-card__head">
+                  <strong>{r.name}</strong>
+                  <AnswerBadge answer={r.answer} />
+                  {r.checkedInAt && <span className="badge badge-success">Arrivé</span>}
+                </div>
+                <p className="stack-card__facts">
+                  <span>{r.numberOfPersons} personne{r.numberOfPersons > 1 ? 's' : ''}</span>
+                  {r.drink && <span>{r.drink}</span>}
+                  <span>Répondu le {new Date(r.respondedAt).toLocaleDateString('fr-FR')}</span>
+                </p>
+                {r.message && (
+                  <button type="button" className="stack-card__quote" onClick={() => setMessageView(r)}>{r.message}</button>
+                )}
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="table-wrap">
           <table className="table">
@@ -492,6 +578,8 @@ export default function GuestsPage() {
         )}
       </div>
 
+      {compact && lockSection}
+
       {qrGuest && (
         <QrCodeModal
           title={qrGuest.name || qrGuest.rsvp?.name || 'Lien invité'}
@@ -512,15 +600,6 @@ export default function GuestsPage() {
       <datalist id="table-suggestions">
         {tableSuggestions.map((t) => <option key={t} value={t} />)}
       </datalist>
-    </div>
-  );
-}
-
-function StatCard({ label, value }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-value">{value}</div>
-      <div className="stat-label">{label}</div>
     </div>
   );
 }

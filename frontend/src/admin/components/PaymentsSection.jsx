@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api/client';
+import Icon from './ui/Icon';
+import { useCompact } from '../hooks/useMediaQuery';
 
 const emptyForm = { amount: '', method: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' };
 
@@ -8,6 +10,7 @@ export default function PaymentsSection({ invitationId, price }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const compact = useCompact();
 
   const load = () => {
     api.get(`/invitations/${invitationId}/payments`).then(setPayments).catch((err) => setError(err.message));
@@ -45,38 +48,69 @@ export default function PaymentsSection({ invitationId, price }) {
 
   return (
     <div>
-      <p style={{ fontSize: '0.92rem' }}>
-        Total payé : <strong>{totalPaid.toFixed(2)} €</strong>
+      <dl className="payment-summary">
+        <div>
+          <dt>Total payé</dt>
+          <dd>{totalPaid.toFixed(2)} €</dd>
+        </div>
         {priceNumber != null && (
-          <> {' '}/ Prix : <strong>{priceNumber.toFixed(2)} €</strong>
-            {totalPaid < priceNumber && <> — reste <strong style={{ color: 'var(--color-accent-dark)' }}>{(priceNumber - totalPaid).toFixed(2)} €</strong></>}
-          </>
+          <div>
+            <dt>Prix</dt>
+            <dd>{priceNumber.toFixed(2)} €</dd>
+          </div>
         )}
-      </p>
+        {priceNumber != null && totalPaid < priceNumber && (
+          <div>
+            <dt>Reste</dt>
+            <dd style={{ color: 'var(--color-accent-dark)' }}>{(priceNumber - totalPaid).toFixed(2)} €</dd>
+          </div>
+        )}
+      </dl>
 
       {error && <p className="error-text">{error}</p>}
 
-      {payments.length > 0 && (
+      {payments.length > 0 && compact && (
+        <ul className="card-list" style={{ marginBottom: 'var(--space-4)' }}>
+          {payments.map((p) => (
+            <li key={p.id} className="list-card">
+              <div className="list-card__main">
+                <strong>{Number(p.amount).toFixed(2)} €</strong>
+                <span className="list-card__sub">
+                  {new Date(p.paidAt).toLocaleDateString('fr-FR')}{p.method ? ` · ${p.method}` : ''}
+                </span>
+                {p.notes && <span className="list-card__meta">{p.notes}</span>}
+              </div>
+              <button type="button" onClick={() => handleDelete(p.id)} className="more-btn" aria-label="Supprimer ce paiement">
+                <Icon name="trash" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {payments.length > 0 && !compact && (
         <div className="table-wrap" style={{ marginBottom: '0.9rem' }}>
         <table className="table">
           <thead>
             <tr>
               <th>Date</th>
-              <th>Montant</th>
+              <th className="col-num">Montant</th>
               <th>Mode</th>
               <th>Notes</th>
-              <th></th>
+              <th className="col-actions"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {payments.map((p) => (
               <tr key={p.id}>
                 <td>{new Date(p.paidAt).toLocaleDateString('fr-FR')}</td>
-                <td>{Number(p.amount).toFixed(2)} €</td>
+                <td className="col-num">{Number(p.amount).toFixed(2)} €</td>
                 <td>{p.method || '—'}</td>
                 <td>{p.notes || '—'}</td>
-                <td>
-                  <button type="button" onClick={() => handleDelete(p.id)} className="btn btn-danger-outline btn-icon">✕</button>
+                <td className="col-actions">
+                  <button type="button" onClick={() => handleDelete(p.id)} className="btn btn-danger-outline btn-icon" aria-label="Supprimer ce paiement" title="Supprimer">
+                    <Icon name="trash" />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -85,37 +119,41 @@ export default function PaymentsSection({ invitationId, price }) {
         </div>
       )}
 
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      <form onSubmit={handleAdd} className="payment-form">
         <input
           type="number"
+          inputMode="decimal"
           step="0.01"
           min="0.01"
           placeholder="Montant (€)"
+          aria-label="Montant en euros"
           value={form.amount}
           onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
           required
           className="input"
-          style={{ width: '120px', flex: 'none' }}
         />
         <input
           placeholder="Mode (virement, espèces...)"
+          aria-label="Mode de paiement"
           value={form.method}
           onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}
           className="input"
         />
         <input
           type="date"
+          aria-label="Date du paiement"
           value={form.paidAt}
           onChange={(e) => setForm((f) => ({ ...f, paidAt: e.target.value }))}
           className="input"
         />
         <input
           placeholder="Notes"
+          aria-label="Notes"
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           className="input"
         />
-        <button type="submit" disabled={saving} className="btn btn-outline" style={{ flexShrink: 0 }}>+ Ajouter</button>
+        <button type="submit" disabled={saving} className="btn btn-outline">+ Ajouter</button>
       </form>
     </div>
   );

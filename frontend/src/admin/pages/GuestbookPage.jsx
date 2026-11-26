@@ -5,6 +5,14 @@ import QrCodeModal from '../../shared/components/QrCodeModal';
 import GuestMessageModal from '../../shared/components/GuestMessageModal';
 import GuestbookLivePreview from '../../shared/components/GuestbookLivePreview';
 import InvitationTabs from '../components/InvitationTabs';
+import PageHeader from '../components/ui/PageHeader';
+import SearchField from '../components/ui/SearchField';
+import StatCard from '../components/ui/StatCard';
+import Loading from '../components/ui/Loading';
+import Icon from '../components/ui/Icon';
+import Panel from '../components/ui/Panel';
+import RowActions from '../components/ui/RowActions';
+import { useCompact } from '../hooks/useMediaQuery';
 import PhotoFocusEditor from '../components/PhotoFocusEditor';
 
 const SOURCE_LABELS = { DIGITAL: 'Invitation numérique', QR: 'QR code' };
@@ -30,6 +38,7 @@ export default function GuestbookPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [messageView, setMessageView] = useState(null);
   const [qrView, setQrView] = useState(null);
+  const compact = useCompact();
   const [tokenForm, setTokenForm] = useState({ label: '', tableNumber: '' });
   const [creatingToken, setCreatingToken] = useState(false);
   const [editingTokenId, setEditingTokenId] = useState(null);
@@ -338,7 +347,7 @@ export default function GuestbookPage() {
     }
   };
 
-  if (!invitation || !data || !tokens) return <p className="admin-muted">Chargement...</p>;
+  if (!invitation || !data || !tokens) return <Loading />;
 
   const { entries, stats } = data;
   const guestbookUrl = (token) => `${window.location.origin}/guestbook/${token}`;
@@ -386,13 +395,9 @@ export default function GuestbookPage() {
 
   return (
     <div className="gb-admin">
-      <div className="page-header">
-        <div>
-          <span className="admin-eyebrow">{invitation.title}</span>
-          <h1 style={{ margin: '0.3rem 0 0' }}>Livre d'or</h1>
-        </div>
+      <PageHeader title="Livre d'or" back={{ to: `/admin/invitations/${id}/edit`, label: invitation.title }}>
         {invitation.status === 'PUBLISHED' && (
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <>
             <button
               type="button"
               className="btn btn-outline"
@@ -418,17 +423,17 @@ export default function GuestbookPage() {
             >
               Ouvrir le mode écran →
             </a>
-          </div>
+          </>
         )}
-      </div>
+      </PageHeader>
       <InvitationTabs id={id} />
 
       {error && <p className="error-text">{error}</p>}
 
-      <div className="editor-section" style={{ marginTop: '1.25rem' }}>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
-            <h2 style={{ marginTop: 0 }}>
+      <Panel title="Fin du livre d'or et lien Souvenir" className="gb-later" desktopTitle={false}>
+        <div className="gb-intro">
+          <div>
+            <h2>
               Fin du livre d'or{' '}
               {invitation.guestbookClosedAt && <span className="badge badge-success" style={{ verticalAlign: 'middle' }}>Terminé</span>}
             </h2>
@@ -454,8 +459,8 @@ export default function GuestbookPage() {
             )}
           </div>
 
-          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
-            <h2 style={{ marginTop: 0 }}>Lien Souvenir des mariés</h2>
+          <div>
+            <h2>Lien Souvenir des mariés</h2>
             <p className="admin-muted" style={{ marginTop: 0, textAlign: 'left' }}>
               Une page à envoyer aux mariés : revoir le livre d'or, puis le télécharger en vidéo et en PDF (téléchargements disponibles une fois le livre d'or terminé).
             </p>
@@ -484,7 +489,7 @@ export default function GuestbookPage() {
             )}
           </div>
         </div>
-      </div>
+      </Panel>
 
       {(photosToCenter > 0 || focusJob) && (
         <p className="admin-muted" style={{ margin: '1rem 0 0', display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', textAlign: 'left' }}>
@@ -499,7 +504,7 @@ export default function GuestbookPage() {
         </p>
       )}
 
-      <div className="stats-grid gb-stats" style={{ marginTop: '1.25rem' }}>
+      <div className="stats-grid gb-stats" style={{ marginTop: 'var(--space-4)' }}>
         <StatCard label="Messages reçus" value={stats.total} />
         <StatCard label="En attente" value={stats.pending} />
         <StatCard label="Approuvés" value={stats.approved} />
@@ -510,8 +515,7 @@ export default function GuestbookPage() {
         <StatCard minor label="Photos en attente" value={entries.filter((e) => e.pendingPhotoId || e.pendingPhotoRemoved).length} />
       </div>
 
-      <div className="editor-section gb-later">
-        <h2>Souvenir du mariage</h2>
+      <Panel title="Souvenir du mariage" className="gb-later">
         <p className="admin-muted" style={{ marginTop: 0 }}>
           Conserve les témoignages approuvés — pas les messages en attente ou rejetés, écartés de
           ces exports par défaut.
@@ -535,10 +539,9 @@ export default function GuestbookPage() {
             Exporter CSV
           </a>
         </div>
-      </div>
+      </Panel>
 
-      <div className="editor-section gb-later">
-        <h2>Modération</h2>
+      <Panel title="Modération" className="gb-later">
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
           <input
             type="checkbox"
@@ -558,17 +561,16 @@ export default function GuestbookPage() {
             </span>
           </span>
         </label>
-      </div>
+      </Panel>
 
-      <div className="editor-section gb-later">
-        <h2>QR codes</h2>
+      <Panel title="QR codes" className="gb-later">
         <p className="admin-muted" style={{ marginTop: 0 }}>
           À imprimer et poser sur les tables (ou à l'accueil pour un QR unique) — un invité qui
           scanne arrive directement sur une page "Laisser un mot", sans avoir reçu d'invitation
           numérique.
         </p>
 
-        <form onSubmit={handleCreateToken} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+        <form onSubmit={handleCreateToken} className="gb-token-form">
           <input
             placeholder="Étiquette (ex. Accueil, Table 3)"
             value={tokenForm.label}
@@ -580,7 +582,6 @@ export default function GuestbookPage() {
             value={tokenForm.tableNumber}
             onChange={(e) => setTokenForm((f) => ({ ...f, tableNumber: e.target.value }))}
             className="input"
-            style={{ width: '180px', flex: 'none' }}
           />
           <button type="submit" disabled={creatingToken} className="btn btn-outline">
             + Générer un QR code
@@ -601,15 +602,65 @@ export default function GuestbookPage() {
               Imprimer tout
             </Link>
           </div>
+          {compact ? (
+            <ul className="card-list">
+              {tokens.map((t) => {
+                const name = t.label || (t.tableNumber ? `Table ${t.tableNumber}` : 'QR code');
+                if (editingTokenId === t.id) {
+                  return (
+                    <li key={t.id} className="stack-card">
+                      <label className="field">
+                        Étiquette
+                        <input value={editTokenForm.label} onChange={(e) => setEditTokenForm((f) => ({ ...f, label: e.target.value }))} className="input" />
+                      </label>
+                      <label className="field">
+                        Numéro de table
+                        <input value={editTokenForm.tableNumber} onChange={(e) => setEditTokenForm((f) => ({ ...f, tableNumber: e.target.value }))} className="input" />
+                      </label>
+                      <div className="stack-card__actions">
+                        <button type="button" disabled={savingToken} onClick={() => saveEditToken(t)} className="btn btn-primary">Enregistrer</button>
+                        <button type="button" disabled={savingToken} onClick={cancelEditToken} className="btn btn-outline">Annuler</button>
+                      </div>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={t.id} className="stack-card">
+                    <div className="stack-card__head">
+                      <strong>{name}</strong>
+                      {t.active ? <span className="badge badge-success">Actif</span> : <span className="badge">Désactivé</span>}
+                      <RowActions
+                        title={name}
+                        actions={[
+                          { icon: 'printer', label: 'Imprimer', to: `/admin/invitations/${id}/guestbook/print/${t.id}`, target: '_blank' },
+                          { icon: 'edit', label: 'Modifier', onClick: () => startEditToken(t) },
+                          { icon: 'power', label: t.active ? 'Désactiver' : 'Réactiver', onClick: () => toggleTokenActive(t) },
+                          { icon: 'trash', label: 'Supprimer', onClick: () => removeToken(t), danger: true },
+                        ]}
+                      />
+                    </div>
+                    <p className="stack-card__facts">
+                      {t.tableNumber && <span>{/^table/i.test(t.tableNumber) ? t.tableNumber : `Table ${t.tableNumber}`}</span>}
+                      <span>{t._count.entries} message{t._count.entries > 1 ? 's' : ''} reçu{t._count.entries > 1 ? 's' : ''}</span>
+                    </p>
+                    <button type="button" onClick={() => setQrView(t)} className="btn btn-outline">
+                      <Icon name="qr" />
+                      Voir et partager le QR
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table table--sticky">
               <thead>
                 <tr>
                   <th>Étiquette</th>
                   <th>Table</th>
                   <th>Messages reçus</th>
                   <th>Statut</th>
-                  <th></th>
+                  <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -645,34 +696,34 @@ export default function GuestbookPage() {
                     )}
                     <td>{t._count.entries}</td>
                     <td>{t.active ? <span className="badge badge-success">Actif</span> : <span className="badge">Désactivé</span>}</td>
-                    <td style={{ display: 'flex', gap: '0.4rem' }}>
+                    <td className="col-actions">
                       {isEditing ? (
-                        <>
+                        <span className="inline-actions">
                           <button type="button" disabled={savingToken} onClick={() => saveEditToken(t)} className="btn btn-primary btn-sm">
                             Enregistrer
                           </button>
                           <button type="button" disabled={savingToken} onClick={cancelEditToken} className="btn btn-outline btn-sm">
                             Annuler
                           </button>
-                        </>
+                        </span>
                       ) : (
-                        <>
-                          <button type="button" onClick={() => setQrView(t)} className="btn btn-outline btn-sm">
-                            Voir le QR
+                        <span className="row-actions">
+                          <button type="button" onClick={() => setQrView(t)} className="row-action" title="Voir le QR" aria-label="Voir le QR">
+                            <Icon name="qr" />
                           </button>
-                          <Link to={`/admin/invitations/${id}/guestbook/print/${t.id}`} target="_blank" className="btn btn-outline btn-sm">
-                            Imprimer
+                          <Link to={`/admin/invitations/${id}/guestbook/print/${t.id}`} target="_blank" className="row-action" title="Imprimer" aria-label="Imprimer">
+                            <Icon name="printer" />
                           </Link>
-                          <button type="button" onClick={() => startEditToken(t)} className="btn btn-outline btn-sm">
-                            Modifier
+                          <button type="button" onClick={() => startEditToken(t)} className="row-action" title="Modifier" aria-label="Modifier">
+                            <Icon name="edit" />
                           </button>
-                          <button type="button" onClick={() => toggleTokenActive(t)} className="btn btn-outline btn-sm">
-                            {t.active ? 'Désactiver' : 'Réactiver'}
+                          <button type="button" onClick={() => toggleTokenActive(t)} className="row-action" title={t.active ? 'Désactiver' : 'Réactiver'} aria-label={t.active ? 'Désactiver' : 'Réactiver'}>
+                            <Icon name="power" />
                           </button>
-                          <button type="button" onClick={() => removeToken(t)} className="btn btn-danger-outline btn-icon">
-                            ✕
+                          <button type="button" onClick={() => removeToken(t)} className="row-action row-action--danger" title="Supprimer" aria-label="Supprimer">
+                            <Icon name="trash" />
                           </button>
-                        </>
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -681,9 +732,10 @@ export default function GuestbookPage() {
               </tbody>
             </table>
           </div>
+          )}
           </>
         )}
-      </div>
+      </Panel>
 
       <div className="editor-section gb-messages">
         <div className="gb-messages-head">
@@ -721,19 +773,16 @@ export default function GuestbookPage() {
             ))}
           </div>
           <div className="gb-search-row">
-            <input
-              type="text"
+            <SearchField
               placeholder="Rechercher un message (nom, texte, table)..."
               value={search}
               onChange={(e) => changeSearch(e.target.value)}
-              className="input gb-search-input"
-              style={{ maxWidth: '340px' }}
             />
             <select
               value={statusFilter}
               onChange={(e) => changeStatusFilter(e.target.value)}
               className="input gb-status-select"
-              style={{ width: '170px', flex: 'none' }}
+              aria-label="Filtrer par statut"
             >
               <option value="ALL">Tous les statuts</option>
               <option value="PENDING">En attente</option>
@@ -748,8 +797,8 @@ export default function GuestbookPage() {
                 : 'Aucun message ne correspond à votre recherche.'}
             </div>
           ) : (
-          <div className="table-wrap">
-            <table className="table gb-msg-table">
+          <div className="table-wrap gb-msg-wrap">
+            <table className="table table--sticky gb-msg-table">
               <thead>
                 <tr>
                   <th></th>
@@ -759,7 +808,7 @@ export default function GuestbookPage() {
                   <th>Table</th>
                   <th>Statut</th>
                   <th>Reçu le</th>
-                  <th></th>
+                  <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -768,11 +817,14 @@ export default function GuestbookPage() {
                   return (
                     <tr key={entry.id}>
                       <td className="gb-c-check">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(entry.id)}
-                          onChange={() => toggleSelected(entry.id)}
-                        />
+                        <label className="gb-check">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(entry.id)}
+                            onChange={() => toggleSelected(entry.id)}
+                            aria-label={`Sélectionner le message de ${entry.guestName}`}
+                          />
+                        </label>
                       </td>
                       <td className="gb-c-name">
                         {entry.guestName}
@@ -787,6 +839,7 @@ export default function GuestbookPage() {
                         )}
                       </td>
                       <td className="cell-message gb-c-msg">
+                        <div className="cell-message__row">
                         {/* Miniature à côté du texte (pas en dessous) : une entrée avec photo garde la
                             même hauteur de ligne qu'une entrée sans photo — cliquer l'agrandit dans
                             GuestMessageModal, qui reste l'endroit où voir la photo en plein format. */}
@@ -832,24 +885,28 @@ export default function GuestbookPage() {
                             </div>
                           )}
                         </div>
+                        </div>
                       </td>
                       <td className="gb-c-meta">{SOURCE_LABELS[entry.source]}</td>
                       <td className="gb-c-meta gb-c-table" data-empty={!entry.tableNumber}>{entry.tableNumber || '—'}</td>
                       <td className="gb-c-status">{STATUS_BADGE[entry.status]}</td>
-                      <td className="gb-c-meta">{new Date(entry.createdAt).toLocaleString('fr-FR')}</td>
-                      <td className="gb-c-actions" style={{ display: 'flex', gap: '0.4rem' }}>
-                        {entry.status !== 'APPROVED' && (
-                          <button type="button" disabled={isBusy} onClick={() => setStatus(entry.id, 'APPROVED')} className="btn btn-outline btn-sm gb-approve">
-                            ✓ Approuver
+                      <td className="gb-c-meta gb-c-date">{new Date(entry.createdAt).toLocaleString('fr-FR')}</td>
+                      <td className="col-actions gb-c-actions">
+                        <div className="inline-actions" style={{ flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
+                          {entry.status !== 'APPROVED' && (
+                            <button type="button" disabled={isBusy} onClick={() => setStatus(entry.id, 'APPROVED')} className="btn btn-outline btn-sm gb-approve" title="Approuver" aria-label="Approuver">
+                              ✓ <span className="gb-action-label">Approuver</span>
+                            </button>
+                          )}
+                          {entry.status !== 'REJECTED' && (
+                            <button type="button" disabled={isBusy} onClick={() => setStatus(entry.id, 'REJECTED')} className="btn btn-outline btn-sm" title="Rejeter" aria-label="Rejeter">
+                              ✕ <span className="gb-action-label">Rejeter</span>
+                            </button>
+                          )}
+                          <button type="button" disabled={isBusy} onClick={() => removeEntry(entry.id)} className="btn btn-danger-outline btn-icon" title="Supprimer" aria-label="Supprimer">
+                            <Icon name="trash" />
                           </button>
-                        )}
-                        {entry.status !== 'REJECTED' && (
-                          <button type="button" disabled={isBusy} onClick={() => setStatus(entry.id, 'REJECTED')} className="btn btn-outline btn-sm">
-                            ✕ Rejeter
-                          </button>
-                        )}
-                        <button type="button" disabled={isBusy} onClick={() => removeEntry(entry.id)} className="btn btn-danger-outline btn-icon">
-                                                  </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -905,17 +962,6 @@ export default function GuestbookPage() {
           onClose={() => setMessageView(null)}
         />
       )}
-    </div>
-  );
-}
-
-// `minor` : chiffres secondaires, masqués sur téléphone (voir admin.css) pour que les messages
-// à valider remontent plus haut dans l'écran.
-function StatCard({ label, value, minor }) {
-  return (
-    <div className={`stat-card${minor ? ' gb-stat-minor' : ''}`}>
-      <div className="stat-value">{value}</div>
-      <div className="stat-label">{label}</div>
     </div>
   );
 }

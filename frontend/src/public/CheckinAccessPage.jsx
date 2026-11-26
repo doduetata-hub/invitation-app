@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppliedTheme } from '../admin/theme';
+import CheckInCards from '../admin/components/CheckInCards';
+import { useCompact } from '../admin/hooks/useMediaQuery';
 import { useParams } from 'react-router-dom';
 import jsQR from 'jsqr';
 import { api } from '../shared/api/client';
@@ -20,6 +22,7 @@ function extractGuestCode(scannedText) {
 // pointer une arrivée.
 export default function CheckinAccessPage() {
   useAppliedTheme();
+  const compact = useCompact();
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -243,6 +246,17 @@ export default function CheckinAccessPage() {
             className="input"
             style={{ maxWidth: '320px', marginBottom: '1rem' }}
           />
+          {compact ? (
+            <CheckInCards
+              entries={filteredGuests.map((g) => ({
+                key: g.id,
+                name: g.name || g.rsvp?.name || '—',
+                answer: g.rsvp ? (g.rsvp.answer === 'YES' ? 'Présent' : 'Absent') : 'En attente',
+                checkedInAt: g.checkedInAt,
+                onToggle: () => toggleManualCheckIn(g.id, Boolean(g.checkedInAt)),
+              }))}
+            />
+          ) : (
           <div className="table-wrap">
           <table className="table">
             <thead>
@@ -273,6 +287,7 @@ export default function CheckinAccessPage() {
             </tbody>
           </table>
           </div>
+          )}
         </div>
       </div>
     </div>

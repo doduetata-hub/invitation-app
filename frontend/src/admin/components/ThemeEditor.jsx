@@ -17,15 +17,15 @@ export default function ThemeEditor({ templateTokens, theme, onChange }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>Couleurs</h3>
+      <div className="subsection-head">
+        <h3>Couleurs</h3>
         <button type="button" onClick={handleResetColors} className="btn btn-ghost btn-sm">
           Réinitialiser
         </button>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.7rem', marginTop: '0.7rem' }}>
+      <div className="swatch-grid">
         {COLOR_FIELDS.map(({ key, label }) => (
-          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.85rem', color: 'var(--color-ink-soft)' }}>
+          <label key={key} className="swatch">
             <input
               type="color"
               value={colors[key] || templateTokens[key]}
@@ -37,13 +37,13 @@ export default function ThemeEditor({ templateTokens, theme, onChange }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-        <h3 style={{ margin: 0 }}>Typographies</h3>
+      <div className="subsection-head">
+        <h3>Typographies</h3>
         <button type="button" onClick={handleResetFonts} className="btn btn-ghost btn-sm">
           Réinitialiser
         </button>
       </div>
-      <div style={{ display: 'flex', gap: '0.9rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.9rem', flexWrap: 'wrap' }}>
         <label className="field" style={{ flex: 1, minWidth: '220px' }}>
           Titres
           <select

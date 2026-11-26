@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams, Link, NavLink } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams, Link, NavLink } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import { STATUS_LABELS, STATUS_OPTIONS, PAYMENT_LABELS, PAYMENT_OPTIONS } from '../../shared/constants/invitations';
 import ProgramEditor from '../components/ProgramEditor';
@@ -11,6 +11,14 @@ import MusicUploader from '../components/MusicUploader';
 import PaymentsSection from '../components/PaymentsSection';
 import InvitationPage from '../../public/InvitationPage';
 import { getTemplate } from '../../public/templates/registry';
+import PageHeader from '../components/ui/PageHeader';
+import Loading from '../components/ui/Loading';
+import Icon from '../components/ui/Icon';
+import PreviewModes from '../components/PreviewModes';
+import PreviewScreen from '../components/PreviewScreen';
+import ShareButton from '../../shared/components/ShareButton';
+import { useCompact, usePreviewApart } from '../hooks/useMediaQuery';
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 
 const emptyForm = {
   clientId: '',
@@ -41,9 +49,9 @@ const PANELS = [
 
 // Pages de l'invitation (hors de l'éditeur) : accessibles depuis la même rangée.
 const PAGES = [
-  { to: 'guests', label: 'Invités' },
-  { to: 'checkin', label: 'Check-in' },
-  { to: 'guestbook', label: 'Livre d’or' },
+  { to: 'guests', label: 'Invités', icon: 'users' },
+  { to: 'checkin', label: 'Check-in', icon: 'userCheck' },
+  { to: 'guestbook', label: 'Livre d’or', icon: 'guestbook' },
 ];
 
 export default function InvitationEditorPage() {
@@ -52,8 +60,14 @@ export default function InvitationEditorPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedClientId = searchParams.get('clientId') || '';
+  const preselectedTemplateId = searchParams.get('templateId') || ''; // bouton « Utiliser » de la bibliothèque
+  const location = useLocation();
+  const compact = useCompact();
+  const previewApart = usePreviewApart();
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const stepsRef = useRef(null);
 
-  const [form, setForm] = useState({ ...emptyForm, clientId: preselectedClientId });
+  const [form, setForm] = useState({ ...emptyForm, clientId: preselectedClientId, templateId: preselectedTemplateId });
   const [themeDraft, setThemeDraft] = useState({});
   // L'éditeur n'affiche plus douze blocs à la suite : un panneau à la fois, l'aperçu reste toujours visible à droite.
   const [panel, setPanel] = useState('infos');
@@ -116,17 +130,19 @@ export default function InvitationEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEdit]);
 
-  // Avertit avant de fermer/rafraîchir l'onglet s'il y a des changements non enregistrés,
-  // pour ne jamais perdre silencieusement une saisie en cours.
+  useUnsavedGuard(dirty);
+
+  // « Créer et continuer » : la page d'édition s'ouvre directement sur l'étape suivante.
   useEffect(() => {
-    if (!dirty) return;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [dirty]);
+    if (location.state?.panel) setPanel(location.state.panel);
+  }, [location.state]);
+
+  // L'étape active reste visible dans la rangée qui défile (téléphone).
+  useEffect(() => {
+    const row = stepsRef.current;
+    const active = row?.querySelector('.is-active');
+    if (row && active) row.scrollLeft = active.offsetLeft - row.offsetLeft - 48;
+  }, [panel, compact, loading]);
 
   const handleChange = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -140,8 +156,7 @@ export default function InvitationEditorPage() {
     setSaved(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const save = async () => {
     setSaving(true);
     setError('');
     try {
@@ -154,13 +169,29 @@ export default function InvitationEditorPage() {
       } else {
         const created = await api.post('/invitations', { ...form, theme: themeDraft });
         setDirty(false);
-        navigate(`/admin/invitations/${created.id}/edit`);
+        navigate(`/admin/invitations/${created.id}/edit`, compact ? { state: { panel: 'design' } } : undefined);
+        if (compact) window.scrollTo(0, 0);
       }
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    save();
+  };
+
+  // Enregistrement depuis un autre panneau que « Infos » : le formulaire (et sa validation) n'est pas affiché.
+  const handleSaveElsewhere = () => {
+    if (!form.clientId || !form.templateId || !form.eventType?.trim() || !form.title?.trim()) {
+      setPanel('infos');
+      setError("Renseignez le client, le template, le type d'événement et le titre avant d'enregistrer.");
+      return;
+    }
+    save();
   };
 
   const clientAccessUrl = invitation?.clientAccessToken
@@ -237,8 +268,17 @@ export default function InvitationEditorPage() {
     setTimeout(() => setCheckinTokenCopied(false), 1500);
   };
 
-  const handleStatusChange = async (e) => {
-    const status = e.target.value;
+  // Publier ou retirer une invitation se voit immédiatement des invités : on demande confirmation.
+  const changeStatus = async (status) => {
+    const published = invitation.status === 'PUBLISHED';
+    if (status === invitation.status) return;
+    const name = form.title || 'cette invitation';
+    if (status === 'PUBLISHED') {
+      const unsaved = dirty ? '\n\nAttention : vos modifications non enregistrées ne seront pas visibles.' : '';
+      if (!window.confirm(`Publier « ${name} » ?\nSa page devient accessible à toute personne qui a le lien.${unsaved}`)) return;
+    } else if (published) {
+      if (!window.confirm(`Dépublier « ${name} » ?\nSa page et les liens des invités cesseront de fonctionner.\nNouveau statut : ${STATUS_LABELS[status]}.`)) return;
+    }
     setStatusSaving(true);
     setError('');
     try {
@@ -274,172 +314,230 @@ export default function InvitationEditorPage() {
   }, [form, themeDraft, selectedTemplate, invitation]);
 
   const show = (name) => !isEdit || panel === name;
+  const panelIndex = PANELS.findIndex((p) => p.id === panel);
+  const goToPanel = (panelId) => {
+    setPanel(panelId);
+    if (compact) window.scrollTo(0, 0);
+  };
 
-  if (loading) return <p className="admin-muted">Chargement...</p>;
+  if (loading) return <Loading />;
+
+  const onInfos = !isEdit || panel === 'infos';
+  const publicPath = invitation ? `/i/${invitation.slug}` : '';
+  let saveLabel = 'Enregistrer';
+  if (!isEdit) saveLabel = compact ? 'Créer et continuer' : 'Créer l’invitation';
+  if (saving) saveLabel = 'Enregistrement...';
 
   return (
     <div className="editor-columns">
       <div className="editor-main">
-        <div className="page-header">
-          <div>
-            <span className="admin-eyebrow">{isEdit ? 'Modifier' : 'Créer'}</span>
-            <h1>{isEdit ? form.title || 'Invitation' : 'Nouvelle invitation'}</h1>
-          </div>
+        <PageHeader
+          title={isEdit ? form.title || 'Invitation' : 'Nouvelle invitation'}
+          back={{ to: '/admin/invitations', label: 'Invitations' }}
+        >
           {isEdit && invitation && (
-            <select value={invitation.status} onChange={handleStatusChange} disabled={statusSaving} className="input" style={{ width: 'auto' }}>
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-              ))}
-            </select>
+            <div className="publish-row">
+              <label className="status-control">
+                Statut
+                <select value={invitation.status} onChange={(e) => changeStatus(e.target.value)} disabled={statusSaving} className="input">
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                  ))}
+                </select>
+              </label>
+              {invitation.status === 'PUBLISHED' ? (
+                <button type="button" className="btn btn-outline" onClick={() => changeStatus('READY')} disabled={statusSaving}>
+                  Dépublier
+                </button>
+              ) : (
+                <button type="button" className="btn btn-accent" onClick={() => changeStatus('PUBLISHED')} disabled={statusSaving}>
+                  Publier
+                </button>
+              )}
+            </div>
           )}
-        </div>
+        </PageHeader>
 
+        {isEdit && compact && (
+          <nav className="editor-shortcuts" aria-label="Pages de l'invitation">
+            {PAGES.map((pg) => (
+              <Link key={pg.to} to={`/admin/invitations/${id}/${pg.to}`} className="btn btn-outline">
+                <Icon name={pg.icon} />
+                {pg.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {isEdit && (
-          <nav className="editor-nav" aria-label="Parties de l'invitation">
+          <nav className="editor-nav" aria-label="Parties de l'invitation" ref={stepsRef}>
             <div className="editor-nav__group">
-              {PANELS.map((pn) => (
-                <button key={pn.id} type="button" className={`editor-nav__btn${panel === pn.id ? ' is-active' : ''}`} onClick={() => setPanel(pn.id)} aria-current={panel === pn.id ? 'true' : undefined}>
+              {PANELS.map((pn, index) => (
+                <button key={pn.id} type="button" className={`editor-nav__btn${panel === pn.id ? ' is-active' : ''}`} onClick={() => goToPanel(pn.id)} aria-current={panel === pn.id ? 'step' : undefined}>
+                  <span className="step-num" aria-hidden="true">{index + 1}</span>
                   {pn.label}
                 </button>
               ))}
             </div>
-            <div className="editor-nav__group editor-nav__group--pages">
-              {PAGES.map((pg) => (
-                <NavLink key={pg.to} to={`/admin/invitations/${id}/${pg.to}`} className="editor-nav__btn editor-nav__btn--page">
-                  {pg.label}
-                </NavLink>
-              ))}
-            </div>
+            {!compact && (
+              <div className="editor-nav__group editor-nav__group--pages">
+                {PAGES.map((pg) => (
+                  <NavLink key={pg.to} to={`/admin/invitations/${id}/${pg.to}`} className="editor-nav__btn editor-nav__btn--page">
+                    {pg.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
           </nav>
         )}
 
         {show('infos') && isEdit && invitation?.status === 'PUBLISHED' && (
           <div className="public-link-box">
-            <p style={{ margin: 0 }}>
-              URL publique : <a href={`/i/${invitation.slug}`} target="_blank" rel="noreferrer">/i/{invitation.slug}</a>
-            </p>
-            <div className="qr-row">
-              <img src={`/api/invitations/${id}/qrcode`} alt="QR Code" className="qr-image" />
-              <a
-                href={`/api/invitations/${id}/qrcode`}
-                download={`qrcode-${invitation.slug}.png`}
-                className="btn btn-outline btn-sm"
-              >
-                Télécharger le QR Code
-              </a>
+            <img src={`/api/invitations/${id}/qrcode`} alt="QR Code" className="qr-image" />
+            <div className="public-link-box__body">
+              <span className="public-link-box__label">URL publique</span>
+              <a href={publicPath} target="_blank" rel="noreferrer">{publicPath}</a>
+              <div className="inline-actions">
+                <a href={`/i/${invitation.slug}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                  <Icon name="external" />
+                  Ouvrir la page
+                </a>
+                <a
+                  href={`/api/invitations/${id}/qrcode`}
+                  download={`qrcode-${invitation.slug}.png`}
+                  className="btn btn-outline btn-sm"
+                >
+                  <Icon name="download" />
+                  Télécharger le QR Code
+                </a>
+                <ShareButton
+                  title={form.title}
+                  url={`${window.location.origin}${publicPath}`}
+                  qrUrl={`/api/invitations/${id}/qrcode`}
+                  fileName={`qrcode-${invitation.slug}.png`}
+                />
+              </div>
             </div>
           </div>
         )}
 
         {show('infos') && (
-        <form onSubmit={handleSubmit} className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginTop: '1.25rem' }}>
-          <div className="field-row">
+        <form id="invitation-form" onSubmit={handleSubmit} className="panel editor-form form-stack">
+          <div className="form-section">
+            <h2>Client et modèle</h2>
+            <div className="field-row">
+              <label className="field">
+                Client *
+                <select value={form.clientId} onChange={handleChange('clientId')} required className="input">
+                  <option value="">Sélectionner...</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                Template *
+                <select value={form.templateId} onChange={handleChange('templateId')} required className="input">
+                  <option value="">Sélectionner...</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h2>Événement</h2>
+            <div className="field-row">
+              <label className="field">
+                Type d'événement *
+                <input value={form.eventType} onChange={handleChange('eventType')} required placeholder="mariage, anniversaire..." className="input" />
+              </label>
+              <label className="field">
+                Titre *
+                <input value={form.title} onChange={handleChange('title')} required className="input" />
+              </label>
+            </div>
+
             <label className="field">
-              Client *
-              <select value={form.clientId} onChange={handleChange('clientId')} required className="input">
-                <option value="">Sélectionner...</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
-                ))}
-              </select>
+              Nom(s)
+              <input value={form.namesLine} onChange={handleChange('namesLine')} placeholder="Marie & Paul" className="input" />
+            </label>
+
+            <div className="field-row">
+              <label className="field">
+                Date
+                <input type="date" value={form.eventDate} onChange={handleChange('eventDate')} className="input" />
+              </label>
+              <label className="field">
+                Heure
+                <input value={form.eventTime} onChange={handleChange('eventTime')} placeholder="16:00" className="input" />
+              </label>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h2>Lieu</h2>
+            <label className="field">
+              Lieu
+              <input value={form.venueName} onChange={handleChange('venueName')} className="input" />
             </label>
             <label className="field">
-              Template *
-              <select value={form.templateId} onChange={handleChange('templateId')} required className="input">
-                <option value="">Sélectionner...</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+              Adresse
+              <input value={form.address} onChange={handleChange('address')} className="input" />
+            </label>
+            <div className="field-row">
+              <label className="field">
+                <span>Latitude <span className="admin-muted">(optionnel, pour la carte)</span></span>
+                <input type="number" inputMode="decimal" step="any" value={form.latitude} onChange={handleChange('latitude')} placeholder="48.8566" className="input" />
+              </label>
+              <label className="field">
+                <span>Longitude <span className="admin-muted">(optionnel)</span></span>
+                <input type="number" inputMode="decimal" step="any" value={form.longitude} onChange={handleChange('longitude')} placeholder="2.3522" className="input" />
+              </label>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h2>Textes</h2>
+            <label className="field">
+              Texte d'invitation
+              <textarea value={form.invitationText} onChange={handleChange('invitationText')} rows={3} className="input" />
+            </label>
+            <label className="field">
+              Message personnalisé
+              <textarea value={form.personalMessage} onChange={handleChange('personalMessage')} rows={2} className="input" />
+            </label>
+            <label className="field">
+              <span>Thème <span className="admin-muted">(optionnel, ex. tenue attendue)</span></span>
+              <input value={form.dressCode} onChange={handleChange('dressCode')} placeholder="Smoking et doré" className="input" />
             </label>
           </div>
 
-          <div className="field-row">
-            <label className="field">
-              Type d'événement *
-              <input value={form.eventType} onChange={handleChange('eventType')} required placeholder="mariage, anniversaire..." className="input" />
-            </label>
-            <label className="field">
-              Titre *
-              <input value={form.title} onChange={handleChange('title')} required className="input" />
-            </label>
-          </div>
-
-          <label className="field">
-            Nom(s)
-            <input value={form.namesLine} onChange={handleChange('namesLine')} placeholder="Marie & Paul" className="input" />
-          </label>
-
-          <div className="field-row">
-            <label className="field">
-              Date
-              <input type="date" value={form.eventDate} onChange={handleChange('eventDate')} className="input" />
-            </label>
-            <label className="field">
-              Heure
-              <input value={form.eventTime} onChange={handleChange('eventTime')} placeholder="16:00" className="input" />
-            </label>
-          </div>
-
-          <label className="field">
-            Lieu
-            <input value={form.venueName} onChange={handleChange('venueName')} className="input" />
-          </label>
-          <label className="field">
-            Adresse
-            <input value={form.address} onChange={handleChange('address')} className="input" />
-          </label>
-          <div className="field-row">
-            <label className="field">
-              Latitude <span className="admin-muted" style={{ fontWeight: 400 }}>(optionnel, pour la carte)</span>
-              <input type="number" step="any" value={form.latitude} onChange={handleChange('latitude')} placeholder="48.8566" className="input" />
-            </label>
-            <label className="field">
-              Longitude <span className="admin-muted" style={{ fontWeight: 400 }}>(optionnel)</span>
-              <input type="number" step="any" value={form.longitude} onChange={handleChange('longitude')} placeholder="2.3522" className="input" />
-            </label>
-          </div>
-          <label className="field">
-            Texte d'invitation
-            <textarea value={form.invitationText} onChange={handleChange('invitationText')} rows={3} className="input" />
-          </label>
-          <label className="field">
-            Message personnalisé
-            <textarea value={form.personalMessage} onChange={handleChange('personalMessage')} rows={2} className="input" />
-          </label>
-          <label className="field">
-            Thème <span className="admin-muted" style={{ fontWeight: 400 }}>(optionnel, ex. tenue attendue)</span>
-            <input value={form.dressCode} onChange={handleChange('dressCode')} placeholder="Smoking et doré" className="input" />
-          </label>
-
-          <div className="field-row">
-            <label className="field">
-              Prix (€)
-              <input type="number" step="0.01" value={form.price} onChange={handleChange('price')} className="input" />
-            </label>
-            <label className="field">
-              Statut de paiement
-              <select value={form.paymentStatus} onChange={handleChange('paymentStatus')} className="input">
-                {PAYMENT_OPTIONS.map((p) => (
-                  <option key={p} value={p}>{PAYMENT_LABELS[p]}</option>
-                ))}
-              </select>
-            </label>
+          <div className="form-section">
+            <h2>Facturation</h2>
+            <div className="field-row">
+              <label className="field">
+                Prix (€)
+                <input type="number" inputMode="decimal" step="0.01" value={form.price} onChange={handleChange('price')} className="input" />
+              </label>
+              <label className="field">
+                Statut de paiement
+                <select value={form.paymentStatus} onChange={handleChange('paymentStatus')} className="input">
+                  {PAYMENT_OPTIONS.map((p) => (
+                    <option key={p} value={p}>{PAYMENT_LABELS[p]}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
           {error && <p className="error-text">{error}</p>}
-
-          <div className="form-actions">
-            <button type="submit" disabled={saving} className="btn btn-primary">
-              {saving ? 'Enregistrement...' : isEdit ? 'Enregistrer' : 'Créer l’invitation'}
-            </button>
-            <Link to="/admin/invitations" className="btn btn-ghost">Annuler</Link>
-            {saved && <span className="success-text">✓ Enregistré</span>}
-            {dirty && !saving && <span className="admin-muted" style={{ fontSize: '0.85rem' }}>Modifications non enregistrées</span>}
-          </div>
         </form>
         )}
+
+        {isEdit && panel !== 'infos' && error && <p className="error-text">{error}</p>}
 
         {show('design') && selectedTemplate && (
           <div className="editor-section">
@@ -452,13 +550,13 @@ export default function InvitationEditorPage() {
             {designPart === 'look' && <ThemeEditor templateTokens={templateTokens} theme={themeDraft} onChange={handleThemeChange} />}
             {designPart === 'sections' && (
               <>
-                <p className="admin-muted" style={{ marginTop: 0 }}>Cochez ce qui s'affiche et classez l'ordre avec les flèches.</p>
+                <p className="section-lead">Cochez ce qui s'affiche et classez l'ordre avec les flèches.</p>
                 <SectionsToggle theme={themeDraft} onChange={handleThemeChange} />
               </>
             )}
             {designPart === 'texts' && templateTexts && <TextsEditor groups={templateTexts} theme={themeDraft} onChange={handleThemeChange} />}
             <p className="design-hint">
-              Les changements de design sont appliqués dans l'aperçu immédiatement ; cliquez sur « Enregistrer » dans l'onglet Informations pour les sauvegarder.
+              Les changements de design sont appliqués dans l'aperçu immédiatement ; touchez « Enregistrer » pour les sauvegarder.
             </p>
           </div>
         )}
@@ -466,9 +564,9 @@ export default function InvitationEditorPage() {
         {show('medias') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Photos & vidéos</h2>
-            <h3 style={{ fontSize: '0.9rem', marginBottom: '0.4rem' }}>Photo de couverture</h3>
+            <div className="subsection-head"><h3>Photo de couverture</h3></div>
             <MediaUploader invitationId={id} type="cover" media={invitation.media} onChange={refreshMedia} />
-            <h3 style={{ fontSize: '0.9rem', marginTop: '1.25rem', marginBottom: '0.4rem' }}>Galerie (photos et vidéos)</h3>
+            <div className="subsection-head"><h3>Galerie (photos et vidéos)</h3></div>
             <MediaUploader invitationId={id} type="gallery" media={invitation.media} onChange={refreshMedia} />
           </div>
         )}
@@ -490,17 +588,15 @@ export default function InvitationEditorPage() {
         {show('acces') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Accès client</h2>
-            <p className="admin-muted" style={{ marginTop: 0 }}>
+            <p className="section-lead">
               Donne au client un lien direct, sans mot de passe, pour créer et gérer lui-même les liens
               personnalisés de <strong>cette</strong> invitation uniquement — il n'a accès à rien d'autre
               (autres invitations, édition, templates...).
             </p>
             {invitation.clientAccessToken ? (
               <>
-                <div className="public-link-box">
-                  <p style={{ margin: 0, wordBreak: 'break-all' }}>{clientAccessUrl}</p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <p className="share-link">{clientAccessUrl}</p>
+                <div className="inline-actions">
                   <button type="button" onClick={handleCopyClientAccess} className="btn btn-outline btn-sm">
                     {tokenCopied ? 'Copié !' : 'Copier le lien'}
                   </button>
@@ -523,17 +619,15 @@ export default function InvitationEditorPage() {
         {show('acces') && isEdit && invitation && (
           <div className="editor-section">
             <h2>Accès check-in (jour J)</h2>
-            <p className="admin-muted" style={{ marginTop: 0 }}>
+            <p className="section-lead">
               Lien <strong>distinct</strong> du précédent, à donner à la personne qui filtre l'entrée le
               jour J (souvent pas le client lui-même). Permet de scanner/rechercher et pointer les
               arrivées — mais jamais de créer, modifier ou supprimer un invité.
             </p>
             {invitation.checkinAccessToken ? (
               <>
-                <div className="public-link-box">
-                  <p style={{ margin: 0, wordBreak: 'break-all' }}>{checkinAccessUrl}</p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <p className="share-link">{checkinAccessUrl}</p>
+                <div className="inline-actions">
                   <button type="button" onClick={handleCopyCheckinAccess} className="btn btn-outline btn-sm">
                     {checkinTokenCopied ? 'Copié !' : 'Copier le lien'}
                   </button>
@@ -559,31 +653,61 @@ export default function InvitationEditorPage() {
             <PaymentsSection invitationId={id} price={form.price} />
           </div>
         )}
+
+        <div className="form-actions action-bar editor-bar">
+          {compact && isEdit && (
+            <button type="button" className="btn btn-ghost action-bar__side" onClick={() => goToPanel(PANELS[panelIndex - 1].id)} disabled={panelIndex <= 0} aria-label="Étape précédente">
+              <Icon name="chevronLeft" />
+              <span>Préc.</span>
+            </button>
+          )}
+          {previewApart && previewInvitation && (
+            <button type="button" className={compact ? 'btn btn-ghost action-bar__side' : 'btn btn-outline'} onClick={() => setPreviewOpen(true)}>
+              <Icon name="eye" />
+              <span>Aperçu</span>
+            </button>
+          )}
+          {onInfos ? (
+            <button key="submit" type="submit" form="invitation-form" disabled={saving} className="btn btn-primary">
+              {saveLabel}
+            </button>
+          ) : (
+            <button key="save" type="button" onClick={handleSaveElsewhere} disabled={saving} className="btn btn-primary">
+              {saveLabel}
+            </button>
+          )}
+          {!compact && <Link to="/admin/invitations" className="btn btn-ghost">Annuler</Link>}
+          {compact && isEdit && (
+            <button type="button" className="btn btn-ghost action-bar__side" onClick={() => goToPanel(PANELS[panelIndex + 1].id)} disabled={panelIndex >= PANELS.length - 1} aria-label="Étape suivante">
+              <Icon name="chevronRight" />
+              <span>Suiv.</span>
+            </button>
+          )}
+          <span className="save-bar__state" role="status">
+            {saved && <span className="success-text">✓ Enregistré</span>}
+            {dirty && !saving && <span className="dirty-note">Modifications non enregistrées</span>}
+          </span>
+        </div>
       </div>
 
-      {previewInvitation && (
+      {previewInvitation && !previewApart && (
         <div className="preview-column">
-          <p className="preview-label">Aperçu</p>
-          <div className="preview-modes">
-            {[
-              { id: 'mobile', label: 'Mobile' },
-              { id: 'tablet', label: 'Tablette' },
-              { id: 'desktop', label: 'Desktop' },
-            ].map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setPreviewMode(m.id)}
-                className={`preview-mode-btn${previewMode === m.id ? ' is-active' : ''}`}
-              >
-                {m.label}
-              </button>
-            ))}
+          <div className="preview-bar">
+            <p className="preview-label">Aperçu en direct</p>
+            <PreviewModes value={previewMode} onChange={setPreviewMode} />
           </div>
-          <div className={`preview-frame preview-frame--${previewMode}`}>
-            <InvitationPage invitation={previewInvitation} />
+          <div className="preview-scroll">
+            <div className="preview-device">
+              <div className={`preview-frame preview-frame--${previewMode}`}>
+                <InvitationPage invitation={previewInvitation} />
+              </div>
+            </div>
           </div>
         </div>
+      )}
+
+      {previewInvitation && previewApart && previewOpen && (
+        <PreviewScreen invitation={previewInvitation} mode={previewMode} onModeChange={setPreviewMode} onClose={() => setPreviewOpen(false)} />
       )}
     </div>
   );

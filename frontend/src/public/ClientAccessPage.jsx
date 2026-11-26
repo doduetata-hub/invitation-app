@@ -7,6 +7,8 @@ import GuestMessageModal from '../shared/components/GuestMessageModal';
 import { buildWhatsappShareUrl } from '../shared/utils/whatsapp';
 import { buildGuestDeleteWarning } from '../shared/utils/guestWarnings';
 import { buildInvitationMessage } from '../shared/utils/invitationMessage';
+import GuestCard from '../admin/components/GuestCard';
+import { useCompact } from '../admin/hooks/useMediaQuery';
 
 const emptyForm = { name: '', phone: '', maxPersons: '', tableNumber: '' };
 
@@ -25,6 +27,7 @@ function AnswerBadge({ answer }) {
 // pouvoir créer/modifier/supprimer un invité avec ce même lien.
 export default function ClientAccessPage() {
   useAppliedTheme();
+  const compact = useCompact();
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -228,7 +231,7 @@ export default function ClientAccessPage() {
                 style={{ display: 'none' }}
               />
             </label>
-            <a href={`/api/client-access/${token}/guests/import-template`} className="admin-muted" style={{ fontSize: '0.82rem' }}>
+            <a href={`/api/client-access/${token}/guests/import-template`} className="text-link">
               Télécharger le modèle
             </a>
             {importMessage && <span className="success-text">{importMessage}</span>}
@@ -249,6 +252,30 @@ export default function ClientAccessPage() {
             />
             {filteredGuests.length === 0 ? (
               <div className="empty-state">Aucun invité ne correspond à "{search}".</div>
+            ) : compact ? (
+              <ul className="card-list">
+                {filteredGuests.map((g) => (
+                  <GuestCard
+                    key={g.id}
+                    guest={g}
+                    badge={<AnswerBadge answer={g.rsvp?.answer} />}
+                    locked={locked}
+                    editing={editingId === g.id}
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    saving={savingEdit}
+                    onSave={() => saveEdit(g.id)}
+                    onCancel={cancelEdit}
+                    onEdit={() => startEdit(g)}
+                    onCopy={() => handleCopy(g)}
+                    copied={copiedCode === g.guestCode}
+                    onQr={() => setQrGuest(g)}
+                    onDelete={() => handleDelete(g.id)}
+                    whatsappUrl={g.phone ? buildWhatsappShareUrl(g.phone, invitationMessage(g)) : null}
+                    onMessage={() => setMessageView({ ...g.rsvp, name: g.name || g.rsvp?.name, maxPersons: g.maxPersons, tableNumber: g.tableNumber, phone: g.phone })}
+                  />
+                ))}
+              </ul>
             ) : (
             <div className="table-wrap">
             <table className="table">

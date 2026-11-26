@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api/client';
+import Icon from './ui/Icon';
 
 const emptyEvent = { title: '', time: '', location: '', description: '' };
+const FIELDS = [
+  { key: 'title', label: 'Titre' },
+  { key: 'time', label: 'Heure' },
+  { key: 'location', label: 'Lieu' },
+  { key: 'description', label: 'Description' },
+];
 
 // onChange(events) : prévient l'éditeur à chaque chargement/modification du programme, pour que l'aperçu en direct l'affiche aussitôt.
 export default function ProgramEditor({ invitationId, onChange }) {
@@ -9,6 +16,13 @@ export default function ProgramEditor({ invitationId, onChange }) {
   const [form, setForm] = useState(emptyEvent);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState(0);
+
+  useEffect(() => {
+    if (!savedAt) return undefined;
+    const timer = setTimeout(() => setSavedAt(0), 3000);
+    return () => clearTimeout(timer);
+  }, [savedAt]);
 
   const load = () => {
     api
@@ -41,6 +55,8 @@ export default function ProgramEditor({ invitationId, onChange }) {
   const handleFieldUpdate = async (id, field, value) => {
     try {
       await api.patch(`/events/${id}`, { [field]: value });
+      setError('');
+      setSavedAt(Date.now());
       load();
     } catch (err) {
       setError(err.message);
@@ -62,71 +78,47 @@ export default function ProgramEditor({ invitationId, onChange }) {
       {error && <p className="error-text">{error}</p>}
 
       {events.length === 0 ? (
-        <p className="admin-muted">Aucun événement dans le programme.</p>
+        <div className="empty-state">Aucun événement dans le programme.</div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <ul className="program-list">
           {events.map((ev) => (
-            <li key={ev.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <input
-                defaultValue={ev.title}
-                onBlur={(e) => e.target.value !== ev.title && handleFieldUpdate(ev.id, 'title', e.target.value)}
-                className="input"
-                style={{ fontWeight: 600 }}
-              />
-              <input
-                defaultValue={ev.time || ''}
-                placeholder="Heure"
-                onBlur={(e) => e.target.value !== (ev.time || '') && handleFieldUpdate(ev.id, 'time', e.target.value)}
-                className="input"
-                style={{ width: '80px', flex: 'none' }}
-              />
-              <input
-                defaultValue={ev.location || ''}
-                placeholder="Lieu"
-                onBlur={(e) => e.target.value !== (ev.location || '') && handleFieldUpdate(ev.id, 'location', e.target.value)}
-                className="input"
-              />
-              <input
-                defaultValue={ev.description || ''}
-                placeholder="Description"
-                onBlur={(e) => e.target.value !== (ev.description || '') && handleFieldUpdate(ev.id, 'description', e.target.value)}
-                className="input"
-              />
-              <button type="button" onClick={() => handleDelete(ev.id)} className="btn btn-danger-outline btn-icon">
-                ✕
+            <li key={ev.id} className="program-row">
+              {FIELDS.map((f) => (
+                <label key={f.key} className={`program-field program-field--${f.key}`}>
+                  <span>{f.label}</span>
+                  <input
+                    defaultValue={ev[f.key] || ''}
+                    placeholder={f.label}
+                    onBlur={(e) => e.target.value !== (ev[f.key] || '') && handleFieldUpdate(ev.id, f.key, e.target.value)}
+                    className="input"
+                    style={f.key === 'title' ? { fontWeight: 700 } : undefined}
+                  />
+                </label>
+              ))}
+              <button type="button" onClick={() => handleDelete(ev.id)} className="btn btn-danger-outline btn-icon" aria-label={`Supprimer : ${ev.title}`} title="Supprimer">
+                <Icon name="trash" />
+                <span className="program-delete-label">Supprimer l'étape</span>
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem', alignItems: 'center' }}>
-        <input
-          placeholder="Titre (ex: Cérémonie)"
-          value={form.title}
-          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          className="input"
-        />
-        <input
-          placeholder="Heure"
-          value={form.time}
-          onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
-          className="input"
-          style={{ width: '80px', flex: 'none' }}
-        />
-        <input
-          placeholder="Lieu"
-          value={form.location}
-          onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-          className="input"
-        />
-        <input
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          className="input"
-        />
-        <button type="submit" disabled={saving} className="btn btn-outline" style={{ flexShrink: 0 }}>+ Ajouter</button>
+      <p className="saved-note success-text" role="status">{savedAt ? '✓ Modification enregistrée' : ''}</p>
+
+      <form onSubmit={handleAdd} className="program-row program-row--new">
+        {FIELDS.map((f) => (
+          <label key={f.key} className={`program-field program-field--${f.key}`}>
+            <span>{f.key === 'title' ? 'Nouvelle étape : titre' : f.label}</span>
+            <input
+              placeholder={f.key === 'title' ? 'Titre (ex: Cérémonie)' : f.label}
+              value={form[f.key]}
+              onChange={(e) => setForm((current) => ({ ...current, [f.key]: e.target.value }))}
+              className="input"
+            />
+          </label>
+        ))}
+        <button type="submit" disabled={saving} className="btn btn-outline">+ Ajouter</button>
       </form>
     </div>
   );

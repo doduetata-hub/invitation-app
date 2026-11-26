@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
+import PageHeader from '../components/ui/PageHeader';
+import Loading from '../components/ui/Loading';
 
 const emptyForm = {
   firstName: '',
@@ -52,53 +54,68 @@ export default function ClientFormPage() {
     }
   };
 
-  if (loading) return <p className="admin-muted">Chargement...</p>;
+  if (loading) return <Loading />;
+
+  const backTo = isEdit ? `/admin/clients/${id}` : '/admin/clients';
 
   return (
-    <div style={{ maxWidth: '520px' }}>
-      <span className="admin-eyebrow">Client</span>
-      <h1>{isEdit ? 'Modifier le client' : 'Nouveau client'}</h1>
-      <form onSubmit={handleSubmit} className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-        <div className="field-row">
+    <div className="page--narrow">
+      <PageHeader
+        title={isEdit ? 'Modifier le client' : 'Nouveau client'}
+        subtitle="Les champs marqués d'un astérisque sont obligatoires."
+        back={{ to: backTo, label: isEdit ? 'Fiche client' : 'Clients' }}
+      />
+      <form onSubmit={handleSubmit} className="panel form-stack">
+        <div className="form-section">
+          <h2>Identité</h2>
+          <div className="field-row">
+            <label className="field">
+              Prénom *
+              <input value={form.firstName} onChange={handleChange('firstName')} required className="input" />
+            </label>
+            <label className="field">
+              Nom *
+              <input value={form.lastName} onChange={handleChange('lastName')} required className="input" />
+            </label>
+          </div>
+        </div>
+        <div className="form-section">
+          <h2>Coordonnées</h2>
+          <div className="field-row">
+            <label className="field">
+              Téléphone
+              <input type="tel" autoComplete="off" value={form.phone || ''} onChange={handleChange('phone')} className="input" />
+            </label>
+            <label className="field">
+              WhatsApp
+              <input type="tel" autoComplete="off" value={form.whatsapp || ''} onChange={handleChange('whatsapp')} className="input" />
+            </label>
+          </div>
           <label className="field">
-            Prénom *
-            <input value={form.firstName} onChange={handleChange('firstName')} required className="input" />
+            Email
+            <input type="email" value={form.email || ''} onChange={handleChange('email')} className="input" />
           </label>
           <label className="field">
-            Nom *
-            <input value={form.lastName} onChange={handleChange('lastName')} required className="input" />
+            Adresse
+            <input value={form.address || ''} onChange={handleChange('address')} className="input" />
           </label>
         </div>
-        <label className="field">
-          Téléphone
-          <input value={form.phone} onChange={handleChange('phone')} className="input" />
-        </label>
-        <label className="field">
-          WhatsApp
-          <input value={form.whatsapp} onChange={handleChange('whatsapp')} className="input" />
-        </label>
-        <label className="field">
-          Email
-          <input type="email" value={form.email} onChange={handleChange('email')} className="input" />
-        </label>
-        <label className="field">
-          Adresse
-          <input value={form.address} onChange={handleChange('address')} className="input" />
-        </label>
-        <label className="field">
-          Notes
-          <textarea value={form.notes} onChange={handleChange('notes')} rows={3} className="input" />
-        </label>
+        <div className="form-section">
+          <label className="field">
+            Notes
+            <textarea value={form.notes || ''} onChange={handleChange('notes')} rows={3} className="input" />
+          </label>
 
-        {error && <p className="error-text">{error}</p>}
+          {error && <p className="error-text">{error}</p>}
 
-        <div className="form-actions">
-          <button type="submit" disabled={saving} className="btn btn-primary">
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
-          <Link to={isEdit ? `/admin/clients/${id}` : '/admin/clients'} className="btn btn-ghost">
-            Annuler
-          </Link>
+          <div className="form-actions action-bar">
+            <button type="submit" disabled={saving} className="btn btn-primary">
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+            <Link to={backTo} className="btn btn-ghost">
+              Annuler
+            </Link>
+          </div>
         </div>
       </form>
     </div>

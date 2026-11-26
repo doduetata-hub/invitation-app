@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppliedTheme } from '../theme';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import jsQR from 'jsqr';
 import { api } from '../../shared/api/client';
+import PageHeader from '../components/ui/PageHeader';
+import SearchField from '../components/ui/SearchField';
+import Loading from '../components/ui/Loading';
+import CheckInCards from '../components/CheckInCards';
+import MobileNav from '../layout/MobileNav';
+import { useCompact } from '../hooks/useMediaQuery';
 
 function extractGuestCode(scannedText) {
   try {
@@ -15,6 +21,8 @@ function extractGuestCode(scannedText) {
 
 export default function CheckInPage() {
   useAppliedTheme();
+  const compact = useCompact();
+  const [moreOpen, setMoreOpen] = useState(false);
   const { id } = useParams();
   const [invitation, setInvitation] = useState(null);
   const [data, setData] = useState(null);
@@ -144,7 +152,7 @@ export default function CheckInPage() {
   if (!data || !invitation) {
     return (
       <div className="admin-root" style={{ background: 'var(--color-bg)', minHeight: '100vh', padding: '1.5rem' }}>
-        <p className="admin-muted">Chargement...</p>
+        <Loading />
       </div>
     );
   }
@@ -155,17 +163,13 @@ export default function CheckInPage() {
   const filteredWalkIns = walkInRsvps.filter((r) => r.name.toLowerCase().includes(q));
 
   return (
-    <div className="admin-root" style={{ background: 'var(--color-bg)', minHeight: '100vh', padding: '1.5rem' }}>
-      <div className="page-header">
-        <div>
-          <Link to={`/admin/invitations/${id}/guests`} className="admin-eyebrow" style={{ textDecoration: 'none' }}>← {invitation.title}</Link>
-          <h1 style={{ margin: '0.3rem 0 0' }}>Check-in — Jour J</h1>
-        </div>
-      </div>
+    <div className="admin-root standalone-page" style={{ minHeight: '100vh', padding: '1.5rem 1rem 3rem' }}>
+      <div className="page--narrow" style={{ margin: '0 auto' }}>
+      <PageHeader title="Check-in — Jour J" back={{ to: `/admin/invitations/${id}/guests`, label: invitation.title }} />
 
       {error && <p className="error-text">{error}</p>}
 
-      <div className="stats-grid" style={{ marginTop: '1.25rem' }}>
+      <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{stats.arrived}</div>
           <div className="stat-label">Arrivés</div>
@@ -188,7 +192,7 @@ export default function CheckInPage() {
             Caméra indisponible : {cameraError}. Utilise la recherche manuelle ci-dessous.
           </div>
         ) : (
-          <div style={styles.scannerWrap}>
+          <div style={compact ? { ...styles.scannerWrap, aspectRatio: '1 / 1', margin: '0 auto' } : styles.scannerWrap}>
             <video ref={videoRef} muted playsInline style={styles.video} />
             {scanState === 'scanning' && <div style={styles.scanHint}>Visez le QR code de l'invité</div>}
 
@@ -239,15 +243,34 @@ export default function CheckInPage() {
 
       <div className="editor-section">
         <h2>Recherche manuelle</h2>
-        <input
-          type="text"
-          placeholder="Rechercher un invité par nom..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input"
-          style={{ maxWidth: '320px', marginBottom: '1rem' }}
-        />
+        <div className="gb-search-row">
+          <SearchField
+            placeholder="Rechercher un invité par nom..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
+        {compact ? (
+          <CheckInCards
+            entries={[
+              ...filteredGuests.map((g) => ({
+                key: g.id,
+                name: g.name || g.rsvp?.name || '—',
+                answer: g.rsvp ? (g.rsvp.answer === 'YES' ? 'Présent' : 'Absent') : 'En attente',
+                checkedInAt: g.checkedInAt,
+                onToggle: () => toggleManualCheckIn('guest', g.id, Boolean(g.checkedInAt)),
+              })),
+              ...filteredWalkIns.map((r) => ({
+                key: r.id,
+                name: r.name,
+                answer: r.answer === 'YES' ? 'Présent' : 'Absent',
+                checkedInAt: r.checkedInAt,
+                onToggle: () => toggleManualCheckIn('rsvp', r.id, Boolean(r.checkedInAt)),
+              })),
+            ]}
+          />
+        ) : (
         <div className="table-wrap">
         <table className="table">
           <thead>
@@ -255,7 +278,7 @@ export default function CheckInPage() {
               <th>Nom</th>
               <th>Statut RSVP</th>
               <th>Arrivée</th>
-              <th></th>
+              <th className="col-actions">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -264,7 +287,7 @@ export default function CheckInPage() {
                 <td>{g.name || g.rsvp?.name || '—'}</td>
                 <td>{g.rsvp ? (g.rsvp.answer === 'YES' ? 'Présent' : 'Absent') : 'En attente'}</td>
                 <td>{g.checkedInAt ? new Date(g.checkedInAt).toLocaleTimeString('fr-FR') : '—'}</td>
-                <td>
+                <td className="col-actions">
                   <button
                     type="button"
                     onClick={() => toggleManualCheckIn('guest', g.id, Boolean(g.checkedInAt))}
@@ -280,7 +303,7 @@ export default function CheckInPage() {
                 <td>{r.name}</td>
                 <td>{r.answer === 'YES' ? 'Présent' : 'Absent'}</td>
                 <td>{r.checkedInAt ? new Date(r.checkedInAt).toLocaleTimeString('fr-FR') : '—'}</td>
-                <td>
+                <td className="col-actions">
                   <button
                     type="button"
                     onClick={() => toggleManualCheckIn('rsvp', r.id, Boolean(r.checkedInAt))}
@@ -294,7 +317,10 @@ export default function CheckInPage() {
           </tbody>
         </table>
         </div>
+        )}
       </div>
+      </div>
+      <MobileNav open={moreOpen} onOpenChange={setMoreOpen} />
     </div>
   );
 }

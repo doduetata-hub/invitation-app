@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { api } from '../../shared/api/client';
+import { useAuth } from '../../shared/auth/AuthContext';
+import PageHeader from '../components/ui/PageHeader';
 
 export default function SettingsPage() {
+  const { admin } = useAuth();
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -38,16 +41,19 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ maxWidth: '420px' }}>
-      <span className="admin-eyebrow">Compte</span>
-      <h1>Paramètres</h1>
-      <div className="panel" style={{ marginTop: '1.25rem' }}>
-        <h2>Changer le mot de passe</h2>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+    <div>
+      <PageHeader title="Paramètres" subtitle={admin?.email ? `Compte connecté : ${admin.email}` : undefined} />
+      <div className="settings-row">
+        <div className="settings-row__intro">
+          <h2>Changer le mot de passe</h2>
+          <p>Saisissez votre mot de passe actuel, puis le nouveau (8 caractères au minimum) deux fois.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="panel form-stack">
           <label className="field">
             Mot de passe actuel
             <input
               type="password"
+              autoComplete="current-password"
               value={form.currentPassword}
               onChange={handleChange('currentPassword')}
               required
@@ -58,6 +64,7 @@ export default function SettingsPage() {
             Nouveau mot de passe
             <input
               type="password"
+              autoComplete="new-password"
               value={form.newPassword}
               onChange={handleChange('newPassword')}
               required
@@ -69,6 +76,7 @@ export default function SettingsPage() {
             Confirmer le nouveau mot de passe
             <input
               type="password"
+              autoComplete="new-password"
               value={form.confirmPassword}
               onChange={handleChange('confirmPassword')}
               required
@@ -78,11 +86,13 @@ export default function SettingsPage() {
           </label>
 
           {error && <p className="error-text">{error}</p>}
-          {success && <p className="success-text">Mot de passe mis à jour avec succès.</p>}
+          {success && <p className="success-text" role="status">Mot de passe mis à jour avec succès.</p>}
 
-          <button type="submit" disabled={saving} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-            {saving ? 'Enregistrement...' : 'Mettre à jour'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" disabled={saving} className="btn btn-primary">
+              {saving ? 'Enregistrement...' : 'Mettre à jour'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

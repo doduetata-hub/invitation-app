@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ShareButton from './ShareButton';
 
 // Montre le QR code ET le lien ensemble dans une seule vue : le client n'a plus besoin
 // d'envoyer le lien et le QR séparément à un invité, une seule capture d'écran suffit.
@@ -25,6 +26,7 @@ export default function QrCodeModal({ title, link, qrUrl, downloadName, onClose 
           <a href={qrUrl} download={downloadName} className="btn btn-primary btn-sm">
             Télécharger le QR
           </a>
+          <ShareButton title={title} url={link} qrUrl={qrUrl} fileName={downloadName} />
         </div>
       </div>
     </div>
