@@ -8,7 +8,12 @@
 /* Chargement des images : une petite lueur dorée, jamais une scène à moitié construite */
 .lp-gate:not(.is-ready)::before { content: ''; position: absolute; left: 50%; top: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 2px solid rgba(243, 223, 166, 0.25); border-top-color: #f3dfa6; animation: lp-load 0.9s linear infinite; }
 @keyframes lp-load { to { transform: rotate(360deg); } }
-.lp-gate--inline { position: absolute; z-index: 5; }
+/* « Revoir l'ouverture » (aperçus de l'administration) : comme chez l'invité, elle occupe l'écran visible. Calée sur la couverture ou
+   l'invitation entière, la porte se retrouvait très loin sous le haut de page. Dans l'aperçu de l'éditeur, le cadre de l'appareil sert de
+   repère : elle y reste contenue. « Fermer » est visible tout de suite. */
+.lp-gate--inline { container-type: size; }
+.lp-gate--inline .pg-stage { width: min(108%, calc(100cqh * 2 / 3)); } /* le cadre entier tient dans l'aperçu, même plus bas que l'écran */
+.lp-gate--inline .lp-gate__skip { color: rgba(233, 220, 192, 0.85); animation-delay: 0s; }
 .lp-gate[data-phase='leaving'] { opacity: 0; transform: scale(1.06); pointer-events: none; }
 
 /* « Passer » : presque invisible, n'apparaît qu'après 7 secondes */
