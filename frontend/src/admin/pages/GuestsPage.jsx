@@ -7,6 +7,7 @@ import GuestMessageModal from '../../shared/components/GuestMessageModal';
 import InvitationTabs from '../components/InvitationTabs';
 import { buildWhatsappShareUrl } from '../../shared/utils/whatsapp';
 import { buildGuestDeleteWarning } from '../../shared/utils/guestWarnings';
+import { buildInvitationMessage } from '../../shared/utils/invitationMessage';
 
 const emptyForm = { name: '', phone: '', maxPersons: '', tableNumber: '' };
 
@@ -133,8 +134,13 @@ export default function GuestsPage() {
     }
   };
 
-  const handleCopy = (code) => {
-    navigator.clipboard?.writeText(guestUrl(code));
+  const invitationMessage = (g) =>
+    buildInvitationMessage({ guestName: g.name || g.rsvp?.name, namesLine: invitation?.namesLine, url: guestUrl(g.guestCode) });
+
+  // « Copier » reprend le même message que WhatsApp ; le lien seul reste disponible dans la fenêtre du QR code.
+  const handleCopy = (g) => {
+    const code = g.guestCode;
+    navigator.clipboard?.writeText(invitationMessage(g));
     setCopiedId(code);
     setTimeout(() => setCopiedId(''), 1500);
   };
@@ -407,7 +413,7 @@ export default function GuestsPage() {
                           <button type="button" onClick={() => startEdit(g)} className="btn btn-outline btn-sm">
                             Modifier
                           </button>
-                          <button type="button" onClick={() => handleCopy(g.guestCode)} className="btn btn-outline btn-sm">
+                          <button type="button" onClick={() => handleCopy(g)} className="btn btn-outline btn-sm">
                             {copiedId === g.guestCode ? 'Copié !' : 'Copier'}
                           </button>
                           <button type="button" onClick={() => setQrGuest(g)} className="btn btn-outline btn-sm">
@@ -417,7 +423,7 @@ export default function GuestsPage() {
                             <a
                               href={buildWhatsappShareUrl(
                                 g.phone,
-                                `Bonjour${g.name || g.rsvp?.name ? ' ' + (g.name || g.rsvp?.name) : ''}, voici votre invitation : ${guestUrl(g.guestCode)}`
+                                invitationMessage(g)
                               )}
                               target="_blank"
                               rel="noreferrer"
