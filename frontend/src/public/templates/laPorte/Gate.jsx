@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { splitNames, initials } from '../soireeKit/utils';
 import { getText } from './texts';
+import { lockBehind } from '../soireeKit/opening';
 import { playDoor, playSeal, playBell, stopBell } from './sound';
 import plateUrl from './assets/gate/plate.webp';
 import leafLeftUrl from './assets/gate/leaf-left.webp';
@@ -20,7 +21,8 @@ import sealUrl from './assets/gate/seal.webp';
 // visiteur, l'enveloppe fermée / ouverte et le sceau. Aucun texte n'est dans les images : monogramme, noms, consigne et nom du destinataire
 // sont en HTML. Seules des transformations et des opacités sont animées.
 
-export default function Gate({ invitation, mode = 'page', onDone }) {
+export default function Gate({ invitation, mode = 'page', onDone, preview = false }) {
+  const closable = mode === 'inline'; // seul le rejeu pendant la saisie (administration) peut être fermé
   const [phase, setPhase] = useState('door');
   const [ringKey, setRingKey] = useState(0); // 0 = pas encore sonné ; chaque coup de sonnette relance les animations
   const [ready, setReady] = useState(false); // décor et battants chargés : la scène n'apparaît pas à moitié construite
@@ -75,6 +77,10 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
     };
   }, [phase, ready]);
 
+  const shell = useRef(null);
+  // Rien d'autre n'est accessible avant la fin de l'ouverture.
+  useEffect(() => (mode === 'page' ? lockBehind(shell.current) : undefined), [mode]);
+
   // En page publique l'ouverture occupe tout l'écran : on fige le défilement le temps qu'elle dure.
   useEffect(() => {
     if (mode !== 'page') return undefined;
@@ -124,19 +130,19 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
   }, [phase, leave]);
 
   useEffect(() => {
-    if (mode !== 'inline') return undefined;
+    if (!closable) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, skip]);
+  }, [closable, skip]);
 
   const fromLine = tx('gateFrom').replace('{noms}', who || 'vos hôtes');
   const ringing = ringKey === 0 ? '0' : ringKey % 2 ? 'a' : 'b';
 
   return (
-    <div className={`lp-gate lp-gate--${mode}${ready ? ' is-ready' : ''}`} data-phase={phase} data-ring={ringing} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
+    <div ref={shell} className={`lp-gate lp-gate--${mode}${preview ? ' is-preview' : ''}${ready ? ' is-ready' : ''}`} data-phase={phase} data-ring={ringing} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
       <img className="pg-backdrop" src={plateUrl} alt="" aria-hidden="true" decoding="async" />
-      {mode === 'inline' && <button type="button" className="lp-gate__skip" onClick={skip}>Fermer</button>}
+      {closable && <button type="button" className="lp-gate__skip" onClick={skip}>Fermer</button>}
 
       <div className="pg-stage">
         <img className="pg-plate" src={plateUrl} alt="" decoding="async" fetchpriority="high" onLoad={onImg} onError={onImg} />

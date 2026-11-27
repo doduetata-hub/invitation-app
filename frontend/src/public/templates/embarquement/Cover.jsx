@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import Reveal from '../soireeKit/Reveal';
 import Pic from '../soireeKit/Pic';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
@@ -9,7 +9,7 @@ import { Divider, Head } from './Ornaments';
 import { getText } from './texts';
 import { flightOf } from './flight';
 import Gate from './Gate';
-import { useRevisit, afterOpening } from '../soireeKit/opening';
+import { useRevisit, afterOpening, OpeningPreview } from '../soireeKit/opening';
 import cloudAUrl from './assets/cloud-a.webp';
 import cloudBUrl from './assets/cloud-b.webp';
 import ringsUrl from './assets/stamp-rings.webp';
@@ -140,13 +140,15 @@ function Dress({ invitation }) {
 // demande), puis le ciel et le portrait, l'invitation, les informations de vol et le dress code.
 export default function Cover({ invitation }) {
   const isPublic = typeof window !== 'undefined' && /^\/i\//.test(window.location.pathname);
-  const [gate, setGate] = useState(isPublic ? 'page' : null); // obligatoire à chaque visite (voir soireeKit/opening.js)
+  const preview = useContext(OpeningPreview);
+  // Obligatoire à chaque visite de l'invité ; dans l'administration, ouvrir le modèle commence aussi par elle (voir soireeKit/opening.js).
+  const [gate, setGate] = useState(isPublic ? 'page' : preview === 'visit' ? 'preview' : null);
   useRevisit(isPublic, () => setGate('page')); // et à chaque retour sur l'invitation
   return (
     <>
       <div className="em-cover">
-        {gate && <Gate invitation={invitation} mode={gate} onDone={() => { setGate(null); if (gate === 'page') afterOpening(); }} />}
-        <Hero invitation={invitation} entered={gate !== 'page'} preview={!isPublic} onReplay={() => setGate('inline')} />
+        {gate && <Gate invitation={invitation} mode={gate === 'inline' ? 'inline' : 'page'} preview={gate === 'preview'} onDone={() => { setGate(null); if (gate === 'page') afterOpening(); }} />}
+        <Hero invitation={invitation} entered={!gate} preview={!isPublic && preview !== 'thumbnail'} onReplay={() => setGate(preview === 'visit' ? 'preview' : 'inline')} />
       </div>
       <Intro invitation={invitation} />
       <Details invitation={invitation} />

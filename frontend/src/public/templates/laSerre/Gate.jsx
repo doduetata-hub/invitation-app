@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { splitNames } from '../soireeKit/utils';
 import { getText } from './texts';
+import { lockBehind } from '../soireeKit/opening';
 import { createFog } from './fog';
 import { playDrop, playBirds, playLeaves } from './sound';
 import bgPortraitUrl from './assets/bg-portrait.webp';
@@ -19,7 +20,8 @@ import dropletsUrl from './assets/droplets.webp';
 const ENOUGH = 0.4; // part de la vitre à essuyer avant que la buée se dissipe d'elle-même
 const IDLE = 6000; // sans geste pendant ce temps, l'aide devient plus visible
 
-export default function Gate({ invitation, mode = 'page', onDone }) {
+export default function Gate({ invitation, mode = 'page', onDone, preview = false }) {
+  const closable = mode === 'inline'; // seul le rejeu pendant la saisie (administration) peut être fermé
   const [phase, setPhase] = useState('fog');
   const [ready, setReady] = useState(false);
   const [wide, setWide] = useState(null); // décor paysage ou portrait, selon la forme réelle du cadre
@@ -126,6 +128,9 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
     go('clear');
   }, [go]);
 
+  // Rien d'autre n'est accessible avant la fin de l'ouverture.
+  useEffect(() => (mode === 'page' ? lockBehind(root.current) : undefined), [mode]);
+
   // En page publique l'ouverture occupe tout l'écran : on fige le défilement le temps qu'elle dure.
   useEffect(() => {
     if (mode !== 'page') return undefined;
@@ -156,11 +161,11 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
   }, [leave]);
 
   useEffect(() => {
-    if (mode !== 'inline') return undefined;
+    if (!closable) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, skip]);
+  }, [closable, skip]);
 
   // Aide : après un moment sans geste, le doigt réapparaît en plus grand et la consigne bat.
   const waitForHelp = useCallback(() => {
@@ -205,7 +210,7 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
   };
 
   return (
-    <div ref={root} className={`ls-gate ls-gate--${mode}${ready ? ' is-ready' : ''}${touched ? ' is-touched' : ''}${help ? ' is-help' : ''}`} data-phase={phase} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
+    <div ref={root} className={`ls-gate ls-gate--${mode}${preview ? ' is-preview' : ''}${ready ? ' is-ready' : ''}${touched ? ' is-touched' : ''}${help ? ' is-help' : ''}`} data-phase={phase} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
       <div className="ls-gate__scene">
         {wide !== null && <img ref={bg} className="ls-gate__bg" src={wide ? bgLandscapeUrl : bgPortraitUrl} alt="" decoding="async" fetchpriority="high" />}
         <span className="ls-gate__veil" aria-hidden="true" />
@@ -233,7 +238,7 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
         <button type="button" ref={enterBtn} className="ls-gate__cta" onClick={part} tabIndex={phase === 'clear' ? 0 : -1}>{tx('gateEnter')}</button>
       </div>
 
-      {mode === 'inline' && <button type="button" className="ls-gate__skip" onClick={skip}>Fermer</button>}
+      {closable && <button type="button" className="ls-gate__skip" onClick={skip}>Fermer</button>}
     </div>
   );
 }

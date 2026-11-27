@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import InvitationPage from '../../public/InvitationPage';
 import { buildSampleInvitation } from '../../public/sampleInvitation';
+import { OpeningPreview } from '../../public/templates/soireeKit/opening';
 
 export default function TemplatePreviewPage() {
   const { key } = useParams();
@@ -21,17 +22,22 @@ export default function TemplatePreviewPage() {
   if (embed) {
     return (
       <div className="tpl-embed">
-        <InvitationPage invitation={invitation} />
+        <OpeningPreview.Provider value="thumbnail">
+          <InvitationPage invitation={invitation} />
+        </OpeningPreview.Provider>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="tpl-visit">
       <div style={styles.bar}>
         <Link to="/admin/templates" style={styles.back}>← Retour aux templates</Link>
       </div>
-      <InvitationPage invitation={invitation} />
+      {/* Ouvrir un modèle, c'est le voir comme l'invité : il commence par son ouverture. */}
+      <OpeningPreview.Provider key={key} value="visit">
+        <InvitationPage invitation={invitation} />
+      </OpeningPreview.Provider>
     </div>
   );
 }

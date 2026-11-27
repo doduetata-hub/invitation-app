@@ -11,8 +11,8 @@
 /* « Revoir l'ouverture » (aperçus de l'administration) : comme chez l'invité, elle occupe l'écran visible. Calée sur la couverture ou
    l'invitation entière, la porte se retrouvait très loin sous le haut de page. Dans l'aperçu de l'éditeur, le cadre de l'appareil sert de
    repère : elle y reste contenue. « Fermer » est visible tout de suite. */
-.lp-gate--inline { container-type: size; }
-.lp-gate--inline .pg-stage { width: min(108%, calc(100cqh * 2 / 3)); } /* le cadre entier tient dans l'aperçu, même plus bas que l'écran */
+.lp-gate--inline, .lp-gate.is-preview { container-type: size; }
+.lp-gate--inline .pg-stage, .lp-gate.is-preview .pg-stage { width: min(108%, calc(100cqh * 2 / 3)); } /* le cadre entier tient dans l'aperçu, même plus bas que l'écran */
 .lp-gate--inline .lp-gate__skip { color: rgba(233, 220, 192, 0.85); animation-delay: 0s; }
 .lp-gate[data-phase='leaving'] { opacity: 0; transform: scale(1.06); pointer-events: none; }
 

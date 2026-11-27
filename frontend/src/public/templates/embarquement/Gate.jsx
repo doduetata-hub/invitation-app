@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getText } from './texts';
+import { lockBehind } from '../soireeKit/opening';
 import { flightOf } from './flight';
 import { playNotch, playChime, playPaper, playTakeoff } from './sound';
 import cabinUrl from './assets/cabin.webp';
@@ -16,7 +17,8 @@ const ENOUGH = 0.42; // au-delà, le volet termine seul sa course
 const IDLE = 6000; // sans geste pendant ce temps, l'aide devient plus visible
 const clamp = (v) => Math.max(0, Math.min(1, v));
 
-export default function Gate({ invitation, mode = 'page', onDone }) {
+export default function Gate({ invitation, mode = 'page', onDone, preview = false }) {
+  const closable = mode === 'inline'; // seul le rejeu pendant la saisie (administration) peut être fermé
   const [phase, setPhase] = useState('closed');
   const [p, setP] = useState(0); // ouverture du volet, de 0 (fermé) à 1
   const [dragging, setDragging] = useState(false);
@@ -45,6 +47,10 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
     const t = setTimeout(() => setReady(true), 12000);
     return () => clearTimeout(t);
   }, []);
+
+  const shell = useRef(null);
+  // Rien d'autre n'est accessible avant la fin de l'ouverture.
+  useEffect(() => (mode === 'page' ? lockBehind(shell.current) : undefined), [mode]);
 
   // En page publique l'ouverture occupe tout l'écran : on fige le défilement le temps qu'elle dure.
   useEffect(() => {
@@ -100,11 +106,11 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
   }, [leave]);
 
   useEffect(() => {
-    if (mode !== 'inline') return undefined;
+    if (!closable) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, skip]);
+  }, [closable, skip]);
 
   // Aide : après un moment sans geste, les chevrons grandissent et la consigne bat.
   const waitForHelp = useCallback(() => {
@@ -164,7 +170,7 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
   };
 
   return (
-    <div className={`em-gate em-gate--${mode}${ready ? ' is-ready' : ''}${dragging ? ' is-dragging' : ''}${help ? ' is-help' : ''}`} data-phase={phase} style={{ '--p': p }} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
+    <div ref={shell} className={`em-gate em-gate--${mode}${preview ? ' is-preview' : ''}${ready ? ' is-ready' : ''}${dragging ? ' is-dragging' : ''}${help ? ' is-help' : ''}`} data-phase={phase} style={{ '--p': p }} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
       <img className="em-gate__backdrop" src={cabinUrl} alt="" aria-hidden="true" decoding="async" />
 
       <div ref={stage} className="em-stage">
@@ -201,7 +207,7 @@ export default function Gate({ invitation, mode = 'page', onDone }) {
         <button type="button" ref={boardBtn} className="em-pass__go" onClick={board} tabIndex={phase === 'open' ? 0 : -1}>{tx('gateBoard')}<span aria-hidden="true"> →</span></button>
       </div>
 
-      {mode === 'inline' && <button type="button" className="em-gate__skip" onClick={skip}>Fermer</button>}
+      {closable && <button type="button" className="em-gate__skip" onClick={skip}>Fermer</button>}
     </div>
   );
 }

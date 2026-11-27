@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import InvitationPage from '../../public/InvitationPage';
+import { OpeningPreview } from '../../public/templates/soireeKit/opening';
 import Icon from './ui/Icon';
 import PreviewModes from './PreviewModes';
 
@@ -57,7 +58,9 @@ export default function PreviewScreen({ invitation, mode, onModeChange, onClose 
             {/* La transformation garde les éléments « fixes » de l'invitation à l'intérieur de l'aperçu. */}
             <div className="preview-screen__scaler" style={{ width: layout.width, height: layout.height, transform: `scale(${layout.scale})` }}>
               <div className={`preview-frame preview-frame--${mode}`}>
-                <InvitationPage invitation={invitation} />
+                <OpeningPreview.Provider value="visit">
+                  <InvitationPage invitation={invitation} />
+                </OpeningPreview.Provider>
               </div>
             </div>
           </div>

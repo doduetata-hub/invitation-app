@@ -1,7 +1,11 @@
 // Ouverture d'invitation obligatoire (La Porte, La Serre, L'Embarquement) : l'invité fait le geste à chaque visite, et chaque retour
 // sur l'invitation recommence par elle. Un lien qui vise une partie de la page (/i/slug#rsvp, #billet) ne la contourne pas : on rejoint
 // cette partie une fois l'ouverture terminée.
-import { useEffect, useRef } from 'react';
+import { createContext, useEffect, useRef } from 'react';
+
+// Contexte des aperçus de l'administration : « visit » (on ouvre le modèle ou l'aperçu : il commence par l'ouverture, obligatoire comme
+// pour l'invité), « thumbnail » (vignette de la bibliothèque : ni ouverture ni bouton). Sans contexte (aperçu pendant la saisie) : bouton seul.
+export const OpeningPreview = createContext(null);
 
 // Absence à partir de laquelle un onglet retrouvé compte comme une nouvelle visite. En dessous, l'invité n'a fait qu'un aller-retour
 // (choisir une photo pour sa réponse, regarder l'itinéraire, répondre à un message) : on ne le renvoie pas au début.
@@ -28,6 +32,31 @@ export function useRevisit(active, replay) {
       window.removeEventListener('pageshow', onShow);
     };
   }, [active]);
+}
+
+/**
+ * Rend inactif tout le reste de l'invitation tant que l'ouverture est affichée : seul son dernier bouton y donne accès. Les sections qui
+ * se chargent entre-temps sont bloquées à leur arrivée. Ce qui est hors de l'invitation (barre « Retour » d'un aperçu) reste utilisable.
+ * Renvoie la fonction qui libère la page.
+ */
+export function lockBehind(gate) {
+  const root = gate?.closest('.lp-root, .ls-root, .em-root');
+  if (!root) return () => {};
+  const locked = new Set();
+  const apply = () => {
+    for (let node = gate; node && node !== root; node = node.parentElement) {
+      Array.from(node.parentElement.children).forEach((other) => {
+        if (other !== node && !other.inert) { other.inert = true; locked.add(other); }
+      });
+    }
+  };
+  apply();
+  const observer = new MutationObserver(apply);
+  observer.observe(root, { childList: true, subtree: true });
+  return () => {
+    observer.disconnect();
+    locked.forEach((el) => { el.inert = false; });
+  };
 }
 
 /** Après l'ouverture : en haut de l'invitation, ou sur la partie que le lien visait. */
