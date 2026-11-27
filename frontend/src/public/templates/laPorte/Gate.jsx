@@ -13,13 +13,14 @@ import sealUrl from './assets/gate/seal.webp';
 
 // OUVERTURE : le hall, une double porte en noyer. Quelqu'un sonne ; l'invité touche la poignée, les battants s'ouvrent sur un visiteur
 // qui lui tend une enveloppe scellée ; il touche le sceau, la lettre sort de l'enveloppe et l'invitation apparaît.
-// Phases : door → opening → envelope → unseal → leaving. Toujours passable (bouton « Passer », touche Échap).
+// Phases : door → opening → envelope → unseal → leaving. Ouverture obligatoire pour l'invité : ni bouton pour passer, ni touche Échap
+// (seul l'aperçu de l'administration peut la fermer).
 //
 // Le décor est composé de CALQUES PHOTOGRAPHIQUES séparés (voir ASSETS.md) : le hall avec l'ouverture vide, deux battants détourés, le
 // visiteur, l'enveloppe fermée / ouverte et le sceau. Aucun texte n'est dans les images : monogramme, noms, consigne et nom du destinataire
 // sont en HTML. Seules des transformations et des opacités sont animées.
 
-export default function Gate({ invitation, mode = 'page', onDone, replay = false }) {
+export default function Gate({ invitation, mode = 'page', onDone }) {
   const [phase, setPhase] = useState('door');
   const [ringKey, setRingKey] = useState(0); // 0 = pas encore sonné ; chaque coup de sonnette relance les animations
   const [ready, setReady] = useState(false); // décor et battants chargés : la scène n'apparaît pas à moitié construite
@@ -61,7 +62,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
     const first = setTimeout(ring, 800);
     const again = setInterval(ring, 7500);
     const unlock = (e) => {
-      if (e.target && e.target.closest && e.target.closest('.pg-handle, .pg-door, .lp-gate__skip')) { playBell(); return; }
+      if (e.target && e.target.closest && e.target.closest('.pg-handle, .pg-door')) { playBell(); return; }
       if (!heard) ring();
     };
     window.addEventListener('pointerdown', unlock, { once: true });
@@ -123,10 +124,11 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   }, [phase, leave]);
 
   useEffect(() => {
+    if (mode !== 'inline') return undefined;
     const onKey = (e) => { if (e.key === 'Escape') skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [skip]);
+  }, [mode, skip]);
 
   const fromLine = tx('gateFrom').replace('{noms}', who || 'vos hôtes');
   const ringing = ringKey === 0 ? '0' : ringKey % 2 ? 'a' : 'b';
@@ -134,7 +136,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   return (
     <div className={`lp-gate lp-gate--${mode}${ready ? ' is-ready' : ''}`} data-phase={phase} data-ring={ringing} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
       <img className="pg-backdrop" src={plateUrl} alt="" aria-hidden="true" decoding="async" />
-      <button type="button" className="lp-gate__skip" onClick={skip}>{replay ? 'Fermer' : tx('gateSkip')}</button>
+      {mode === 'inline' && <button type="button" className="lp-gate__skip" onClick={skip}>Fermer</button>}
 
       <div className="pg-stage">
         <img className="pg-plate" src={plateUrl} alt="" decoding="async" fetchpriority="high" onLoad={onImg} onError={onImg} />

@@ -12,16 +12,20 @@ import dropletsUrl from './assets/droplets.webp';
 
 // OUVERTURE : la serre est derrière une vitre couverte de buée. L'invité l'essuie du doigt ; la verrière apparaît avec les noms, puis les
 // pivoines du premier plan s'écartent pour le laisser entrer.
-// Phases : fog → clear → part → leaving. Toujours passable (bouton « Passer », touche Échap) et utilisable au clavier.
+// Phases : fog → clear → part → leaving. Ouverture obligatoire pour l'invité : il essuie la vitre puis touche « Entrer » ; rien n'avance
+// tout seul. Au clavier ou au lecteur d'écran, la consigne essuie la vitre à sa place. Seul l'aperçu de l'administration peut la fermer.
 // Aucun texte n'est dans les images : noms, date, consigne et nom de l'invité sont en HTML.
 
 const ENOUGH = 0.4; // part de la vitre à essuyer avant que la buée se dissipe d'elle-même
+const IDLE = 6000; // sans geste pendant ce temps, l'aide devient plus visible
 
-export default function Gate({ invitation, mode = 'page', onDone, replay = false }) {
+export default function Gate({ invitation, mode = 'page', onDone }) {
   const [phase, setPhase] = useState('fog');
   const [ready, setReady] = useState(false);
   const [wide, setWide] = useState(null); // décor paysage ou portrait, selon la forme réelle du cadre
   const [touched, setTouched] = useState(false);
+  const [help, setHelp] = useState(false);
+  const idle = useRef(0);
   const root = useRef(null);
   const canvas = useRef(null);
   const bg = useRef(null);
@@ -116,14 +120,11 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
     later(() => leave(1000), 1500);
   }, [go, later, leave]);
 
-  const partRef = useRef(part);
-  partRef.current = part;
   const reveal = useCallback(() => {
     if (phaseRef.current !== 'fog') return;
     playBirds();
     go('clear');
-    later(() => partRef.current(), 4600);
-  }, [go, later]);
+  }, [go]);
 
   // En page publique l'ouverture occupe tout l'écran : on fige le défilement le temps qu'elle dure.
   useEffect(() => {
@@ -138,9 +139,13 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   }, [mode]);
 
   useEffect(() => {
-    if (!ready || mode !== 'page') return;
-    const target = phase === 'fog' ? mainBtn.current : phase === 'clear' ? enterBtn.current : null;
-    if (target) target.focus({ preventScroll: true });
+    if (!ready || mode !== 'page') return undefined;
+    // Le bouton « Entrer » n'apparaît qu'après les noms : on attend qu'il soit visible avant de lui donner le focus.
+    const t = setTimeout(() => {
+      const target = phase === 'fog' ? mainBtn.current : phase === 'clear' ? enterBtn.current : null;
+      if (target) target.focus({ preventScroll: true });
+    }, phase === 'clear' ? 2100 : 0);
+    return () => clearTimeout(t);
   }, [ready, mode, phase]);
 
   const skip = useCallback(() => {
@@ -151,10 +156,23 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   }, [leave]);
 
   useEffect(() => {
+    if (mode !== 'inline') return undefined;
     const onKey = (e) => { if (e.key === 'Escape') skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [skip]);
+  }, [mode, skip]);
+
+  // Aide : après un moment sans geste, le doigt réapparaît en plus grand et la consigne bat.
+  const waitForHelp = useCallback(() => {
+    clearTimeout(idle.current);
+    setHelp(false);
+    idle.current = setTimeout(() => setHelp(true), IDLE);
+  }, []);
+  useEffect(() => {
+    if (phase === 'fog' && ready) waitForHelp();
+    else setHelp(false);
+    return () => clearTimeout(idle.current);
+  }, [phase, ready, waitForHelp]);
 
   // Position du doigt dans les pixels de la vitre (valable aussi quand l'aperçu de l'administration est mis à l'échelle).
   const point = (e) => {
@@ -168,6 +186,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
     const from = last.current || p;
     last.current = p;
     if (!touched) setTouched(true);
+    waitForHelp();
     fog.current.wipe(from[0], from[1], p[0], p[1]);
     if (e.timeStamp - lastDrop.current > 420 && (e.pointerType !== 'mouse' || e.buttons)) { lastDrop.current = e.timeStamp; playDrop(); }
   };
@@ -175,16 +194,18 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   const onMove = (e) => { if (e.pointerType === 'mouse' || e.buttons || e.pressure > 0) stroke(e); };
   const onUp = () => { last.current = null; };
 
-  const auto = () => {
+  // La consigne : au clavier ou au lecteur d'écran (clic sans pointeur) elle essuie la vitre ; un toucher ne fait que montrer le geste.
+  const onCta = (e) => {
     if (phaseRef.current !== 'fog') return;
-    setTouched(true);
     playDrop();
-    if (fog.current) fog.current.autoWipe();
-    else reveal();
+    if (!fog.current) { reveal(); return; } // secours : la buée n'a pas pu être dessinée, personne ne reste bloqué
+    if (e.detail === 0) { setTouched(true); fog.current.autoWipe(); return; }
+    clearTimeout(idle.current);
+    setHelp(true);
   };
 
   return (
-    <div ref={root} className={`ls-gate ls-gate--${mode}${ready ? ' is-ready' : ''}${touched ? ' is-touched' : ''}`} data-phase={phase} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
+    <div ref={root} className={`ls-gate ls-gate--${mode}${ready ? ' is-ready' : ''}${touched ? ' is-touched' : ''}${help ? ' is-help' : ''}`} data-phase={phase} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
       <div className="ls-gate__scene">
         {wide !== null && <img ref={bg} className="ls-gate__bg" src={wide ? bgLandscapeUrl : bgPortraitUrl} alt="" decoding="async" fetchpriority="high" />}
         <span className="ls-gate__veil" aria-hidden="true" />
@@ -206,13 +227,13 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
       <span className="ls-gate__finger" aria-hidden="true" />
       <div className="ls-gate__ui ls-gate__ui--fog">
         <p className="ls-gate__who">{guest?.name ? `Pour ${guest.name}` : 'Une invitation vous attend'}</p>
-        <button type="button" ref={mainBtn} className="ls-gate__cta" onClick={auto} disabled={phase !== 'fog'}>{tx('gateWipe')}</button>
+        <button type="button" ref={mainBtn} className="ls-gate__cta" onClick={onCta} disabled={phase !== 'fog'}>{tx('gateWipe')}</button>
       </div>
       <div className="ls-gate__ui ls-gate__ui--clear">
         <button type="button" ref={enterBtn} className="ls-gate__cta" onClick={part} tabIndex={phase === 'clear' ? 0 : -1}>{tx('gateEnter')}</button>
       </div>
 
-      <button type="button" className="ls-gate__skip" onClick={skip}>{replay ? 'Fermer' : tx('gateSkip')}</button>
+      {mode === 'inline' && <button type="button" className="ls-gate__skip" onClick={skip}>Fermer</button>}
     </div>
   );
 }

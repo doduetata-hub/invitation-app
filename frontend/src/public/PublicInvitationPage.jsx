@@ -54,6 +54,14 @@ export default function PublicInvitationPage() {
 
   usePageMeta(invitation);
 
+  // Chaque visite commence en haut (sur l'ouverture ou la couverture) : le navigateur ne reprend pas l'ancien défilement.
+  useEffect(() => {
+    if (!('scrollRestoration' in window.history)) return undefined;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => { window.history.scrollRestoration = previous; };
+  }, []);
+
   const handleRsvpSubmit = async (form, { photo = null, removePhoto = false } = {}) => {
     let result;
     if (photo || removePhoto) {

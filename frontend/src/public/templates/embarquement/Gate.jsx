@@ -8,17 +8,22 @@ import skyUrl from './assets/sky-wing.webp';
 
 // OUVERTURE : l'invité est assis près du hublot, volet fermé. Il le fait glisser vers le haut ; le soleil se lève sur les nuages, le signal
 // de cabine retentit et sa carte d'embarquement vient se poser. Il embarque : la vue emplit l'écran et l'invitation apparaît.
-// Phases : closed → open → board → leaving. Toujours passable (bouton « Passer », touche Échap) et utilisable au clavier.
+// Phases : closed → open → board → leaving. Ouverture obligatoire pour l'invité : il fait glisser le volet puis touche « Embarquer » ;
+// rien n'avance tout seul. Au clavier ou au lecteur d'écran, la consigne ouvre le volet à sa place. Seul l'aperçu peut la fermer.
 // Le décor est composé de calques (assets/) : ciel, volet, puis la cabine dont le hublot est transparent. Tout le texte est en HTML.
 
 const ENOUGH = 0.42; // au-delà, le volet termine seul sa course
+const IDLE = 6000; // sans geste pendant ce temps, l'aide devient plus visible
 const clamp = (v) => Math.max(0, Math.min(1, v));
 
-export default function Gate({ invitation, mode = 'page', onDone, replay = false }) {
+export default function Gate({ invitation, mode = 'page', onDone }) {
   const [phase, setPhase] = useState('closed');
   const [p, setP] = useState(0); // ouverture du volet, de 0 (fermé) à 1
   const [dragging, setDragging] = useState(false);
   const [ready, setReady] = useState(false);
+  const [help, setHelp] = useState(false);
+  const idle = useRef(0);
+  const stage = useRef(null);
   const phaseRef = useRef('closed');
   const drag = useRef(null);
   const timers = useRef([]);
@@ -77,8 +82,6 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
     later(() => leave(900), 1500);
   }, [go, later, leave]);
 
-  const boardRef = useRef(board);
-  boardRef.current = board;
   const finish = useCallback(() => {
     if (phaseRef.current !== 'closed') return;
     drag.current = null;
@@ -87,8 +90,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
     go('open');
     playChime();
     playPaper();
-    later(() => boardRef.current(), 12000); // l'invité a le temps de lire sa carte ; ensuite on embarque
-  }, [go, later]);
+  }, [go]);
 
   const skip = useCallback(() => {
     if (phaseRef.current === 'leaving') return;
@@ -98,17 +100,41 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
   }, [leave]);
 
   useEffect(() => {
+    if (mode !== 'inline') return undefined;
     const onKey = (e) => { if (e.key === 'Escape') skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [skip]);
+  }, [mode, skip]);
 
-  // Le volet suit le doigt (ou la souris). La course utile est proportionnelle à la hauteur réelle du hublot à l'écran.
+  // Aide : après un moment sans geste, les chevrons grandissent et la consigne bat.
+  const waitForHelp = useCallback(() => {
+    clearTimeout(idle.current);
+    setHelp(false);
+    idle.current = setTimeout(() => setHelp(true), IDLE);
+  }, []);
+  useEffect(() => {
+    if (phase === 'closed' && ready) waitForHelp();
+    else setHelp(false);
+    return () => clearTimeout(idle.current);
+  }, [phase, ready, waitForHelp]);
+
+  // Un toucher ne suffit pas : le volet s'entrouvre un instant pour montrer le geste, puis retombe.
+  const peek = () => {
+    clearTimeout(idle.current);
+    setHelp(true);
+    playNotch();
+    setP(0.16);
+    later(() => { if (phaseRef.current === 'closed' && !drag.current) setP(0); }, 650);
+  };
+
+  // Le volet suit le doigt (ou la souris), où que l'on glisse sur l'écran. La course utile suit la hauteur réelle du hublot.
   const onDown = (e) => {
     if (phaseRef.current !== 'closed') return;
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* sans effet */ }
-    drag.current = { y: e.clientY, from: p, travel: e.currentTarget.getBoundingClientRect().height * 0.8, value: p, moved: 0, notch: 0 };
+    drag.current = { y: e.clientY, from: 0, travel: (stage.current?.offsetHeight || 600) * 0.36, value: 0, moved: 0, notch: 0 };
+    setP(0);
     setDragging(true);
+    waitForHelp();
   };
   const onMove = (e) => {
     const d = drag.current;
@@ -126,32 +152,37 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
     if (!d) return;
     drag.current = null;
     setDragging(false);
-    // Un simple toucher ouvre aussi le volet : personne ne reste bloqué devant le hublot.
-    if (d.value > ENOUGH || d.moved < 6) finish();
+    if (d.value > ENOUGH) finish();
+    else if (d.moved < 6) peek();
     else setP(0);
   };
   const onCancel = () => { if (drag.current) { drag.current = null; setDragging(false); setP(0); } };
+  // La consigne : au clavier ou au lecteur d'écran (clic sans pointeur) elle ouvre le volet ; un toucher ne fait que montrer le geste.
+  const onCta = (e) => {
+    if (e.detail === 0) finish();
+    else peek();
+  };
 
   return (
-    <div className={`em-gate em-gate--${mode}${ready ? ' is-ready' : ''}${dragging ? ' is-dragging' : ''}`} data-phase={phase} style={{ '--p': p }} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
+    <div className={`em-gate em-gate--${mode}${ready ? ' is-ready' : ''}${dragging ? ' is-dragging' : ''}${help ? ' is-help' : ''}`} data-phase={phase} style={{ '--p': p }} role="dialog" aria-modal={mode === 'page' ? 'true' : undefined} aria-label="Ouverture de l'invitation">
       <img className="em-gate__backdrop" src={cabinUrl} alt="" aria-hidden="true" decoding="async" />
 
-      <div className="em-stage">
+      <div ref={stage} className="em-stage">
         <img className="em-stage__sky" src={skyUrl} alt="" decoding="async" fetchpriority="high" onLoad={onImg} onError={onImg} />
         <div className="em-stage__shade"><img src={shadeUrl} alt="" decoding="async" fetchpriority="high" onLoad={onImg} onError={onImg} /></div>
         <img className="em-stage__cabin" src={cabinUrl} alt="" decoding="async" fetchpriority="high" onLoad={onImg} onError={onImg} />
         <span className="em-stage__dim" aria-hidden="true" />
         <span className="em-stage__glow" aria-hidden="true" />
         <p className="em-stage__head">{tx('gateEyebrow')}</p>
-        {/* La zone du hublot : c'est elle que l'on fait glisser */}
-        <div className="em-stage__grip" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onCancel} aria-hidden="true">
-          <span className="em-stage__arrows"><i /><i /><i /></span>
-        </div>
+        <span className="em-stage__arrows" aria-hidden="true"><i /><i /><i /></span>
       </div>
+
+      {/* Toute la surface répond au glissement vers le haut */}
+      <div className="em-gate__grip" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onCancel} aria-hidden="true" />
 
       <div className="em-gate__ui">
         <p className="em-gate__who">{flight.passenger ? `Siège réservé pour ${flight.passenger}` : 'Un siège vous est réservé'}</p>
-        <button type="button" ref={mainBtn} className="em-gate__cta" onClick={finish} disabled={phase !== 'closed'}>{tx('gateDrag')}</button>
+        <button type="button" ref={mainBtn} className="em-gate__cta" onClick={onCta} disabled={phase !== 'closed'}>{tx('gateDrag')}</button>
       </div>
 
       {/* La carte d'embarquement */}
@@ -170,7 +201,7 @@ export default function Gate({ invitation, mode = 'page', onDone, replay = false
         <button type="button" ref={boardBtn} className="em-pass__go" onClick={board} tabIndex={phase === 'open' ? 0 : -1}>{tx('gateBoard')}<span aria-hidden="true"> →</span></button>
       </div>
 
-      <button type="button" className="em-gate__skip" onClick={skip}>{replay ? 'Fermer' : tx('gateSkip')}</button>
+      {mode === 'inline' && <button type="button" className="em-gate__skip" onClick={skip}>Fermer</button>}
     </div>
   );
 }

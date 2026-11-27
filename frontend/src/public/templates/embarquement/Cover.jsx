@@ -9,6 +9,7 @@ import { Divider, Head } from './Ornaments';
 import { getText } from './texts';
 import { flightOf } from './flight';
 import Gate from './Gate';
+import { useRevisit, afterOpening } from '../soireeKit/opening';
 import cloudAUrl from './assets/cloud-a.webp';
 import cloudBUrl from './assets/cloud-b.webp';
 import ringsUrl from './assets/stamp-rings.webp';
@@ -139,12 +140,12 @@ function Dress({ invitation }) {
 // demande), puis le ciel et le portrait, l'invitation, les informations de vol et le dress code.
 export default function Cover({ invitation }) {
   const isPublic = typeof window !== 'undefined' && /^\/i\//.test(window.location.pathname);
-  const deepLink = typeof window !== 'undefined' && window.location.hash.length > 1;
-  const [gate, setGate] = useState(isPublic && !deepLink ? 'page' : null);
+  const [gate, setGate] = useState(isPublic ? 'page' : null); // obligatoire à chaque visite (voir soireeKit/opening.js)
+  useRevisit(isPublic, () => setGate('page')); // et à chaque retour sur l'invitation
   return (
     <>
       <div className="em-cover">
-        {gate && <Gate invitation={invitation} mode={gate} replay={gate === 'inline'} onDone={() => setGate(null)} />}
+        {gate && <Gate invitation={invitation} mode={gate} onDone={() => { setGate(null); if (gate === 'page') afterOpening(); }} />}
         <Hero invitation={invitation} entered={gate !== 'page'} preview={!isPublic} onReplay={() => setGate('inline')} />
       </div>
       <Intro invitation={invitation} />

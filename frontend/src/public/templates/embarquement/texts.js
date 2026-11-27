@@ -11,7 +11,6 @@ export const TEXT_GROUPS = [
     { key: 'gateDrag', label: 'Invitation à ouvrir le volet', default: 'Faites glisser le volet vers le haut' },
     { key: 'gatePass', label: 'En-tête de la carte', default: "Carte d'embarquement" },
     { key: 'gateBoard', label: 'Bouton pour entrer', default: 'Embarquer' },
-    { key: 'gateSkip', label: "Lien pour passer l'ouverture", default: 'Passer' },
   ] },
   { title: 'Couverture', fields: [
     { key: 'heroEyebrow', label: 'Phrase au-dessus des noms', default: 'Vous invitent à bord' },

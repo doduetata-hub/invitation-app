@@ -13,7 +13,6 @@ export const TEXT_GROUPS = [
     { key: 'gateButton', label: 'Invitation à toucher la poignée', default: 'Touchez la poignée pour ouvrir' },
     { key: 'gateFrom', label: "Phrase pendant que l'enveloppe arrive ({noms} = les prénoms des hôtes)", default: 'Un message de {noms}', multiline: true },
     { key: 'gateSeal', label: 'Invitation à rompre le sceau', default: 'Touchez le sceau pour lire' },
-    { key: 'gateSkip', label: "Lien pour passer l'ouverture", default: 'Passer' },
   ] },
   { title: 'Couverture', fields: [
     { key: 'heroEyebrow', label: 'Phrase au-dessus des noms', default: 'Ont la joie de vous convier' },

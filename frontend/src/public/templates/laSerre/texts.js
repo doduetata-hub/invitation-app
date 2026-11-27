@@ -10,7 +10,6 @@ export const TEXT_GROUPS = [
     { key: 'gateWipe', label: 'Invitation à essuyer la vitre', default: 'Essuyez la buée avec votre doigt' },
     { key: 'gateEyebrow', label: 'Phrase au-dessus des noms', default: 'Le mariage de' },
     { key: 'gateEnter', label: 'Bouton pour entrer', default: 'Entrer dans la serre' },
-    { key: 'gateSkip', label: "Lien pour passer l'ouverture", default: 'Passer' },
   ] },
   { title: 'Couverture', fields: [
     { key: 'heroEyebrow', label: 'Phrase au-dessus du portrait', default: 'Ont la joie de vous convier' },

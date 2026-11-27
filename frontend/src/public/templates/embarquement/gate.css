@@ -2,7 +2,7 @@
    pourcentages de ce cadre (ouverture du hublot : x 20,9 → 79,1 % ; y 19,5 → 65,3 %). --p vaut 0 volet fermé, 1 volet ouvert.
    Les tailles suivent le CADRE (unités cqw / cqh) : l'écran du téléphone comme l'aperçu de l'administration. */
 
-.em-gate { position: fixed; inset: 0; z-index: 100; overflow: hidden; container-type: size; background: #0a1224; color: var(--ivory); font-family: var(--sans);
+.em-gate { position: fixed; inset: 0; z-index: 300; overflow: hidden; container-type: size; background: #0a1224; color: var(--ivory); font-family: var(--sans);
   opacity: 1; transition: opacity 0.9s ease; -webkit-user-select: none; user-select: none; }
 .em-gate--inline { position: absolute; z-index: 5; }
 .em-gate[data-phase='leaving'] { opacity: 0; pointer-events: none; }
@@ -20,26 +20,32 @@
 .em-stage > img { position: absolute; display: block; }
 .em-stage__sky { left: 0; top: -5%; width: 100%; height: 100%; transform-origin: 50% 45%; animation: em-fly 18s ease-in-out infinite alternate; }
 @keyframes em-fly { from { transform: scale(1.02) translateX(-0.8%); } to { transform: scale(1.09) translateX(1.2%); } }
-.em-stage__shade { position: absolute; left: 20.5%; top: 19%; width: 59%; height: 46.8%; transform: translateY(calc(var(--p, 0) * -102%)); transition: transform 0.9s cubic-bezier(.3, .8, .3, 1); }
+.em-stage__shade { position: absolute; left: 20.5%; top: 19%; width: 59%; height: 46.8%; transform: translateY(calc(var(--p, 0) * -102%)); clip-path: inset(calc(var(--p, 0) * 102%) 0 0 0); transition: transform 0.9s cubic-bezier(.3, .8, .3, 1), clip-path 0.9s cubic-bezier(.3, .8, .3, 1); }
 .em-stage__shade img { display: block; width: 100%; height: 100%; object-fit: fill; }
 .em-gate.is-dragging .em-stage__shade { transition: none; }
 .em-stage__cabin { inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.em-stage__cabin, .em-stage__dim { -webkit-mask-image: linear-gradient(transparent 0, #000 9%); mask-image: linear-gradient(transparent 0, #000 9%); }
+.em-stage__sky { clip-path: inset(20% 18% 28% 18%); }
 /* La cabine est dans la pénombre tant que le volet est fermé ; la lumière du matin entre avec lui */
 .em-stage__dim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(60% 40% at 50% 42%, rgba(8, 15, 34, 0.18), rgba(8, 15, 34, 0.72)); opacity: calc(1 - var(--p, 0)); transition: opacity 0.9s ease; }
 .em-stage__glow { position: absolute; left: -10%; right: -10%; top: 8%; height: 76%; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(255, 178, 92, 0.5), rgba(233, 118, 91, 0.16) 60%, transparent); opacity: calc(var(--p, 0) * 0.75); transition: opacity 0.9s ease; }
 .em-gate.is-dragging .em-stage__dim, .em-gate.is-dragging .em-stage__glow { transition: none; }
 .em-stage__head { position: absolute; left: 16%; right: 16%; top: 2%; margin: 0; text-align: center; font-family: var(--display); font-size: 5.6cqw; line-height: 1.15; color: var(--ivory); text-shadow: 0 1px 12px rgba(8, 15, 34, 0.9), 0 0 3px rgba(8, 15, 34, 0.7); text-wrap: balance; transition: opacity 0.6s ease; }
 .em-gate:not([data-phase='closed']) .em-stage__head { opacity: 0; }
-.em-stage__grip { position: absolute; left: 20.9%; top: 19.5%; width: 58.2%; height: 45.8%; border-radius: 28% / 24%; touch-action: none; cursor: grab; }
-.em-gate.is-dragging .em-stage__grip { cursor: grabbing; }
-.em-gate:not([data-phase='closed']) .em-stage__grip { pointer-events: none; cursor: default; }
+.em-gate__grip { position: absolute; inset: 0; z-index: 3; touch-action: none; cursor: grab; }
+.em-gate.is-dragging .em-gate__grip { cursor: grabbing; }
+.em-gate:not([data-phase='closed']) .em-gate__grip { pointer-events: none; cursor: default; }
 /* Trois chevrons au-dessus de la poignée : le geste à faire */
-.em-stage__arrows { position: absolute; left: 0; right: 0; bottom: 19%; display: flex; flex-direction: column; align-items: center; gap: 1cqw; pointer-events: none; }
+.em-stage__arrows { position: absolute; left: 20.9%; right: 20.9%; bottom: 43%; display: flex; flex-direction: column; align-items: center; gap: 1cqw; pointer-events: none; }
 .em-stage__arrows i { width: 4.6cqw; height: 4.6cqw; border-left: 0.7cqw solid #fff; border-top: 0.7cqw solid #fff; transform: rotate(45deg); filter: drop-shadow(0 0 4px rgba(16, 31, 60, 0.75)); opacity: 0; animation: em-chevron 1.8s ease-in-out infinite; }
 .em-stage__arrows i:nth-child(1) { animation-delay: 0.36s; }
 .em-stage__arrows i:nth-child(2) { animation-delay: 0.18s; }
 @keyframes em-chevron { 0%, 100% { opacity: 0; translate: 0 1.6cqw; } 50% { opacity: 0.95; translate: 0 -0.8cqw; } }
 .em-gate.is-dragging .em-stage__arrows, .em-gate:not([data-phase='closed']) .em-stage__arrows { display: none; }
+/* Aide : l'invité n'a pas encore réussi — les chevrons grandissent et la consigne bat */
+.em-gate.is-help[data-phase='closed'] .em-stage__arrows i { width: 8cqw; height: 8cqw; border-width: 1.2cqw 0 0 1.2cqw; border-color: var(--gold); }
+.em-gate.is-help[data-phase='closed'] .em-gate__cta { animation: em-pulse 1.2s ease-in-out infinite; }
+@keyframes em-pulse { 50% { transform: scale(1.06); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 0 7px rgba(227, 174, 85, 0.55); } }
 
 /* ---------- Consigne ---------- */
 .em-gate__ui { position: absolute; left: 0; right: 0; bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px)); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 20px; text-align: center; pointer-events: none; transition: opacity 0.5s ease, visibility 0s; }

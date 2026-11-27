@@ -7,6 +7,7 @@ import { splitNames, initials, mediaOf } from '../soireeKit/utils';
 import { Divider, Head } from './Ornaments';
 import { getText } from './texts';
 import Gate from './Gate';
+import { useRevisit, afterOpening } from '../soireeKit/opening';
 
 const DEFAULT_TEXT = "C'est avec une immense joie que nous vous convions à partager ce moment unique. Votre présence sera notre plus beau cadeau.";
 
@@ -156,12 +157,12 @@ function Dress({ invitation }) {
 // puis le portrait sous une arche, l'invitation, les détails et le dress code.
 export default function Cover({ invitation }) {
   const isPublic = typeof window !== 'undefined' && /^\/i\//.test(window.location.pathname);
-  const deepLink = typeof window !== 'undefined' && window.location.hash.length > 1;
-  const [gate, setGate] = useState(isPublic && !deepLink ? 'page' : null);
+  const [gate, setGate] = useState(isPublic ? 'page' : null); // obligatoire à chaque visite (voir soireeKit/opening.js)
+  useRevisit(isPublic, () => setGate('page')); // et à chaque retour sur l'invitation
   return (
     <>
       <div className="lp-cover">
-        {gate && <Gate invitation={invitation} mode={gate} replay={gate === 'inline'} onDone={() => setGate(null)} />}
+        {gate && <Gate invitation={invitation} mode={gate} onDone={() => { setGate(null); if (gate === 'page') afterOpening(); }} />}
         <Hero invitation={invitation} entered={gate !== 'page'} preview={!isPublic} onReplay={() => setGate('inline')} />
       </div>
       <Intro invitation={invitation} />
