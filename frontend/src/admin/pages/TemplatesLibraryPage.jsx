@@ -19,7 +19,7 @@ export default function TemplatesLibraryPage() {
 
   return (
     <div>
-      <PageHeader title="Templates" subtitle="Chaque modèle est montré tel que l'invité le verra, avec des données d'exemple. « Lien client » donne l'adresse à envoyer à un client." />
+      <PageHeader title="Templates" subtitle="Chaque modèle est montré tel que l'invité le verra, avec des données d'exemple." />
       {error && <p className="error-text">{error}</p>}
       {loading && <Loading />}
       <div className="tpl-grid">

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import Icon from './ui/Icon';
 import ShareButton from '../../shared/components/ShareButton';
 
-// Lien de démonstration d'un modèle, à envoyer à un client : copie, et partage direct quand l'appareil le propose.
+// Un seul bouton « Partager » pour envoyer à un client le lien de démonstration d'un modèle. Il ouvre le menu de partage de
+// l'appareil (qui permet aussi de copier le lien) ; quand l'appareil n'en a pas, le même bouton copie le lien.
 export default function DemoLinkActions({ tpl }) {
   const url = `${window.location.origin}/demo/${tpl.key}`;
   const [state, setState] = useState(''); // '' | 'copied' | 'manual'
@@ -25,14 +26,17 @@ export default function DemoLinkActions({ tpl }) {
   return (
     <>
       <div className="tpl-card__actions tpl-card__actions--demo">
-        <button type="button" className="btn btn-outline btn-sm" onClick={copy} aria-label={`Copier le lien client du modèle ${tpl.name}`}>
-          <Icon name={state === 'copied' ? 'check' : 'copy'} />
-          {state === 'copied' ? 'Lien copié' : 'Lien client'}
-        </button>
-        <ShareButton title={`Modèle d'invitation « ${tpl.name} »`} url={url} />
+        {typeof navigator.share === 'function' ? (
+          <ShareButton title={`Modèle d'invitation « ${tpl.name} »`} url={url} />
+        ) : (
+          <button type="button" className="btn btn-outline btn-sm" onClick={copy}>
+            <Icon name={state === 'copied' ? 'check' : 'share'} />
+            {state === 'copied' ? 'Lien copié' : 'Partager'}
+          </button>
+        )}
       </div>
       {state === 'manual' && (
-        <input className="tpl-card__link" value={url} readOnly autoFocus onFocus={(e) => e.target.select()} aria-label={`Lien client du modèle ${tpl.name}`} />
+        <input className="tpl-card__link" value={url} readOnly autoFocus onFocus={(e) => e.target.select()} aria-label={`Lien de démonstration du modèle ${tpl.name}`} />
       )}
     </>
   );
