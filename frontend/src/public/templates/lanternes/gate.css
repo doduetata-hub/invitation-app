@@ -1,0 +1,111 @@
+/* OUVERTURE DES « LANTERNES » — la lagune la nuit. Seules des transformations et des opacités sont animées ; les tailles suivent le CADRE
+   (unités cqw / cqh) : l'écran du téléphone comme l'aperçu de l'administration. --drag vaut 0 (lanterne posée) à 1 (lâchée). */
+
+.ll-gate { position: fixed; inset: 0; z-index: 300; overflow: hidden; container-type: size; background: #061a22; color: #f7efe0; font-family: var(--sans);
+  opacity: 1; transition: opacity 0.9s ease; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.ll-gate--inline { position: absolute; z-index: 5; }
+.ll-gate[data-phase='leaving'] { opacity: 0; pointer-events: none; }
+.ll-gate:not(.is-ready)::before { content: ''; position: absolute; left: 50%; top: 50%; z-index: 20; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 2px solid rgba(242, 163, 58, 0.25); border-top-color: #f2a33a; animation: ll-load 0.9s linear infinite; }
+@keyframes ll-load { to { transform: rotate(360deg); } }
+.ll-gate:not(.is-ready) > * { visibility: hidden; }
+
+.ll-gate__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 60%; transition: transform 5s ease; }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-gate__bg { transform: scale(1.07); }
+/* La nuit s'assombrit tant que la lanterne n'est pas allumée */
+.ll-gate__night { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(3, 12, 18, 0.55), rgba(3, 12, 18, 0.3) 55%, rgba(3, 12, 18, 0.5)); transition: opacity 1.4s ease; }
+.ll-gate[data-phase='lit'] .ll-gate__night { opacity: 0.55; }
+
+/* L'envol des autres lanternes */
+.ll-gate__flight { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: translateY(105%); pointer-events: none; }
+/* Les deux calques sont légèrement agrandis : leurs bords ne doivent jamais apparaître pendant qu'ils dérivent. */
+.ll-gate__flight--far { transform: translateY(115%) scale(-1.18, 1.18); }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-gate__flight--near { animation: ll-up 4.6s cubic-bezier(.2, .6, .3, 1) 0.4s forwards, ll-float 14s ease-in-out 5s infinite alternate; }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-gate__flight--far { animation: ll-up-far 6s cubic-bezier(.2, .6, .3, 1) 0.9s forwards; }
+@keyframes ll-up { 0% { opacity: 0; transform: translateY(105%) scale(1.1); } 15% { opacity: 1; } 100% { opacity: 1; transform: translateY(2%) scale(1.1); } }
+@keyframes ll-float { from { transform: translateY(2%) scale(1.1); } to { transform: translateY(-3%) scale(1.1); } }
+@keyframes ll-up-far { 0% { opacity: 0; transform: translateY(115%) scale(-1.18, 1.18); } 20% { opacity: 0.45; } 100% { opacity: 0.45; transform: translateY(-7%) scale(-1.18, 1.18); } }
+
+.ll-gate__head { position: absolute; left: 12%; right: 12%; top: max(9cqh, calc(env(safe-area-inset-top) + 44px)); margin: 0; text-align: center; font-family: var(--display); font-size: clamp(1.35rem, 6.4cqw, 2.2rem); line-height: 1.3; color: #ffe2a8; text-shadow: 0 0 24px rgba(3, 12, 18, 0.9); text-wrap: balance; transition: opacity 0.6s ease; }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-gate__head { opacity: 0; }
+
+/* ---------- La lanterne de l'invité ---------- */
+.ll-lantern { position: absolute; left: 50%; bottom: max(16cqh, 128px); width: min(50cqw, 30cqh); aspect-ratio: 560 / 693; pointer-events: none;
+  transform: translate(-50%, calc(var(--drag, 0) * -26cqh)) scale(calc(1 - var(--drag, 0) * 0.1)); transition: transform 0.7s cubic-bezier(.3, .8, .3, 1); }
+.ll-gate.is-dragging .ll-lantern { transition: none; }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-lantern { transform: translate(-50%, -96cqh) scale(0.2); opacity: 0; transition: transform 3s cubic-bezier(.45, 0, .6, 1), opacity 0.8s ease 2.3s; }
+.ll-lantern img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.ll-lantern__off { filter: brightness(0.46) saturate(0.55) sepia(0.15) hue-rotate(-12deg); }
+.ll-lantern__on, .ll-lantern__glow { opacity: 0; transition: opacity 0.45s ease; }
+.ll-lantern__glow { position: absolute; left: -55%; right: -55%; top: -35%; bottom: -35%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 182, 80, 0.6), rgba(242, 140, 40, 0.22) 55%, transparent); }
+/* Pendant l'appui, la flamme gagne la lanterne (même durée que l'appui) */
+.ll-gate.is-holding .ll-lantern__on, .ll-gate.is-holding .ll-lantern__glow { opacity: 0.92; transition: opacity 1.6s linear; }
+.ll-gate:not([data-phase='dark']) .ll-lantern__on { opacity: 1; }
+.ll-gate:not([data-phase='dark']) .ll-lantern__glow { opacity: 1; animation: ll-flicker 2.4s ease-in-out infinite alternate; }
+@keyframes ll-flicker { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 70% { transform: scale(0.97); } 100% { transform: scale(1.04); } }
+.ll-gate[data-phase='lit']:not(.is-dragging) .ll-lantern__on { animation: ll-bob 2.2s ease-in-out infinite alternate; }
+@keyframes ll-bob { to { transform: translateY(-1.5%); } }
+/* Anneau qui se remplit pendant l'appui */
+.ll-lantern__ring { position: absolute; left: 50%; top: 56%; width: 56%; aspect-ratio: 1; translate: -50% -50%; rotate: -90deg; overflow: visible; }
+.ll-lantern__ring circle { fill: none; stroke: #ffe2a8; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.3s ease; filter: drop-shadow(0 0 3px rgba(3, 12, 18, 0.8)); }
+.ll-gate.is-holding .ll-lantern__ring circle { stroke-dashoffset: 0; transition: stroke-dashoffset 1.6s linear; }
+.ll-gate:not([data-phase='dark']) .ll-lantern__ring { display: none; }
+/* Chevrons : glisser vers le haut */
+.ll-lantern__arrows { position: absolute; left: 0; right: 0; bottom: 104%; display: none; flex-direction: column; align-items: center; gap: 1cqw; }
+.ll-gate[data-phase='lit']:not(.is-dragging) .ll-lantern__arrows { display: flex; }
+.ll-lantern__arrows i { width: 4.4cqw; height: 4.4cqw; max-width: 22px; max-height: 22px; border-left: 3px solid #ffe2a8; border-top: 3px solid #ffe2a8; transform: rotate(45deg); opacity: 0; filter: drop-shadow(0 0 4px rgba(3, 12, 18, 0.9)); animation: ll-chevron 1.8s ease-in-out infinite; }
+.ll-lantern__arrows i:nth-child(1) { animation-delay: 0.36s; }
+.ll-lantern__arrows i:nth-child(2) { animation-delay: 0.18s; }
+@keyframes ll-chevron { 0%, 100% { opacity: 0; translate: 0 8px; } 50% { opacity: 1; translate: 0 -4px; } }
+
+.ll-gate__grip { position: absolute; inset: 0; z-index: 3; touch-action: none; cursor: pointer; }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-gate__grip { pointer-events: none; }
+
+/* ---------- Consignes ---------- */
+.ll-gate__ui, .ll-gate__enter { position: absolute; left: 0; right: 0; bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px)); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 20px; text-align: center; pointer-events: none; }
+.ll-gate__ui { transition: opacity 0.5s ease, visibility 0s; }
+.ll-gate:not([data-phase='dark']):not([data-phase='lit']) .ll-gate__ui { opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s 0.4s; }
+.ll-gate__who { margin: 0; font-family: var(--display); font-size: 1.12rem; letter-spacing: 0.06em; color: #ffe2a8; text-shadow: 0 1px 10px rgba(3, 12, 18, 0.95); text-wrap: balance; }
+.ll-gate__cta { min-height: 50px; max-width: 340px; padding: 10px 30px; border: 0; border-radius: 999px; background: var(--amber); color: var(--lagoon); font: 800 0.92rem/1.35 var(--sans); box-shadow: 0 0 0 1px rgba(255, 226, 168, 0.7), 0 12px 34px rgba(3, 12, 18, 0.6); cursor: pointer; pointer-events: auto; touch-action: none; text-wrap: balance; }
+.ll-gate__cta:disabled { cursor: default; }
+.ll-gate__cta:focus-visible { outline: 3px solid #ffe2a8; outline-offset: 3px; }
+.ll-gate.is-help .ll-gate__ui .ll-gate__cta { animation: ll-pulse 1.2s ease-in-out infinite; }
+@keyframes ll-pulse { 50% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(242, 163, 58, 0.4), 0 12px 34px rgba(3, 12, 18, 0.6); } }
+.ll-gate.is-help .ll-lantern__arrows i { width: 30px; height: 30px; max-width: none; max-height: none; border-width: 5px 0 0 5px; border-color: #f2a33a; }
+.ll-gate.is-help[data-phase='dark']:not(.is-holding) .ll-lantern__ring circle { stroke-dashoffset: 0; animation: ll-ring 1.4s ease-in-out infinite; }
+@keyframes ll-ring { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+
+/* ---------- Les noms dans le ciel ---------- */
+.ll-gate__names { position: absolute; left: 0; right: 0; top: 14%; height: 50%; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 18px; text-align: center; pointer-events: none; }
+.ll-gate__names::before { content: ''; position: absolute; left: -18%; right: -18%; top: -8%; bottom: -8%; z-index: -1; background: radial-gradient(closest-side, rgba(4, 18, 26, 0.86), rgba(4, 18, 26, 0.6) 55%, transparent); opacity: 0; transition: opacity 1.4s ease; }
+.ll-gate[data-phase='sky'] .ll-gate__names::before { opacity: 1; }
+.ll-gate__names > * { margin: 0; opacity: 0; transform: translateY(18px); transition: opacity 1.2s ease, transform 1.2s cubic-bezier(.2, .7, .2, 1); }
+.ll-gate[data-phase='sky'] .ll-gate__names > *, .ll-gate[data-phase='leaving'] .ll-gate__names > * { opacity: 1; transform: none; }
+.ll-gate[data-phase='sky'] .ll-gate__names > :nth-child(2) { transition-delay: 0.3s; }
+.ll-gate[data-phase='sky'] .ll-gate__names > :nth-child(n + 3) { transition-delay: 0.9s; }
+.ll-gate__eyebrow { font: 400 clamp(0.66rem, 3.2cqw, 0.8rem)/1.6 var(--display); letter-spacing: 0.26em;text-transform: uppercase; color: var(--flame); }
+.ll-gate__h { display: flex; flex-direction: column; align-items: center; max-width: 100%; margin: 6px 0 8px !important; font-family: var(--script); font-size: clamp(3.4rem, min(calc(205cqw / var(--len, 8)), 12cqh), 8rem); line-height: 1.05; color: #ffe9be; text-shadow: 0 0 18px rgba(242, 163, 58, 0.75), 0 2px 14px rgba(3, 12, 18, 0.8); }
+.ll-gate__h span { max-width: 100%; padding: 0 0.14em; overflow-wrap: anywhere; }
+.ll-gate__h .ll-gate__amp { font-size: 0.58em; line-height: 0.95; color: var(--amber); }
+.ll-gate__date { font-family: var(--display); font-size: clamp(1.35rem, 6cqw, 2rem); }
+.ll-gate__time { margin-top: 2px !important; font: 700 0.76rem/1.5 var(--sans); letter-spacing: 0.28em; text-transform: uppercase; color: #ffe2a8; }
+
+.ll-gate__enter { opacity: 0; visibility: hidden; }
+.ll-gate[data-phase='sky'] .ll-gate__enter { opacity: 1; visibility: visible; transition: opacity 0.8s ease 1.6s, visibility 0s 1.6s; }
+
+.ll-gate__skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 12; min-height: 36px; padding: 0 14px; border: 1px solid rgba(255, 226, 168, 0.4); border-radius: 999px; background: rgba(4, 18, 26, 0.75); color: #f7efe0; font: 800 0.62rem/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; }
+.ll-gate__skip:focus-visible { outline: 3px solid #ffe2a8; }
+
+/* Écran large (ordinateur, tablette couchée) */
+@container (min-aspect-ratio: 1/1) {
+  .ll-lantern { width: min(26cqw, 38cqh); bottom: max(14cqh, 104px); }
+  .ll-gate__head { top: 7cqh; font-size: clamp(1.5rem, 4.6cqh, 2.4rem); }
+  .ll-gate__names { top: 8%; height: 70%; }
+  .ll-gate__h { font-size: clamp(3.2rem, 14cqh, 8.5rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-gate, .ll-gate *, .ll-gate *::before { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-delay: 0s !important; }
+  .ll-gate__flight, .ll-lantern { transition-duration: 0.2s !important; }
+  .ll-gate.is-holding .ll-lantern__on, .ll-gate.is-holding .ll-lantern__glow, .ll-gate.is-holding .ll-lantern__ring circle { transition-duration: 1.6s !important; }
+  .ll-lantern__arrows i { opacity: 0.9; }
+}

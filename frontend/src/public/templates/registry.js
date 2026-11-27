@@ -14,6 +14,8 @@ import rosaceNoire from './rosaceNoire/index.jsx';
 import laPorte from './laPorte/index.jsx';
 import laSerre from './laSerre/index.jsx';
 import embarquement from './embarquement/index.jsx';
+import lanternes from './lanternes/index.jsx';
+import leverDeRideau from './leverDeRideau/index.jsx';
 import generic from './generic.jsx';
 
 const TEMPLATES = {
@@ -33,6 +35,8 @@ const TEMPLATES = {
   [laPorte.key]: laPorte,
   [laSerre.key]: laSerre,
   [embarquement.key]: embarquement,
+  [lanternes.key]: lanternes,
+  [leverDeRideau.key]: leverDeRideau,
   [generic.key]: generic,
 };
 

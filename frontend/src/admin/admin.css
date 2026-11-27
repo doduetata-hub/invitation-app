@@ -3091,4 +3091,4 @@ html[data-theme='light'] .modal-overlay {
 }
 
 /* Page d'un modèle : son ouverture commence sous la barre « Retour aux templates », qui reste le moyen d'en sortir. */
-.tpl-visit .lp-gate--page, .tpl-visit .ls-gate--page, .tpl-visit .em-gate--page { top: calc(60px + env(safe-area-inset-top, 0px)); }
+.tpl-visit .lp-gate--page, .tpl-visit .ls-gate--page, .tpl-visit .em-gate--page, .tpl-visit .ll-gate--page, .tpl-visit .lr-gate--page { top: calc(60px + env(safe-area-inset-top, 0px)); }

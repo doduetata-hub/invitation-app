@@ -1,0 +1,112 @@
+/* OUVERTURE DU « LEVER DE RIDEAU » — le théâtre. Seules des transformations et des opacités sont animées ; les tailles suivent le CADRE
+   (unités cqw / cqh). --sw est la largeur de la scène (images 2:3) ; --drag vaut 0 (cordon au repos) à 1 (tiré). */
+
+.lr-gate { position: fixed; inset: 0; z-index: 300; overflow: hidden; container-type: size; background: #12090a; color: #f6ebd6; font-family: var(--sans);
+  opacity: 1; transition: opacity 0.9s ease; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.lr-gate--inline { position: absolute; z-index: 5; }
+.lr-gate[data-phase='leaving'] { opacity: 0; pointer-events: none; }
+.lr-gate:not(.is-ready)::before { content: ''; position: absolute; left: 50%; top: 50%; z-index: 20; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 2px solid rgba(226, 190, 119, 0.25); border-top-color: #e2be77; animation: lr-load 0.9s linear infinite; }
+@keyframes lr-load { to { transform: rotate(360deg); } }
+.lr-gate:not(.is-ready) > * { visibility: hidden; }
+.lr-gate__house { position: absolute; inset: 0; background: linear-gradient(#12090a 4%, rgba(18, 9, 10, 0.5) 22%, rgba(18, 9, 10, 0.7) 75%, #12090a 96%), url('./assets/velvet.webp') 50% 0 / cover; }
+/* Le haut et le bas de la scène se fondent dans la pénombre de la salle */
+.lr-theatre::before, .lr-theatre::after { content: ''; position: absolute; left: -1px; right: -1px; z-index: 1; pointer-events: none; }
+.lr-theatre::before { top: -1px; height: 9%; background: linear-gradient(#12090a, transparent); }
+.lr-theatre::after { bottom: -1px; height: 14%; background: linear-gradient(transparent, #12090a); }
+
+/* ---------- La scène : fond, noms, rideau, cadre ---------- */
+.lr-theatre { --sw: min(112cqw, 62cqh); position: absolute; left: 50%; top: calc((100cqh - var(--sw) * 1.5) * 0.36); width: var(--sw); height: calc(var(--sw) * 1.5); margin-left: calc(var(--sw) / -2); }
+.lr-theatre__set { position: absolute; inset: 0; }
+.lr-theatre__set img { display: block; }
+.lr-theatre__stage, .lr-theatre__frame { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
+.lr-theatre__frame { pointer-events: none; }
+.lr-theatre__opening { position: absolute; left: 12%; top: 15.8%; width: 76%; height: 57%; overflow: hidden; }
+.lr-theatre__curtain { position: absolute; inset: 0; transform: translateY(calc(var(--drag, 0) * -4%)); transition: transform 0.6s cubic-bezier(.3, .8, .3, 1); }
+.lr-gate.is-dragging .lr-theatre__curtain { transition: none; }
+.lr-theatre__curtain img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; }
+.lr-gate:not([data-phase='knock']):not([data-phase='cord']) .lr-theatre__curtain { transform: translateY(-101%); transition: transform 3.2s cubic-bezier(.62, .02, .3, 1) 0.25s; }
+.lr-theatre__announce { position: absolute; left: 8%; right: 8%; top: 24%; margin: 0; text-align: center; font-family: var(--deco); font-weight: 700; font-size: calc(var(--sw) * 0.082); line-height: 1.35; color: #fbefd4; text-shadow: 0 2px 6px rgba(18, 4, 5, 0.9), 0 0 26px rgba(18, 4, 5, 0.85); text-wrap: balance; }
+/* La secousse à chaque coup */
+.lr-theatre__set.is-knock-a { animation: lr-shake-a 0.36s ease-out; }
+.lr-theatre__set.is-knock-b { animation: lr-shake-b 0.36s ease-out; }
+@keyframes lr-shake-a { 0%, 100% { transform: none; } 20% { transform: translateY(7px); } 45% { transform: translateY(-4px); } 70% { transform: translateY(2px); } }
+@keyframes lr-shake-b { 0%, 100% { transform: none; } 20% { transform: translateY(7px); } 45% { transform: translateY(-4px); } 70% { transform: translateY(2px); } }
+/* La salle est dans la pénombre ; chaque coup rallume un peu plus */
+.lr-theatre__dark { position: absolute; inset: -1px; pointer-events: none; background: #0a0304; opacity: 0.56; transition: opacity 0.5s ease; }
+.lr-gate[data-knocks='1'] .lr-theatre__dark { opacity: 0.38; }
+.lr-gate[data-knocks='2'] .lr-theatre__dark { opacity: 0.2; }
+.lr-gate[data-knocks='3'] .lr-theatre__dark { opacity: 0.04; }
+.lr-gate:not([data-phase='knock']):not([data-phase='cord']) .lr-theatre__dark { opacity: 0; }
+/* La rampe (à 78 % de la hauteur de l'image) */
+.lr-theatre__foot { position: absolute; left: -4%; right: -4%; top: 72%; height: 13%; pointer-events: none; opacity: 0.15; mix-blend-mode: screen; transition: opacity 0.4s ease;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(255, 190, 90, 0.8), rgba(255, 150, 50, 0.3) 55%, transparent); }
+.lr-gate[data-knocks='1'] .lr-theatre__foot { opacity: 0.38; }
+.lr-gate[data-knocks='2'] .lr-theatre__foot { opacity: 0.6; }
+.lr-gate[data-knocks='3'] .lr-theatre__foot { opacity: 0.85; animation: lr-flicker 2.2s ease-in-out infinite alternate; }
+@keyframes lr-flicker { 0% { transform: scaleY(1); } 40% { transform: scaleY(1.14); } 70% { transform: scaleY(0.94); } 100% { transform: scaleY(1.08); } }
+.lr-theatre__ripple { position: absolute; left: var(--x, 50%); top: 76%; width: 20%; aspect-ratio: 2.6; translate: -50% -50%; border-radius: 50%; border: 3px solid #ffe3a6; pointer-events: none; opacity: 0; animation: lr-ripple 0.8s ease-out; }
+@keyframes lr-ripple { 0% { opacity: 1; transform: scale(0.25); } 100% { opacity: 0; transform: scale(2.4); } }
+
+/* ---------- Le projecteur et les noms ---------- */
+.lr-theatre__spot { position: absolute; left: 13%; top: 16%; width: 74%; height: 56%; pointer-events: none; opacity: 0; transition: opacity 1.6s ease;
+  background: conic-gradient(from 144deg at 50% -8%, transparent 0deg, rgba(255, 232, 180, 0.4) 24deg 48deg, transparent 72deg);
+  -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+.lr-gate:not([data-phase='knock']):not([data-phase='cord']) .lr-theatre__spot { opacity: 0.75; transition-delay: 1.4s; }
+.lr-theatre__names { position: absolute; left: 15%; right: 15%; top: 21%; height: 42%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.lr-theatre__names > * { margin: 0; opacity: 0; transform: translateY(16px); transition: opacity 1s ease, transform 1s cubic-bezier(.2, .7, .2, 1); text-shadow: 0 2px 10px rgba(12, 4, 3, 0.95), 0 0 24px rgba(12, 4, 3, 0.8); }
+.lr-gate[data-phase='stage'] .lr-theatre__names > *, .lr-gate[data-phase='leaving'] .lr-theatre__names > * { opacity: 1; transform: none; }
+.lr-gate[data-phase='stage'] .lr-theatre__names > :nth-child(2) { transition-delay: 0.3s; }
+.lr-gate[data-phase='stage'] .lr-theatre__names > :nth-child(n + 3) { transition-delay: 0.8s; }
+.lr-theatre__eyebrow { font: 600 calc(var(--sw) * 0.027)/1.6 var(--display); letter-spacing: 0.24em; text-transform: uppercase; color: #e2be77; }
+.lr-theatre__h { display: flex; flex-direction: column; align-items: center; max-width: 100%; margin: calc(var(--sw) * 0.016) 0 !important; font-family: var(--deco); font-weight: 700; font-size: clamp(1.6rem, calc(var(--sw) * 0.82 / var(--len, 8)), calc(var(--sw) * 0.118)); line-height: 1.14; color: #fbefd4; }
+.lr-theatre__h span { max-width: 100%; overflow-wrap: anywhere; }
+.lr-theatre__h .lr-theatre__amp { font-size: 0.68em; line-height: 1.1; color: #e2be77; }
+.lr-theatre__date { font: 600 calc(var(--sw) * 0.047)/1.4 var(--display); letter-spacing: 0.04em; }
+.lr-theatre__time { margin-top: 2px !important; font: 600 calc(var(--sw) * 0.027)/1.5 var(--display); letter-spacing: 0.24em; text-transform: uppercase; color: #e2be77; }
+
+/* ---------- Le cordon doré ---------- */
+.lr-cord { --sw: min(112cqw, 62cqh); --cw: calc(var(--sw) * 0.19); position: absolute; left: calc(50% + var(--sw) * 0.3 - var(--cw) / 2); top: 0; width: var(--cw); height: calc(var(--cw) * 8.3);
+  margin-top: calc((100cqh - var(--sw) * 1.5) * 0.36 + var(--sw) * 0.99 - var(--cw) * 8.3); pointer-events: none; z-index: 2;
+  transform: translateY(-100cqh); transition: transform 0.9s cubic-bezier(.3, 1.25, .4, 1); }
+.lr-cord img { display: block; width: 100%; height: auto; filter: drop-shadow(-8px 10px 10px rgba(10, 2, 2, 0.6)); }
+.lr-gate[data-phase='cord'] .lr-cord { transform: translateY(calc(var(--drag, 0) * var(--sw) * 0.13)); }
+.lr-gate[data-phase='cord']:not(.is-dragging) .lr-cord img { animation: lr-swing 3.2s ease-in-out infinite alternate; transform-origin: 50% 0; }
+@keyframes lr-swing { from { transform: rotate(-0.8deg); } to { transform: rotate(0.8deg); } }
+.lr-gate.is-dragging .lr-cord { transition: none; }
+.lr-gate[data-phase='rise'] .lr-cord, .lr-gate[data-phase='stage'] .lr-cord, .lr-gate[data-phase='leaving'] .lr-cord { transform: translateY(-100cqh); transition: transform 1.4s cubic-bezier(.5, 0, .7, 1) 0.35s; }
+.lr-cord__arrows { position: absolute; left: 0; right: 0; top: calc(100% + 6px); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.lr-cord__arrows i { width: 18px; height: 18px; border-right: 3px solid #ffe3a6; border-bottom: 3px solid #ffe3a6; transform: rotate(45deg); opacity: 0; filter: drop-shadow(0 0 4px rgba(10, 2, 2, 0.95)); animation: lr-chevron 1.8s ease-in-out infinite; }
+.lr-cord__arrows i:nth-child(2) { animation-delay: 0.18s; }
+.lr-cord__arrows i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes lr-chevron { 0%, 100% { opacity: 0; translate: 0 -8px; } 50% { opacity: 1; translate: 0 4px; } }
+.lr-gate.is-dragging .lr-cord__arrows { display: none; }
+.lr-gate.is-help .lr-cord__arrows i { width: 30px; height: 30px; border-width: 0 5px 5px 0; }
+
+.lr-gate__grip { position: absolute; inset: 0; z-index: 3; touch-action: none; cursor: pointer; }
+.lr-gate:not([data-phase='knock']):not([data-phase='cord']) .lr-gate__grip { pointer-events: none; }
+
+/* ---------- Consignes ---------- */
+.lr-gate__ui, .lr-gate__enter { position: absolute; left: 0; right: 0; bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px)); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 20px; text-align: center; pointer-events: none; }
+.lr-gate__ui { transition: opacity 0.5s ease, visibility 0s; }
+.lr-gate:not([data-phase='knock']):not([data-phase='cord']) .lr-gate__ui { opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s 0.4s; }
+.lr-gate__who { margin: 0; font-family: var(--display); font-size: 1rem; letter-spacing: 0.06em; color: #f6e2b8; text-shadow: 0 1px 8px rgba(10, 2, 2, 1), 0 0 18px rgba(10, 2, 2, 0.9); text-wrap: balance; }
+.lr-gate__knocks { display: flex; gap: 14px; }
+.lr-gate__knocks i { width: 11px; height: 11px; border-radius: 50%; border: 1px solid #e2be77; background: rgba(18, 9, 10, 0.8); transition: background 0.2s ease, box-shadow 0.2s ease; }
+.lr-gate[data-knocks='1'] .lr-gate__knocks i:nth-child(-n + 1), .lr-gate[data-knocks='2'] .lr-gate__knocks i:nth-child(-n + 2), .lr-gate[data-knocks='3'] .lr-gate__knocks i { background: #ffd98a; box-shadow: 0 0 12px 3px rgba(255, 190, 90, 0.75); }
+.lr-gate[data-phase='cord'] .lr-gate__knocks { visibility: hidden; }
+.lr-gate__cta { min-height: 50px; max-width: 340px; padding: 10px 30px; border: 1px solid #fff0c9; border-radius: 4px; background: linear-gradient(180deg, #f3d99d, #d6a851); color: #2a0a0f; font: 700 0.92rem/1.35 var(--display); letter-spacing: 0.04em; box-shadow: 0 0 0 3px #12090a, 0 0 0 4px rgba(226, 190, 119, 0.65), 0 14px 34px rgba(0, 0, 0, 0.6); cursor: pointer; pointer-events: auto; touch-action: none; text-wrap: balance; }
+.lr-gate__cta:disabled { cursor: default; }
+.lr-gate__cta:focus-visible { outline: 3px solid #fff0c9; outline-offset: 6px; }
+.lr-gate.is-help .lr-gate__ui .lr-gate__cta { animation: lr-pulse 1.2s ease-in-out infinite; }
+@keyframes lr-pulse { 50% { transform: scale(1.06); box-shadow: 0 0 0 3px #12090a, 0 0 0 10px rgba(226, 190, 119, 0.4), 0 14px 34px rgba(0, 0, 0, 0.6); } }
+.lr-gate__enter { opacity: 0; visibility: hidden; }
+.lr-gate[data-phase='stage'] .lr-gate__enter { opacity: 1; visibility: visible; transition: opacity 0.8s ease 1.4s, visibility 0s 1.4s; }
+
+.lr-gate__skip { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 12; min-height: 36px; padding: 0 14px; border: 1px solid rgba(226, 190, 119, 0.5); border-radius: 4px; background: rgba(18, 9, 10, 0.8); color: #f6ebd6; font: 700 0.62rem/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; }
+.lr-gate__skip:focus-visible { outline: 3px solid #fff0c9; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lr-gate, .lr-gate *, .lr-gate *::before { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-delay: 0s !important; }
+  .lr-theatre__curtain, .lr-cord { transition-duration: 0.2s !important; }
+  .lr-cord__arrows i { opacity: 0.9; }
+}

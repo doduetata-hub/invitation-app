@@ -1,4 +1,4 @@
-// Ouverture d'invitation obligatoire (La Porte, La Serre, L'Embarquement) : l'invité fait le geste à chaque visite, et chaque retour
+// Ouverture d'invitation obligatoire (La Porte, La Serre, L'Embarquement, Les Lanternes, Le Lever de rideau) : l'invité fait le geste à chaque visite, et chaque retour
 // sur l'invitation recommence par elle. Un lien qui vise une partie de la page (/i/slug#rsvp, #billet) ne la contourne pas : on rejoint
 // cette partie une fois l'ouverture terminée.
 import { createContext, useEffect, useRef } from 'react';
@@ -40,11 +40,12 @@ export function useRevisit(active, replay) {
  * Renvoie la fonction qui libère la page.
  */
 export function lockBehind(gate) {
-  const root = gate?.closest('.lp-root, .ls-root, .em-root');
+  const root = gate?.closest('.lp-root, .ls-root, .em-root, .ll-root, .lr-root');
   if (!root) return () => {};
   const locked = new Set();
   const apply = () => {
-    for (let node = gate; node && node !== root; node = node.parentElement) {
+    // L'observateur peut se déclencher après le retrait de l'ouverture, avant sa désactivation : il n'y a alors plus de parent.
+    for (let node = gate; node && node !== root && node.parentElement; node = node.parentElement) {
       Array.from(node.parentElement.children).forEach((other) => {
         if (other !== node && !other.inert) { other.inert = true; locked.add(other); }
       });

@@ -35,6 +35,8 @@ async function main() {
     { key: 'la-porte', name: 'La Porte', category: 'mariage' },
     { key: 'la-serre', name: 'La Serre', category: 'mariage' },
     { key: 'embarquement', name: "L'Embarquement", category: 'mariage' },
+    { key: 'les-lanternes', name: 'Les Lanternes', category: 'mariage' },
+    { key: 'lever-de-rideau', name: 'Le Lever de rideau', category: 'mariage' },
   ];
 
   for (const t of templates) {
