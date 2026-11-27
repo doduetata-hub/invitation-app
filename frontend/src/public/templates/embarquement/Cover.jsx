@@ -9,7 +9,7 @@ import { Divider, Head } from './Ornaments';
 import { getText } from './texts';
 import { flightOf } from './flight';
 import Gate from './Gate';
-import { useRevisit, afterOpening, OpeningPreview } from '../soireeKit/opening';
+import { useRevisit, afterOpening, isGuestPage, OpeningPreview } from '../soireeKit/opening';
 import cloudAUrl from './assets/cloud-a.webp';
 import cloudBUrl from './assets/cloud-b.webp';
 import ringsUrl from './assets/stamp-rings.webp';
@@ -139,7 +139,7 @@ function Dress({ invitation }) {
 // Couverture : l'ouverture du hublot (uniquement sur la vraie page de l'invité ; dans l'aperçu de l'administration elle se rejoue à la
 // demande), puis le ciel et le portrait, l'invitation, les informations de vol et le dress code.
 export default function Cover({ invitation }) {
-  const isPublic = typeof window !== 'undefined' && /^\/i\//.test(window.location.pathname);
+  const isPublic = isGuestPage();
   const preview = useContext(OpeningPreview);
   // Obligatoire à chaque visite de l'invité ; dans l'administration, ouvrir le modèle commence aussi par elle (voir soireeKit/opening.js).
   const [gate, setGate] = useState(isPublic ? 'page' : preview === 'visit' ? 'preview' : null);

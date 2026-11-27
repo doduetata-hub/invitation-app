@@ -5,7 +5,7 @@ import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { buildMapsQuery } from '../../utils/mapsUrl';
 import { splitNames, initials, mediaOf, upFirst } from '../soireeKit/utils';
 import { swatchesOf } from '../soireeKit/swatches';
-import { useRevisit, afterOpening, OpeningPreview } from '../soireeKit/opening';
+import { useRevisit, afterOpening, isGuestPage, OpeningPreview } from '../soireeKit/opening';
 import { Divider, Head } from './Ornaments';
 import { getText } from './texts';
 import Gate from './Gate';
@@ -141,7 +141,7 @@ function Dress({ invitation }) {
 
 // Couverture : l'ouverture à la lanterne, puis le portrait dans la lune, l'invitation, les détails et le dress code.
 export default function Cover({ invitation }) {
-  const isPublic = typeof window !== 'undefined' && /^\/i\//.test(window.location.pathname);
+  const isPublic = isGuestPage();
   const preview = useContext(OpeningPreview);
   // Obligatoire à chaque visite de l'invité ; dans l'administration, ouvrir le modèle commence aussi par elle (voir soireeKit/opening.js).
   const [gate, setGate] = useState(isPublic ? 'page' : preview === 'visit' ? 'preview' : null);

@@ -8,7 +8,7 @@ import { Divider, Head } from './Ornaments';
 import { swatchesOf } from '../soireeKit/swatches';
 import { getText } from './texts';
 import Gate from './Gate';
-import { useRevisit, afterOpening, OpeningPreview } from '../soireeKit/opening';
+import { useRevisit, afterOpening, isGuestPage, OpeningPreview } from '../soireeKit/opening';
 import archUrl from './assets/arch.webp';
 import eucalyptusUrl from './assets/eucalyptus.webp';
 import oliveUrl from './assets/olive.webp';
@@ -143,7 +143,7 @@ function Dress({ invitation }) {
 // Couverture : l'ouverture dans la buée (uniquement sur la vraie page de l'invité ; dans l'aperçu de l'administration elle se rejoue à la
 // demande), puis le portrait dans l'arche, l'invitation, les détails et le dress code.
 export default function Cover({ invitation }) {
-  const isPublic = typeof window !== 'undefined' && /^\/i\//.test(window.location.pathname);
+  const isPublic = isGuestPage();
   const preview = useContext(OpeningPreview);
   // Obligatoire à chaque visite de l'invité ; dans l'administration, ouvrir le modèle commence aussi par elle (voir soireeKit/opening.js).
   const [gate, setGate] = useState(isPublic ? 'page' : preview === 'visit' ? 'preview' : null);

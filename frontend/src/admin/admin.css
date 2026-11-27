@@ -2855,6 +2855,16 @@ select.input option {
   flex: 1;
 }
 
+/* Seconde rangée : lien de démonstration à envoyer au client */
+.tpl-card__actions--demo {
+  margin-top: 0;
+}
+
+.tpl-card__link {
+  width: 100%;
+  font-size: 0.8rem;
+}
+
 /* ============================================================
    13. Fenêtres
    ============================================================ */

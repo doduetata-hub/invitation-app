@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Reveal from '../soireeKit/Reveal';
+import { guestQrUrl } from '../../utils/guestQrUrl';
 import RsvpSection from '../../sections/RsvpSection';
 import { formatEventDate } from '../../../shared/utils/eventDateTime';
 import { splitNames, initials, isDisabled, pad2 } from '../soireeKit/utils';
@@ -13,7 +14,7 @@ function Ticket({ invitation, slug }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   if (!guest?.code || !slug) return null;
-  const qrUrl = `/api/public/invitations/${slug}/qrcode?guest=${encodeURIComponent(guest.code)}`;
+  const qrUrl = guestQrUrl(slug, guest);
   const d = eventDate ? new Date(eventDate) : null;
   const valid = d && !Number.isNaN(d.getTime());
   const guestName = guest.name || guest.rsvp?.name || '';

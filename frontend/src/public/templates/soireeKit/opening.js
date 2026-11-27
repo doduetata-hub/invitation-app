@@ -7,6 +7,9 @@ import { createContext, useEffect, useRef } from 'react';
 // pour l'invité), « thumbnail » (vignette de la bibliothèque : ni ouverture ni bouton). Sans contexte (aperçu pendant la saisie) : bouton seul.
 export const OpeningPreview = createContext(null);
 
+/** La page est celle que voit l'invité : vraie invitation (/i/…) ou démonstration envoyée à un client (/demo/…). */
+export const isGuestPage = () => typeof window !== 'undefined' && /^\/(i|demo)\//.test(window.location.pathname);
+
 // Absence à partir de laquelle un onglet retrouvé compte comme une nouvelle visite. En dessous, l'invité n'a fait qu'un aller-retour
 // (choisir une photo pour sa réponse, regarder l'itinéraire, répondre à un message) : on ne le renvoie pas au début.
 export const AWAY_MS = 2 * 60 * 1000;

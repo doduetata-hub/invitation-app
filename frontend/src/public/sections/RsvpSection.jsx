@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { guestQrUrl } from '../utils/guestQrUrl';
 import GuestbookPhotoPicker from '../../shared/components/GuestbookPhotoPicker';
 import { DRINKS, OTHER_DRINK, splitDrink, joinDrink } from '../../shared/constants/drinks';
 
@@ -9,7 +10,7 @@ const emptyForm = { name: '', answer: 'YES', numberOfPersons: 1, drinkChoice: ''
 // client ait besoin de le lui envoyer séparément (voir QrCodeModal côté client/admin).
 function GuestQrCard({ slug, guestInfo }) {
   if (!slug || !guestInfo?.code) return null;
-  const qrUrl = `/api/public/invitations/${slug}/qrcode?guest=${guestInfo.code}`;
+  const qrUrl = guestQrUrl(slug, guestInfo);
   return (
     <div style={styles.qrCard}>
       <img src={qrUrl} alt="Votre QR code d'entrée" style={styles.qrImage} />

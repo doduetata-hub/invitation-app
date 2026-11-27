@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../shared/api/client';
 import { isDesigned } from '../../public/templates/registry';
 import TemplateShot from '../components/TemplateShot';
+import DemoLinkActions from '../components/DemoLinkActions';
 import PageHeader from '../components/ui/PageHeader';
 import Loading from '../components/ui/Loading';
 import Icon from '../components/ui/Icon';
@@ -18,7 +19,7 @@ export default function TemplatesLibraryPage() {
 
   return (
     <div>
-      <PageHeader title="Templates" subtitle="Chaque modèle est montré tel que l'invité le verra, avec des données d'exemple." />
+      <PageHeader title="Templates" subtitle="Chaque modèle est montré tel que l'invité le verra, avec des données d'exemple. « Lien client » donne l'adresse à envoyer à un client." />
       {error && <p className="error-text">{error}</p>}
       {loading && <Loading />}
       <div className="tpl-grid">
@@ -38,6 +39,7 @@ export default function TemplatesLibraryPage() {
                 Utiliser
               </Link>
             </div>
+            {isDesigned(t.key) && <DemoLinkActions tpl={t} />}
           </article>
         ))}
       </div>
