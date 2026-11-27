@@ -99,7 +99,7 @@
 
 /* ---------- Invitation ---------- */
 .lr-intro { padding: 84px 30px 84px; text-align: center; }
-.lr-programme > .lr-prop--masks { width: 120px; height: auto; margin: -6px auto 14px; }
+.lr-programme > .lr-prop--rings { width: 128px; height: auto; margin: -6px auto 14px; }
 .lr-lede { font-size: clamp(1.08rem, 4.6vw, 1.2rem); line-height: 1.85; white-space: pre-line; text-wrap: pretty; }
 .lr-quote { max-width: 400px; margin: 22px auto 0; font-family: var(--display); font-weight: 500; font-size: 1.12rem; line-height: 1.7; color: var(--crimson); }
 .lr-sign { margin-top: 28px; font-family: var(--display); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }

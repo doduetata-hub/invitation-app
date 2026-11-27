@@ -67,7 +67,7 @@ function Intro({ invitation }) {
   return (
     <section className="lr-intro lr-dark" id="invitation" aria-label="Invitation">
       <Reveal className="lr-programme">
-        <Prop name="masks" />
+        <Prop name="rings" />
         <p className="lr-eyebrow">{tx('introEyebrow')}</p>
         <h2 className="lr-h1">{tx('introTitle')}</h2>
         <Divider />

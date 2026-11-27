@@ -42,7 +42,7 @@ export default function Gallery({ invitation }) {
 
   return (
     <section className="lr-gal lr-dark" aria-label="Galerie">
-      <Reveal><Head eyebrow={getText(invitation, 'galEyebrow')} title={getText(invitation, 'galTitle')} prop="masks" /></Reveal>
+      <Reveal><Head eyebrow={getText(invitation, 'galEyebrow')} title={getText(invitation, 'galTitle')} prop="camera" /></Reveal>
       <ul className="lr-prints">
         {shown.map((m, i) => (
           <Reveal as="li" key={m.id || i} delay={(i % 2) * 90}>

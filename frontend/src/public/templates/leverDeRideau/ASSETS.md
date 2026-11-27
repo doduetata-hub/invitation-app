@@ -92,6 +92,20 @@ Vertical 2:3 image, 1024x1536, transparent background. Exactly 6 separate antiqu
 All with the same warm light, crisp edges, no shadows, no text.
 ```
 
+Les masques (ornement 1) ne sont plus utilisés : les visages ne conviennent pas à tous les mariés. Les images 10 et 11 les remplacent. Le modèle doit rester sans visages ni masques.
+
+## 10. `alliances.png` — l'ornement de l'invitation (carré, fond transparent)
+
+```text
+Square 1:1 image, 1024x1024, TRANSPARENT background (PNG with alpha). Two polished gold wedding rings interlaced, seen slightly from above, tied with a flowing crimson velvet ribbon and a few small golden laurel leaves. Same style as the previous images: photorealistic, antique gold #E2BE77, crimson #6B0F1F, warm theatrical lighting. The subject is centered and fills about 80% of the width. Crisp edges, no ground shadow. Absolutely no people, no faces, no masks, no statues, no animals, no text, no letters.
+```
+
+## 11. `appareil-photo.png` — l'ornement de la galerie (carré, fond transparent)
+
+```text
+Square 1:1 image, 1024x1024, TRANSPARENT background (PNG with alpha). One elegant Belle Epoque folding camera with crimson leather bellows and ornate antique gold metalwork, seen from a three-quarter front angle. Same style as the previous images: photorealistic, antique gold #E2BE77, crimson #6B0F1F, warm theatrical lighting. The subject is centered and fills about 80% of the width. Crisp edges, no ground shadow. Absolutely no people, no faces, no masks, no statues, no animals, no brand, no text, no letters.
+```
+
 ## Ce que je fais dès réception
 
 1. Découpe de l'ouverture du cadre, alignement du rideau et de la scène, tailles mobile et ordinateur, compression (objectif : moins de 900 Ko sur téléphone).

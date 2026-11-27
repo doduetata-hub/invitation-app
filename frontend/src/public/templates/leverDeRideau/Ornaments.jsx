@@ -1,14 +1,15 @@
 // Ornements du « Lever de rideau » : le séparateur (un losange entre deux filets), les objets de théâtre et l'en-tête de section.
-import masksUrl from './assets/masks.webp';
+import ringsUrl from './assets/rings.webp';
+import cameraUrl from './assets/camera.webp';
 import glassesUrl from './assets/glasses.webp';
 import lyreUrl from './assets/lyre.webp';
 import fanUrl from './assets/fan.webp';
 import rosesUrl from './assets/roses.webp';
 import laurelUrl from './assets/laurel.webp';
 
-const PROPS = { masks: masksUrl, glasses: glassesUrl, lyre: lyreUrl, fan: fanUrl, roses: rosesUrl, laurel: laurelUrl };
+const PROPS = { rings: ringsUrl, camera: cameraUrl, glasses: glassesUrl, lyre: lyreUrl, fan: fanUrl, roses: rosesUrl, laurel: laurelUrl };
 
-/** Un objet de théâtre décoratif (masques, jumelles, lyre, éventail, roses, laurier). */
+/** Un objet de théâtre décoratif (alliances, appareil photo, jumelles, lyre, éventail, roses, laurier). */
 export function Prop({ name, className = '' }) {
   return <img className={`lr-prop lr-prop--${name} ${className}`} src={PROPS[name]} alt="" aria-hidden="true" loading="lazy" />;
 }
