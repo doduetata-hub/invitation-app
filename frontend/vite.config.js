@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import demoPreviews from './demoPreviews.js';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), demoPreviews()],
   optimizeDeps: {
     // @ffmpeg/ffmpeg crée son worker via `new Worker(new URL('./worker.js', import.meta.url))` :
     // ce chemin relatif suppose que worker.js reste physiquement à côté du fichier qui le
