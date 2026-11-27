@@ -28,6 +28,7 @@ const guestbookAccessRoutes = require('./routes/guestbookAccess.routes');
 const souvenirRoutes = require('./routes/souvenir.routes');
 const mediaProxyRoutes = require('./routes/mediaProxy.routes');
 const env = require('./config/env');
+const { getSharePage } = require('./controllers/share.controller');
 
 const app = express();
 
@@ -88,6 +89,9 @@ app.use('/api/guests', requireAuth, guestsRoutes);
 app.use('/api/media', requireAuth, mediaRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/share', shareRoutes);
+// Sur Vercel, les robots d'aperçu (WhatsApp…) qui demandent /i/<slug> sont réécrits vers cette fonction, qui reçoit l'adresse
+// d'origine (voir vercel.json). Les invités, eux, reçoivent l'application et n'arrivent jamais ici.
+app.get('/i/:slug', apiLimiter, getSharePage);
 app.use('/api/client-access', clientAccessRoutes);
 app.use('/api/checkin-access', checkinAccessRoutes);
 app.use('/api/payments', requireAuth, paymentsRoutes);

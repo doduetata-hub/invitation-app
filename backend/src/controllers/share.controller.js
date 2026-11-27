@@ -9,25 +9,41 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// En local, un média est un chemin (/uploads/x.jpg) à compléter ; avec R2/S3, c'est déjà une adresse complète.
+const absoluteUrl = (url) => (/^https?:\/\//i.test(url) ? url : `${env.publicBaseUrl}${url}`);
+
+// Photo de l'aperçu : la couverture, sinon la première photo de la galerie (jamais une vidéo).
+function previewPhoto(media) {
+  const photos = media.filter((m) => !m.mimeType?.startsWith('video/'));
+  return photos.find((m) => m.type === 'cover') || photos.find((m) => m.type === 'gallery') || null;
+}
+
+// Page lue par WhatsApp, Messenger… (qui n'exécutent pas l'application) pour afficher l'aperçu d'un lien d'invitation. Les robots
+// y sont dirigés depuis /i/<slug> (voir vercel.json et la configuration nginx).
 async function getSharePage(req, res) {
   const invitation = await prisma.invitation.findUnique({
     where: { slug: req.params.slug },
-    include: { media: { where: { type: 'cover' }, take: 1 } },
+    include: { media: { where: { type: { in: ['cover', 'gallery'] } }, orderBy: { order: 'asc' } } },
   });
-
-  const publicUrl = `${env.publicBaseUrl}/i/${req.params.slug}`;
 
   if (!invitation || invitation.status !== 'PUBLISHED') {
     res.status(404).type('html').send(`<!doctype html>
-<html><head><meta charset="utf-8"><title>Invitation introuvable</title></head>
+<html lang="fr"><head><meta charset="utf-8"><title>Invitation introuvable</title></head>
 <body>Invitation introuvable.</body></html>`);
     return;
   }
 
+  const path = `/i/${encodeURIComponent(req.params.slug)}`;
+  const publicUrl = `${env.publicBaseUrl}${path}`;
+  // Une personne arrivée ici est renvoyée vers l'invitation, avec son lien personnalisé. « app=1 » empêche de la ramener sur cette
+  // page (voir vercel.json) : sans lui, un navigateur pris pour un robot tournerait en rond.
+  const guest = typeof req.query.guest === 'string' ? req.query.guest : '';
+  const appUrl = escapeHtml(`${path}?app=1${guest ? `&guest=${encodeURIComponent(guest)}` : ''}`);
+
   const title = escapeHtml(invitation.namesLine ? `${invitation.namesLine} — ${invitation.title}` : invitation.title);
   const description = escapeHtml(invitation.invitationText || invitation.personalMessage || '');
-  const coverUrl = invitation.media[0]?.url;
-  const imageUrl = coverUrl ? `${env.publicBaseUrl}${coverUrl}` : null;
+  const photo = previewPhoto(invitation.media);
+  const imageUrl = photo ? escapeHtml(absoluteUrl(photo.url)) : null;
 
   res.type('html').send(`<!doctype html>
 <html lang="fr">
@@ -44,10 +60,10 @@ async function getSharePage(req, res) {
   <meta name="twitter:title" content="${title}">
   <meta name="twitter:description" content="${description}">
   ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}">` : ''}
-  <meta http-equiv="refresh" content="0; url=${publicUrl}">
+  <meta http-equiv="refresh" content="0; url=${appUrl}">
 </head>
 <body>
-  <p>Redirection vers l'invitation... <a href="${publicUrl}">Cliquez ici si rien ne se passe</a>.</p>
+  <p>Redirection vers l'invitation... <a href="${appUrl}">Cliquez ici si rien ne se passe</a>.</p>
 </body>
 </html>`);
 }
